@@ -516,10 +516,6 @@ root.addEventListener('pointerdown', (event) => {
   }
   const action = actionElement.dataset.action;
   if (
-    action !== 'toggle-intercom-panel' &&
-    action !== 'close-intercom-panel' &&
-    action !== 'open-side-panel' &&
-    action !== 'close-side-panel' &&
     action !== 'connect-toggle' &&
     action !== 'open-saved-messages' &&
     action !== 'close-saved-messages' &&
@@ -540,10 +536,6 @@ root.addEventListener('click', (event) => {
   }
   const action = actionElement.dataset.action;
   if (
-    action === 'toggle-intercom-panel' ||
-    action === 'close-intercom-panel' ||
-    action === 'open-side-panel' ||
-    action === 'close-side-panel' ||
     action === 'connect-toggle' ||
     action === 'open-saved-messages' ||
     action === 'close-saved-messages' ||
