@@ -68,8 +68,10 @@ function normalizeConfig(value: AppConfig | undefined): AppConfig {
 
   return {
     credentials: value.credentials
-      ? {
+        ? {
           ...value.credentials,
+          serial: value.credentials.serial ?? null,
+          resolvedOrigin: value.credentials.resolvedOrigin ?? null,
           token: value.credentials.token ?? null,
           tokenValidUntil: value.credentials.tokenValidUntil ?? null,
           intercomUsername: value.credentials.intercomUsername ?? '',

@@ -3,6 +3,8 @@ export type AppLanguage = 'pl' | 'en' | 'de';
 
 export interface StoredCredentials {
   origin: string;
+  serial: string | null;
+  resolvedOrigin: string | null;
   username: string;
   password: string;
   intercomUsername: string;
@@ -87,6 +89,7 @@ export interface PersistedState {
 
 export interface FormState {
   origin: string;
+  serial: string | null;
   username: string;
   passwordStored: boolean;
 }
@@ -174,6 +177,7 @@ export interface AppViewModel {
 
 export interface SaveServerPayload {
   origin: string;
+  serial: string;
   username: string;
   password: string;
 }

@@ -726,7 +726,7 @@ h3 {
   right: 0;
   --rail-handle-width: 66px;
   transform: translate(calc(100% - var(--rail-handle-width) + 2px), -50%);
-  z-index: 30;
+  z-index: 60;
   display: flex;
   align-items: center;
   transition: transform 180ms ease;
@@ -1126,12 +1126,14 @@ select:focus {
 
   .insight-rail {
     top: auto;
-    bottom: 18px;
+    right: max(0px, env(safe-area-inset-right));
+    bottom: max(18px, env(safe-area-inset-bottom));
     --rail-handle-width: 74px;
     transform: translateX(calc(100% - var(--rail-handle-width) + 2px));
-    width: 100%;
+    width: auto;
+    max-width: calc(100vw - 16px);
     justify-content: flex-end;
-    padding-left: 20px;
+    padding-left: 0;
   }
 
   .insight-rail-open {

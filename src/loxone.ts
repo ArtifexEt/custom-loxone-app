@@ -97,6 +97,7 @@ interface LoxoneClientHandlers {
     stateValues: Record<string, LoxoneStateValue>;
     token: string | null;
     tokenValidUntil: string | null;
+    resolvedOrigin: string | null;
   }) => void;
   onStatesChanged: (changed: Record<string, LoxoneStateValue>) => void;
   onAvailabilityChanged: (online: boolean, message: string) => void;
@@ -144,6 +145,10 @@ export class LoxoneClient {
     this.credentials = credentials;
   }
 
+  currentResolvedOrigin(): string | null {
+    return this.credentials.resolvedOrigin ?? null;
+  }
+
   updateConnectionHints(hints: Partial<LoxoneConnectionHints>): void {
     this.hints = {
       ...this.hints,
@@ -170,6 +175,7 @@ export class LoxoneClient {
         stateValues: this.stateValues,
         token: this.credentials.token,
         tokenValidUntil: this.credentials.tokenValidUntil,
+        resolvedOrigin: this.credentials.resolvedOrigin ?? effectiveOrigin(this.credentials),
       });
       this.handlers.onAvailabilityChanged(true, rt('miniserver_connected'));
     } catch (error) {
@@ -221,13 +227,18 @@ export class LoxoneClient {
   }
 
   private async openSocket(): Promise<WebSocket> {
-    const candidates = socketCandidates(this.credentials.origin, this.hints.serial);
+    const candidates = dedupeSocketCandidates([
+      ...socketCandidates(effectiveOrigin(this.credentials), this.hints.serial),
+      ...(this.credentials.resolvedOrigin && this.credentials.resolvedOrigin !== this.credentials.origin
+        ? socketCandidates(this.credentials.origin, this.hints.serial)
+        : []),
+    ]);
     let lastError: Error | null = null;
 
     for (const candidate of candidates) {
       try {
         const socket = await this.openSocketCandidate(candidate);
-        this.credentials.origin = candidate.origin;
+        this.credentials.resolvedOrigin = candidate.origin;
         return socket;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(rt('websocket_open_failed'));
@@ -236,7 +247,7 @@ export class LoxoneClient {
 
     throw (
       lastError ??
-      new Error(describeSocketFailure(this.credentials.origin, this.hints.serial))
+      new Error(describeSocketFailure(effectiveOrigin(this.credentials), this.hints.serial))
     );
   }
 
@@ -278,8 +289,8 @@ export class LoxoneClient {
       clientUuid,
       'CustomLoxoneApp',
     );
-    this.credentials.origin = tokenResult.origin;
     const token = asString(tokenResult.payload.token);
+    this.credentials.resolvedOrigin = tokenResult.resolvedOrigin;
     this.credentials.token = token;
     this.credentials.tokenValidUntil = tokenResult.payload.validUntil
       ? String(tokenResult.payload.validUntil)
@@ -498,12 +509,13 @@ export function buildIntercomViewModel(
   const microphoneMuted = lookupBooleanState(summary, stateValues, MUTE_STATE_CANDIDATES);
   const supportsAnswer = supportsIntercomAnswer(summary);
   const supportsMute = supportsIntercomMute(summary);
+  const runtimeOrigin = credentials ? effectiveOrigin(credentials) : null;
 
   const streamUrl = credentials ? resolveMediaUrl(mediaControl, stateValues, STREAM_DETAIL_PATHS, credentials) : null;
   const snapshotUrl =
     credentials
       ? resolveMediaUrl(mediaControl, stateValues, SNAPSHOT_DETAIL_PATHS, credentials) ??
-        signUrl(credentials.origin, `camimage/${encodeURIComponent(summary.uuidAction)}`, credentials, 'server')
+        signUrl(runtimeOrigin!, `camimage/${encodeURIComponent(summary.uuidAction)}`, credentials, 'server')
       : null;
 
   const nativeHistoryTokens = parseLastBellEvents(mediaControl, stateValues);
@@ -515,13 +527,13 @@ export function buildIntercomViewModel(
         imageUrl:
           nativeHistoryTokens.length > 0
             ? signUrl(
-                credentials.origin,
+                runtimeOrigin!,
                 `camimage/${encodeURIComponent(summary.uuidAction)}/${encodeURIComponent(timestamp)}`,
                 credentials,
                 'server',
               )
             : signUrl(
-                credentials.origin,
+                runtimeOrigin!,
                 `camimage/${encodeURIComponent(summary.uuidAction)}?event=${encodeURIComponent(timestamp)}`,
                 credentials,
                 'server',
@@ -545,7 +557,7 @@ export function buildIntercomViewModel(
     roomName: summary.roomName,
     deviceUuid: resolveIntercomDeviceUuid(summary),
     address: resolveAddressHost(mediaControl, stateValues) ?? resolveAddressHost(summary, stateValues),
-    origin: credentials?.origin ?? null,
+    origin: runtimeOrigin,
     authToken: credentials?.token ?? null,
     doorbellActive,
     microphoneMuted,
@@ -939,14 +951,14 @@ function resolveIntercomHttpUrl(
   const raw = value.trim();
   const intercomAuth = resolveIntercomAuth(control, credentials);
   if (raw.startsWith('http://') || raw.startsWith('https://')) {
-    const mode = pickAuthMode(raw, credentials.origin);
+    const mode = pickAuthMode(raw, effectiveOrigin(credentials));
     return signAbsoluteUrl(raw, credentials, mode, mode === 'intercom' ? intercomAuth : undefined);
   }
   if (raw.startsWith('/camimage/') || raw.startsWith('camimage/')) {
-    return signUrl(credentials.origin, raw, credentials, 'server');
+    return signUrl(effectiveOrigin(credentials), raw, credentials, 'server');
   }
   if (raw.startsWith('/')) {
-    return signUrl(credentials.origin, raw, credentials, 'server');
+    return signUrl(effectiveOrigin(credentials), raw, credentials, 'server');
   }
 
   const addressBase = resolveAddressBase(control, stateValues);
@@ -955,9 +967,9 @@ function resolveIntercomHttpUrl(
   }
 
   if (raw.includes('/')) {
-    return signUrl(credentials.origin, raw, credentials, 'server');
+    return signUrl(effectiveOrigin(credentials), raw, credentials, 'server');
   }
-  return signUrl(credentials.origin, raw, credentials, 'server');
+  return signUrl(effectiveOrigin(credentials), raw, credentials, 'server');
 }
 
 function resolveAddressBase(
@@ -1094,6 +1106,42 @@ function signUrl(
 
 function ensureTrailingSlash(value: string): string {
   return value.endsWith('/') ? value : `${value}/`;
+}
+
+function effectiveOrigin(credentials: StoredCredentials): string {
+  return credentials.resolvedOrigin ?? credentials.origin;
+}
+
+function dedupeSocketCandidates(candidates: Array<{ origin: string; wsUrl: string }>): Array<{ origin: string; wsUrl: string }> {
+  const seen = new Set<string>();
+  return candidates.filter((candidate) => {
+    const key = `${candidate.origin}|${candidate.wsUrl}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
+function resolveAuthResponseOrigin(origin: string, responseUrl: string, commandPath: string): string {
+  const fallback = new URL(origin);
+  const response = new URL(responseUrl, fallback);
+  const commandUrl = new URL(commandPath, ensureTrailingSlash(fallback.toString()));
+  const commandPathname = commandUrl.pathname;
+  const commandSuffix = `/${commandPath.replace(/^\/+/, '')}`;
+  const matchedSuffix = response.pathname.endsWith(commandPathname)
+    ? commandPathname
+    : response.pathname.endsWith(commandSuffix)
+      ? commandSuffix
+      : null;
+  if (matchedSuffix) {
+    const trimmedPath = response.pathname.slice(0, response.pathname.length - matchedSuffix.length);
+    response.pathname = trimmedPath || '/';
+  }
+  response.search = '';
+  response.hash = '';
+  return response.toString().replace(/\/$/, '');
 }
 
 function isIntercomControl(control: LoxoneControl): boolean {
@@ -1496,15 +1544,15 @@ async function requestJwtToken(
   password: string,
   clientUuid: string,
   clientInfo: string,
-): Promise<{ origin: string; payload: Record<string, unknown> }> {
+): Promise<{ origin: string; resolvedOrigin: string; payload: Record<string, unknown> }> {
   const candidates = authBootstrapOrigins(origin, serial);
   let lastError: unknown = null;
 
   for (const candidateOrigin of candidates) {
     try {
-      const publicKeyPem = await fetchPublicKey(candidateOrigin);
+      const { publicKeyPem, resolvedOrigin } = await fetchPublicKey(candidateOrigin);
       const tokenSalts = await requestEncryptedValue(
-        candidateOrigin,
+        resolvedOrigin,
         `jdev/sys/getkey2/${encodeURIComponent(username)}`,
         publicKeyPem,
       );
@@ -1515,12 +1563,13 @@ async function requestJwtToken(
       const userHash = await hmacUserHash(username, passwordHash, key, hashAlg);
       const tokenPath = supportsVersion(JWT_SUPPORT_VERSION, null) ? 'jdev/sys/getjwt/' : 'jdev/sys/gettoken/';
       const payload = await requestEncryptedValue(
-        candidateOrigin,
+        resolvedOrigin,
         `${tokenPath}${userHash}/${encodeURIComponent(username)}/${TOKEN_PERMISSION_APP}/${encodeURIComponent(clientUuid)}/${encodeURIComponent(clientInfo)}`,
         publicKeyPem,
       );
       return {
         origin: candidateOrigin,
+        resolvedOrigin,
         payload,
       };
     } catch (error) {
@@ -1531,16 +1580,32 @@ async function requestJwtToken(
   throw (lastError instanceof Error ? lastError : new Error(rt('loxone_unknown_error')));
 }
 
-async function fetchPublicKey(origin: string): Promise<string> {
+async function fetchPublicKey(origin: string): Promise<{ publicKeyPem: string; resolvedOrigin: string }> {
   try {
     const response = await fetch(new URL('jdev/sys/getPublicKey', ensureTrailingSlash(origin)), {
       method: 'GET',
     });
     const payload = parseCommandPayload(await response.text(), 'jdev/sys/getPublicKey');
-    return normalizePublicKeyPem(asString(payload.value));
+    return {
+      publicKeyPem: normalizePublicKeyPem(asString(payload.value)),
+      resolvedOrigin: resolveAuthResponseOrigin(origin, response.url, 'jdev/sys/getPublicKey'),
+    };
   } catch (error) {
     throw mapAuthBootstrapError(error, origin, 'jdev/sys/getPublicKey');
   }
+}
+
+export async function resolveRuntimeOrigin(origin: string, serial: string | null): Promise<string | null> {
+  const candidates = authBootstrapOrigins(origin, serial);
+  for (const candidateOrigin of candidates) {
+    try {
+      const { resolvedOrigin } = await fetchPublicKey(candidateOrigin);
+      return resolvedOrigin;
+    } catch {
+      // Keep background probing silent.
+    }
+  }
+  return null;
 }
 
 async function requestEncryptedValue(
@@ -1844,14 +1909,7 @@ function buildSmartTlsOrigin(origin: URL, serial: string | null): URL | null {
     return null;
   }
 
-  const cleanedHost = origin.hostname.replaceAll('.', '-');
-  const tlsOrigin = new URL(origin.toString());
-  tlsOrigin.protocol = 'https:';
-  tlsOrigin.hostname = `${cleanedHost}.${serial}.dyndns.loxonecloud.com`;
-  if (tlsOrigin.port === '80') {
-    tlsOrigin.port = '';
-  }
-  return tlsOrigin;
+  return buildCloudDnsOrigin(serial);
 }
 
 function describeSocketFailure(origin: string, serial: string | null): string {
@@ -1872,14 +1930,15 @@ function buildSuggestedDnsHost(origin: URL, serial: string | null): string | nul
   if (!serial || !isPrivateHost(origin.hostname)) {
     return null;
   }
-  const cleanedHost = origin.hostname.replaceAll('.', '-');
-  const suggested = new URL(origin.toString());
-  suggested.protocol = 'https:';
-  suggested.hostname = `${cleanedHost}.${serial}.dyndns.loxonecloud.com`;
-  if (suggested.port === '80') {
-    suggested.port = '';
+  return buildCloudDnsOrigin(serial)?.toString().replace(/\/$/, '') ?? null;
+}
+
+function buildCloudDnsOrigin(serial: string): URL | null {
+  const normalizedSerial = serial.trim().toUpperCase();
+  if (!normalizedSerial) {
+    return null;
   }
-  return suggested.toString().replace(/\/$/, '');
+  return new URL(`https://dns.loxonecloud.com/${encodeURIComponent(normalizedSerial)}/`);
 }
 
 function isPrivateHost(hostname: string): boolean {

@@ -38,6 +38,7 @@ let state: AppViewModel = {
   notice: null,
   serverForm: {
     origin: '',
+    serial: null,
     username: '',
     passwordStored: false,
   },
@@ -59,6 +60,13 @@ let browserConversationMessage = '';
 let selectedHistoryImage: IntercomHistoryItem | null = null;
 let localMicrophoneStream: MediaStream | null = null;
 let localViewDraft: IntercomViewConfig | null = null;
+let localServerDraft: {
+  origin: string;
+  serial: string;
+  username: string;
+  password: string;
+  passwordStored: boolean;
+} | null = null;
 let browserHistoryByIntercomUuidAction = new Map<string, IntercomHistoryItem[]>();
 let historyImageCache = new Map<string, string>();
 let pendingHistoryImageLoads = new Map<string, Promise<string | null>>();
@@ -68,6 +76,7 @@ let historyDrawerScrollTop = 0;
 let historyDrawerViewportHeight = 0;
 let historyVirtualWindowKey = '';
 let pendingFocusSelector: string | null = null;
+let deferredRenderRequested = false;
 
 const HISTORY_DRAWER_GAP = 12;
 const HISTORY_DRAWER_OVERSCAN_ROWS = 2;
@@ -690,6 +699,7 @@ root.addEventListener('submit', (event) => {
       type: 'saveServer',
       payload: {
         origin: String(formData.get('origin') ?? ''),
+        serial: String(formData.get('serial') ?? ''),
         username: String(formData.get('username') ?? ''),
         password: String(formData.get('password') ?? ''),
       },
@@ -789,6 +799,12 @@ post({ type: 'bootstrap', browserLanguage: navigator.language });
 render();
 
 function render(): void {
+  if (shouldDeferRenderForActiveEditor()) {
+    deferredRenderRequested = true;
+    return;
+  }
+  deferredRenderRequested = false;
+  const focusedField = captureFocusedFieldState();
   renderMarkup(`
     <main class="shell ${state.screen === 'loading' ? 'shell-loading' : ''}">
       <div class="ambient ambient-a"></div>
@@ -802,6 +818,9 @@ function render(): void {
   attachRtcStreamToDom();
   syncHistoryDrawerMetrics();
   flushPendingFocus();
+  if (!pendingFocusSelector) {
+    restoreFocusedFieldState(focusedField);
+  }
   const intercom = state.currentView?.intercom;
   if (intercom) {
     persistIntercomPreviewHint(intercom);
@@ -813,6 +832,112 @@ function render(): void {
     });
   }
 }
+
+function shouldDeferRenderForActiveEditor(): boolean {
+  if (pendingFocusSelector) {
+    return false;
+  }
+  const activeElement = document.activeElement;
+  if (
+    !(activeElement instanceof HTMLInputElement) &&
+    !(activeElement instanceof HTMLTextAreaElement) &&
+    !(activeElement instanceof HTMLSelectElement)
+  ) {
+    return false;
+  }
+  return Boolean(activeElement.closest('form[data-form]'));
+}
+
+type FocusedFieldState = {
+  selector: string;
+  selectionStart: number | null;
+  selectionEnd: number | null;
+};
+
+function captureFocusedFieldState(): FocusedFieldState | null {
+  const activeElement = document.activeElement;
+  if (
+    !(activeElement instanceof HTMLInputElement) &&
+    !(activeElement instanceof HTMLTextAreaElement) &&
+    !(activeElement instanceof HTMLSelectElement)
+  ) {
+    return null;
+  }
+
+  const form = activeElement.closest<HTMLFormElement>('form[data-form]');
+  const fieldName = activeElement.getAttribute('name');
+  if (!form || !fieldName) {
+    return null;
+  }
+
+  const formName = form.dataset.form;
+  if (!formName) {
+    return null;
+  }
+
+  const escapedFormName = escapeCssSelectorValue(formName);
+  const escapedFieldName = escapeCssSelectorValue(fieldName);
+  const selector = `form[data-form="${escapedFormName}"] [name="${escapedFieldName}"]`;
+  const selectionStart =
+    activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement
+      ? activeElement.selectionStart
+      : null;
+  const selectionEnd =
+    activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement
+      ? activeElement.selectionEnd
+      : null;
+
+  return {
+    selector,
+    selectionStart,
+    selectionEnd,
+  };
+}
+
+function restoreFocusedFieldState(fieldState: FocusedFieldState | null): void {
+  if (!fieldState) {
+    return;
+  }
+  const target = document.querySelector<HTMLElement>(fieldState.selector);
+  if (
+    !(target instanceof HTMLInputElement) &&
+    !(target instanceof HTMLTextAreaElement) &&
+    !(target instanceof HTMLSelectElement)
+  ) {
+    return;
+  }
+  if (document.activeElement === target) {
+    return;
+  }
+  target.focus({ preventScroll: true });
+  if (
+    (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) &&
+    fieldState.selectionStart !== null &&
+    fieldState.selectionEnd !== null
+  ) {
+    try {
+      target.setSelectionRange(fieldState.selectionStart, fieldState.selectionEnd);
+    } catch {
+      // Some input types do not support selection ranges.
+    }
+  }
+}
+
+function escapeCssSelectorValue(value: string): string {
+  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+    return CSS.escape(value);
+  }
+  return value.replace(/["\\]/g, '\\$&');
+}
+
+document.addEventListener('focusout', () => {
+  window.setTimeout(() => {
+    if (!deferredRenderRequested || shouldDeferRenderForActiveEditor()) {
+      return;
+    }
+    render();
+  }, 0);
+});
 
 function flushPendingFocus(): void {
   if (!pendingFocusSelector) {
@@ -1512,19 +1637,24 @@ function renderViewSettingsContent(): string {
 }
 
 function renderServerForm(showSubmit = true): string {
+  const serverForm = localServerDraft ?? state.serverForm;
   return `
     <form class="server-form" data-form="server">
       <label>
         <span>${escapeHtml(tr('loxone_address'))}</span>
-        <input name="origin" required placeholder="https://miniserver.local" value="${escapeAttribute(state.serverForm.origin)}" />
+        <input name="origin" placeholder="https://miniserver.local" value="${escapeAttribute(serverForm.origin)}" />
+      </label>
+      <label>
+        <span>${escapeHtml(tr('serial_number_optional'))}</span>
+        <input name="serial" placeholder="${escapeAttribute(tr('serial_placeholder'))}" value="${escapeAttribute(serverForm.serial ?? '')}" />
       </label>
       <label>
         <span>${escapeHtml(tr('login'))}</span>
-        <input name="username" required placeholder="uzytkownik" value="${escapeAttribute(state.serverForm.username)}" />
+        <input name="username" required placeholder="uzytkownik" value="${escapeAttribute(serverForm.username)}" />
       </label>
       <label>
         <span>${escapeHtml(tr('password'))}</span>
-        <input name="password" type="password" placeholder="${escapeAttribute(state.serverForm.passwordStored ? tr('password_keep') : tr('password_placeholder'))}" />
+        <input name="password" type="password" placeholder="${escapeAttribute(serverForm.passwordStored ? tr('password_keep') : tr('password_placeholder'))}" value="${escapeAttribute(localServerDraft?.password ?? '')}" />
       </label>
       ${showSubmit ? `<button class="action-button action-button-wide" type="submit">${escapeHtml(tr('save_and_connect'))}</button>` : ''}
     </form>
@@ -1749,6 +1879,7 @@ async function closeSettingsOverlay(): Promise<void> {
   if (state.settingsMode === 'app') {
     await persistServerSettingsFromOverlay();
   }
+  localServerDraft = null;
   post({ type: 'closeSettings' });
 }
 
@@ -1759,10 +1890,12 @@ async function persistServerSettingsFromOverlay(): Promise<void> {
   }
   const formData = new FormData(form);
   const origin = String(formData.get('origin') ?? '').trim();
+  const serial = String(formData.get('serial') ?? '').trim();
   const username = String(formData.get('username') ?? '').trim();
   const password = String(formData.get('password') ?? '');
   const changed =
     origin !== state.serverForm.origin ||
+    serial !== (state.serverForm.serial ?? '') ||
     username !== state.serverForm.username ||
     password.trim().length > 0;
   if (!changed) {
@@ -1772,6 +1905,7 @@ async function persistServerSettingsFromOverlay(): Promise<void> {
     type: 'saveServer',
     payload: {
       origin,
+      serial,
       username,
       password,
     },
@@ -1981,6 +2115,11 @@ root.addEventListener('input', (event) => {
   if (!(target instanceof HTMLElement)) {
     return;
   }
+  const serverForm = target.closest<HTMLFormElement>('form[data-form="server"]');
+  if (serverForm) {
+    syncDraftFromServerForm(serverForm);
+    return;
+  }
   const form = target.closest<HTMLFormElement>('form[data-form="view"]');
   if (!form) {
     return;
@@ -1993,6 +2132,11 @@ root.addEventListener('change', (event) => {
   if (!(target instanceof HTMLElement)) {
     return;
   }
+  const serverForm = target.closest<HTMLFormElement>('form[data-form="server"]');
+  if (serverForm) {
+    syncDraftFromServerForm(serverForm);
+    return;
+  }
   const form = target.closest<HTMLFormElement>('form[data-form="view"]');
   if (!form) {
     return;
@@ -2000,7 +2144,24 @@ root.addEventListener('change', (event) => {
   syncDraftFromViewForm(form);
 });
 
+function syncLocalServerDraft(): void {
+  if (state.settingsMode !== 'app') {
+    localServerDraft = null;
+    return;
+  }
+  if (!localServerDraft) {
+    localServerDraft = {
+      origin: state.serverForm.origin,
+      serial: state.serverForm.serial ?? '',
+      username: state.serverForm.username,
+      password: '',
+      passwordStored: state.serverForm.passwordStored,
+    };
+  }
+}
+
 function syncLocalViewDraft(): void {
+  syncLocalServerDraft();
   if (state.settingsMode !== 'view' || !state.currentEditorView) {
     localViewDraft = null;
     return;
@@ -2008,6 +2169,21 @@ function syncLocalViewDraft(): void {
   if (!localViewDraft || localViewDraft.id !== state.currentEditorView.id) {
     localViewDraft = structuredClone(state.currentEditorView);
   }
+}
+
+function syncDraftFromServerForm(form?: HTMLFormElement | null): void {
+  const sourceForm = form ?? document.querySelector<HTMLFormElement>('form[data-form="server"]');
+  if (!sourceForm) {
+    return;
+  }
+  const formData = new FormData(sourceForm);
+  localServerDraft = {
+    origin: String(formData.get('origin') ?? '').trim(),
+    serial: String(formData.get('serial') ?? '').trim().toUpperCase(),
+    username: String(formData.get('username') ?? '').trim(),
+    password: String(formData.get('password') ?? ''),
+    passwordStored: state.serverForm.passwordStored,
+  };
 }
 
 function ensureLocalViewDraft(): boolean {
@@ -2118,6 +2294,14 @@ function setupViewportHeightTracking(): void {
   document.addEventListener('focusin', (event) => {
     const target = event.target;
     if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    const isTextEntryTarget =
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target instanceof HTMLSelectElement ||
+      target.isContentEditable;
+    if (!isTextEntryTarget) {
       return;
     }
     window.setTimeout(() => {

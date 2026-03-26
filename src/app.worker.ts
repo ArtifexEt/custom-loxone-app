@@ -8,6 +8,7 @@ import {
   listIntercoms,
   listLogSources,
   mergeControlSecuredDetails,
+  resolveRuntimeOrigin,
   selectIntercomControl,
 } from './loxone';
 import { defaultPersistedState, loadPersistedState, saveCache, saveConfig } from './storage';
@@ -42,6 +43,9 @@ let connection: AppViewModel['connection'] = {
 };
 let persistCacheTimer: number | null = null;
 let browserLanguage: string | null = null;
+let resolvedOriginRefreshTimer: number | null = null;
+
+const RESOLVED_ORIGIN_REFRESH_MS = 120000;
 
 self.onmessage = (event: MessageEvent<MainToWorkerMessage>) => {
   void handleMessage(event.data);
@@ -150,6 +154,7 @@ async function bootstrap(): Promise<void> {
   emitState();
 
   if (config.credentials) {
+    ensureResolvedOriginRefreshLoop();
     await connect();
   }
 }
@@ -157,6 +162,7 @@ async function bootstrap(): Promise<void> {
 async function saveServerConfiguration(payload: SaveServerPayload): Promise<void> {
   const credentials = mergeCredentials(payload, config.credentials);
   config.credentials = credentials;
+  ensureResolvedOriginRefreshLoop();
   setInfoNotice(t(resolveLanguage(), 'server_saved'));
   await persistConfig();
   emitState();
@@ -348,6 +354,7 @@ async function connect(forceReload = false): Promise<void> {
           ...config.credentials!,
           token: payload.token,
           tokenValidUntil: payload.tokenValidUntil,
+          resolvedOrigin: payload.resolvedOrigin,
         };
         ensureConfigConsistency();
         void persistConfig();
@@ -466,6 +473,7 @@ function buildViewState(): AppViewModel {
     notice,
     serverForm: {
       origin: config.credentials?.origin ?? '',
+      serial: config.credentials?.serial ?? null,
       username: config.credentials?.username ?? '',
       passwordStored: Boolean(config.credentials?.password),
     },
@@ -631,11 +639,12 @@ function mergeCredentials(
   payload: SaveServerPayload,
   existing: StoredCredentials | null,
 ): StoredCredentials {
-  const origin = normalizeOrigin(payload.origin);
+  const serial = normalizeSerial(payload.serial || existing?.serial || '');
+  const origin = normalizeOrigin(payload.origin || buildCloudDnsOriginString(serial) || '');
   const username = payload.username.trim();
   const password = payload.password || existing?.password || '';
 
-  if (!origin) {
+  if (!origin && !serial) {
     throw new Error(t(resolveLanguage(), 'enter_server_address'));
   }
   if (!username) {
@@ -647,6 +656,8 @@ function mergeCredentials(
 
   const base: StoredCredentials = {
     origin,
+    serial,
+    resolvedOrigin: existing?.resolvedOrigin ?? null,
     username,
     password,
     intercomUsername: existing?.intercomUsername ?? '',
@@ -658,9 +669,11 @@ function mergeCredentials(
   if (
     existing &&
     (existing.origin !== base.origin ||
+      existing.serial !== base.serial ||
       existing.username !== base.username ||
       existing.password !== base.password)
   ) {
+    base.resolvedOrigin = null;
     base.token = null;
     base.tokenValidUntil = null;
   }
@@ -684,6 +697,21 @@ function normalizeOrigin(value: string): string {
   return url.toString().replace(/\/$/, normalizedPath === '/' ? '' : '/');
 }
 
+function buildCloudDnsOriginString(serial: string | null): string | null {
+  if (!serial) {
+    return null;
+  }
+  return `https://dns.loxonecloud.com/${encodeURIComponent(serial)}`;
+}
+
+function normalizeSerial(value: string): string | null {
+  const trimmed = value.trim().toUpperCase();
+  if (!trimmed) {
+    return null;
+  }
+  return /^[A-Z0-9]+$/.test(trimmed) ? trimmed : null;
+}
+
 function shouldUseHttpByDefault(value: string): boolean {
   const candidate = value.trim().toLowerCase();
   if (candidate === 'localhost' || candidate.endsWith('.local')) {
@@ -700,6 +728,49 @@ function shouldUseHttpByDefault(value: string): boolean {
     (a === 172 && b >= 16 && b <= 31) ||
     (a === 192 && b === 168)
   );
+}
+
+function ensureResolvedOriginRefreshLoop(): void {
+  if (resolvedOriginRefreshTimer !== null) {
+    return;
+  }
+  resolvedOriginRefreshTimer = self.setInterval(() => {
+    void refreshResolvedOriginInBackground();
+  }, RESOLVED_ORIGIN_REFRESH_MS);
+}
+
+async function refreshResolvedOriginInBackground(): Promise<void> {
+  const credentials = config.credentials;
+  if (!credentials || (!credentials.serial && !isCloudDnsOrigin(credentials.origin))) {
+    return;
+  }
+
+  const nextResolvedOrigin = await resolveRuntimeOrigin(credentials.origin, credentials.serial);
+  if (!nextResolvedOrigin || nextResolvedOrigin === credentials.resolvedOrigin) {
+    return;
+  }
+
+  config.credentials = {
+    ...credentials,
+    resolvedOrigin: nextResolvedOrigin,
+  };
+  if (client) {
+    client.updateCredentials(config.credentials);
+  }
+  await persistConfig();
+  emitState();
+
+  if (connection.status !== 'online') {
+    await connect(true);
+  }
+}
+
+function isCloudDnsOrigin(origin: string): boolean {
+  try {
+    return new URL(origin).hostname.toLowerCase() === 'dns.loxonecloud.com';
+  } catch {
+    return false;
+  }
 }
 
 function clampHistory(value: number): number {
