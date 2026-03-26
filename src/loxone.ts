@@ -241,7 +241,7 @@ export class LoxoneClient {
 
   private async openSocketCandidate(candidate: { origin: string; wsUrl: string }): Promise<WebSocket> {
     return new Promise((resolve, reject) => {
-      const socket = new WebSocket(candidate.wsUrl);
+      const socket = new WebSocket(candidate.wsUrl, 'remotecontrol');
       socket.binaryType = 'arraybuffer';
       socket.onopen = () => {
         socket.onmessage = (event) => {
@@ -275,7 +275,8 @@ export class LoxoneClient {
     }
 
     const clientUuid = crypto.randomUUID();
-    const tokenPayload = await this.requestJwtTokenOverSocket(
+    const tokenPayload = await requestJwtToken(
+      this.credentials.origin,
       username,
       this.credentials.password,
       clientUuid,
@@ -285,43 +286,6 @@ export class LoxoneClient {
     this.credentials.token = token;
     this.credentials.tokenValidUntil = tokenPayload.validUntil ? String(tokenPayload.validUntil) : null;
     await this.sendCommand(`authwithtoken/${encodeURIComponent(token)}/${encodeURIComponent(username)}`);
-  }
-
-  private async requestJwtTokenOverSocket(
-    username: string,
-    password: string,
-    clientUuid: string,
-    clientInfo: string,
-  ): Promise<Record<string, unknown>> {
-    const publicKeyPayload = await this.sendCommand('jdev/sys/getPublicKey');
-    const publicKeyPem = normalizePublicKeyPem(asString(publicKeyPayload.value));
-    const tokenSalts = await this.requestEncryptedValueOverSocket(
-      `jdev/sys/getkey2/${encodeURIComponent(username)}`,
-      publicKeyPem,
-    );
-    const key = asString(tokenSalts.key);
-    const salt = asString(tokenSalts.salt);
-    const hashAlg = asString(tokenSalts.hashAlg ?? 'SHA1').toUpperCase();
-    const passwordHash = await hashPassword(password, salt, hashAlg);
-    const userHash = await hmacUserHash(username, passwordHash, key, hashAlg);
-    const tokenPath = supportsVersion(JWT_SUPPORT_VERSION, null) ? 'jdev/sys/getjwt/' : 'jdev/sys/gettoken/';
-    return this.requestEncryptedValueOverSocket(
-      `${tokenPath}${userHash}/${encodeURIComponent(username)}/${TOKEN_PERMISSION_APP}/${encodeURIComponent(clientUuid)}/${encodeURIComponent(clientInfo)}`,
-      publicKeyPem,
-    );
-  }
-
-  private async requestEncryptedValueOverSocket(
-    command: string,
-    publicKeyPem: string,
-  ): Promise<Record<string, unknown>> {
-    const encrypted = await encryptCommand(command, publicKeyPem);
-    const rawResponse = await this.sendTextCommand(
-      `${encrypted.encryptedCommand}?sk=${encodeURIComponent(encrypted.encryptedSessionKey)}`,
-    );
-    const decrypted = await tryDecryptEncryptedResponse(rawResponse, encrypted.aesKey, encrypted.aesIv);
-    const payload = parseCommandPayload(decrypted ?? rawResponse, command);
-    return coerceMaybeJsonRecord(payload.value);
   }
 
   private async loadStructure(): Promise<LoxoneStructure> {
@@ -1511,6 +1475,70 @@ function bytesToArrayBuffer(value: Uint8Array): ArrayBuffer {
   return value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength) as ArrayBuffer;
 }
 
+async function requestJwtToken(
+  origin: string,
+  username: string,
+  password: string,
+  clientUuid: string,
+  clientInfo: string,
+): Promise<Record<string, unknown>> {
+  const publicKeyPem = await fetchPublicKey(origin);
+  const tokenSalts = await requestEncryptedValue(origin, `jdev/sys/getkey2/${encodeURIComponent(username)}`, publicKeyPem);
+  const key = asString(tokenSalts.key);
+  const salt = asString(tokenSalts.salt);
+  const hashAlg = asString(tokenSalts.hashAlg ?? 'SHA1').toUpperCase();
+  const passwordHash = await hashPassword(password, salt, hashAlg);
+  const userHash = await hmacUserHash(username, passwordHash, key, hashAlg);
+  const tokenPath = supportsVersion(JWT_SUPPORT_VERSION, null) ? 'jdev/sys/getjwt/' : 'jdev/sys/gettoken/';
+  return requestEncryptedValue(
+    origin,
+    `${tokenPath}${userHash}/${encodeURIComponent(username)}/${TOKEN_PERMISSION_APP}/${encodeURIComponent(clientUuid)}/${encodeURIComponent(clientInfo)}`,
+    publicKeyPem,
+  );
+}
+
+async function fetchPublicKey(origin: string): Promise<string> {
+  try {
+    const response = await fetch(new URL('jdev/sys/getPublicKey', ensureTrailingSlash(origin)), {
+      method: 'GET',
+    });
+    const payload = parseCommandPayload(await response.text(), 'jdev/sys/getPublicKey');
+    return normalizePublicKeyPem(asString(payload.value));
+  } catch (error) {
+    throw mapAuthBootstrapError(error, origin, 'jdev/sys/getPublicKey');
+  }
+}
+
+async function requestEncryptedValue(
+  origin: string,
+  command: string,
+  publicKeyPem: string,
+): Promise<Record<string, unknown>> {
+  const encrypted = await encryptCommand(command, publicKeyPem);
+  try {
+    const response = await fetch(buildEncryptedCommandUrl(origin, encrypted), {
+      method: 'GET',
+    });
+    const rawResponse = await response.text();
+    const decrypted = await tryDecryptEncryptedResponse(rawResponse, encrypted.aesKey, encrypted.aesIv);
+    const payload = parseCommandPayload(decrypted ?? rawResponse, command);
+    return coerceMaybeJsonRecord(payload.value);
+  } catch (error) {
+    throw mapAuthBootstrapError(error, origin, command);
+  }
+}
+
+function buildEncryptedCommandUrl(
+  origin: string,
+  encrypted: {
+    encryptedCommand: string;
+    encryptedSessionKey: string;
+  },
+): string {
+  const base = ensureTrailingSlash(origin);
+  return `${base}${encrypted.encryptedCommand}?sk=${encodeURIComponent(encrypted.encryptedSessionKey)}`;
+}
+
 
 async function encryptCommand(
   command: string,
@@ -1711,6 +1739,24 @@ function toErrorMessage(error: unknown): string {
     return error.message;
   }
   return rt('loxone_unknown_error');
+}
+
+function mapAuthBootstrapError(error: unknown, origin: string, command: string): Error {
+  const target = new URL(origin);
+  const publicOrigin = self.location.origin;
+  if (
+    target.origin !== publicOrigin &&
+    error instanceof TypeError
+  ) {
+    return new Error(rt('loxone_auth_cors_blocked', { command, host: target.host }));
+  }
+  if (error instanceof Error && error.message) {
+    return error;
+  }
+  if (target.origin !== publicOrigin) {
+    return new Error(rt('loxone_auth_cors_blocked', { command, host: target.host }));
+  }
+  return new Error(rt('loxone_command_error', { code: 0, command }));
 }
 
 function socketCandidates(origin: string, serial: string | null): Array<{ origin: string; wsUrl: string }> {

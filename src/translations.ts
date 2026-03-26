@@ -120,6 +120,8 @@ const TRANSLATIONS = {
     miniserver_empty_response: 'Empty response from the Miniserver.',
     loxone_bad_credentials: 'Invalid Loxone username or password.',
     loxone_command_error: 'Loxone returned error {code} for command {command}.',
+    loxone_auth_cors_blocked:
+      'Browser access to {command} on {host} was blocked. Use the app locally over the same trusted network host, or place it behind a reverse proxy on the same origin as Loxone.',
     invalid_hmac_key: 'Invalid HMAC key.',
     login_slash_forbidden: 'The Loxone login cannot contain the "/" character.',
     miniserver_unexpected_data: 'The Miniserver returned an unexpected data format.',
@@ -286,6 +288,8 @@ const TRANSLATIONS = {
     miniserver_empty_response: 'Pusta odpowiedź z Miniservera.',
     loxone_bad_credentials: 'Błędny login lub hasło do Loxone.',
     loxone_command_error: 'Loxone zwrócił błąd {code} dla komendy {command}.',
+    loxone_auth_cors_blocked:
+      'Przeglądarka zablokowała dostęp do {command} na {host}. Uruchom aplikację lokalnie pod tym samym zaufanym hostem albo wystaw ją za reverse proxy na tym samym originie co Loxone.',
     invalid_hmac_key: 'Nieprawidłowy klucz HMAC.',
     login_slash_forbidden: 'Login Loxone nie może zawierać znaku /.',
     miniserver_unexpected_data: 'Miniserver zwrócił nieoczekiwany format danych.',
@@ -452,6 +456,8 @@ const TRANSLATIONS = {
     miniserver_empty_response: 'Leere Antwort vom Miniserver.',
     loxone_bad_credentials: 'Ungültiger Loxone-Benutzername oder falsches Passwort.',
     loxone_command_error: 'Loxone hat Fehler {code} für Befehl {command} zurückgegeben.',
+    loxone_auth_cors_blocked:
+      'Der Browser hat den Zugriff auf {command} auf {host} blockiert. Betreibe die App lokal unter demselben vertrauenswürdigen Host oder hinter einem Reverse-Proxy mit derselben Origin wie Loxone.',
     invalid_hmac_key: 'Ungültiger HMAC-Schlüssel.',
     login_slash_forbidden: 'Der Loxone-Login darf das Zeichen "/" nicht enthalten.',
     miniserver_unexpected_data: 'Der Miniserver hat ein unerwartetes Datenformat zurückgegeben.',
