@@ -2229,21 +2229,21 @@ function canUseRtcPreview(intercom: CurrentIntercom): boolean {
 
 function resolveIntercomSignalingUrls(intercom: CurrentIntercom): string[] {
   const candidates: string[] = [];
-  if (intercom.address) {
-    candidates.push(`${preferSecureIntercomTransport() ? 'wss' : isPrivateLikeHost(intercom.address) ? 'ws' : 'wss'}://${intercom.address}`);
-  }
   if (intercom.deviceUuid && intercom.origin) {
     const base = intercom.origin.replace(/\/$/, '').replace(/^http/, 'ws');
     candidates.push(`${base}/proxy/${encodeURIComponent(intercom.deviceUuid)}/`);
+  }
+  if (intercom.address && !preferSecureIntercomTransport()) {
+    candidates.push(`${isPrivateLikeHost(intercom.address) ? 'ws' : 'wss'}://${intercom.address}`);
   }
   return Array.from(new Set(candidates));
 }
 
 function resolveIntercomHttpBase(intercom: CurrentIntercom): string | null {
-  if (intercom.address) {
-    return `${preferSecureIntercomTransport() ? 'https' : isPrivateLikeHost(intercom.address) ? 'http' : 'https'}://${intercom.address}`;
-  }
   if (!intercom.deviceUuid || !intercom.origin) {
+    if (intercom.address) {
+      return `${preferSecureIntercomTransport() ? 'https' : isPrivateLikeHost(intercom.address) ? 'http' : 'https'}://${intercom.address}`;
+    }
     return null;
   }
   return `${intercom.origin.replace(/\/$/, '')}/proxy/${encodeURIComponent(intercom.deviceUuid)}/`;
@@ -2392,13 +2392,16 @@ function rewriteMixedContentMediaUrl(url: URL, intercom?: CurrentIntercom): URL 
     self.location.protocol === 'https:' &&
     url.protocol === 'http:' &&
     isPrivateLikeHost(url.hostname) &&
-    intercom?.origin
+    intercom?.origin &&
+    intercom.deviceUuid
   ) {
     const secureOrigin = new URL(intercom.origin);
     if (secureOrigin.protocol === 'https:') {
-      url.protocol = secureOrigin.protocol;
-      url.hostname = secureOrigin.hostname;
-      url.port = secureOrigin.port;
+      const proxyUrl = new URL(
+        `/proxy/${encodeURIComponent(intercom.deviceUuid)}${url.pathname}${url.search}`,
+        `${secureOrigin.origin}/`,
+      );
+      return proxyUrl;
     }
   }
   return url;
