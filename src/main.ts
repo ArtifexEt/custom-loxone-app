@@ -784,12 +784,13 @@ root.addEventListener(
 );
 
 registerServiceWorker();
+setupViewportHeightTracking();
 post({ type: 'bootstrap', browserLanguage: navigator.language });
 render();
 
 function render(): void {
   renderMarkup(`
-    <main class="shell">
+    <main class="shell ${state.screen === 'loading' ? 'shell-loading' : ''}">
       <div class="ambient ambient-a"></div>
       <div class="ambient ambient-b"></div>
       ${state.screen === 'loading' ? renderLoadingScreen() : renderAppShell()}
@@ -1084,6 +1085,7 @@ function renderIntercomStage(): string {
   }
   const realtimeAvailable = isRealtimeAvailable();
   const controlsDisabled = realtimeAvailable ? '' : 'disabled';
+  const expandedPanels = shouldExpandIntercomPanels();
   const hasVisualMedia =
     intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction) ||
     Boolean(intercom.streamUrl || intercom.snapshotUrl || intercom.cachedPreviewUrl);
@@ -1123,36 +1125,40 @@ function renderIntercomStage(): string {
                 </button>
               `
               : ''}
-            <button
-              class="ghost-button media-overlay-button ${intercomPanelMode === 'actions' ? 'intercom-panel-switch-active' : ''}"
-              type="button"
-              data-action="toggle-intercom-panel"
-              data-panel="actions"
-              ${controlsDisabled}
-            >
-              ${escapeHtml(tr('actions'))}
-            </button>
-            <button
-              class="ghost-button media-overlay-button ${intercomPanelMode === 'tts' ? 'intercom-panel-switch-active' : ''}"
-              type="button"
-              data-action="toggle-intercom-panel"
-              data-panel="tts"
-              ${controlsDisabled}
-            >
-              ${escapeHtml(tr('tts'))}
-            </button>
+            ${expandedPanels
+              ? ''
+              : `
+                <button
+                  class="ghost-button media-overlay-button ${intercomPanelMode === 'actions' ? 'intercom-panel-switch-active' : ''}"
+                  type="button"
+                  data-action="toggle-intercom-panel"
+                  data-panel="actions"
+                  ${controlsDisabled}
+                >
+                  ${escapeHtml(tr('actions'))}
+                </button>
+                <button
+                  class="ghost-button media-overlay-button ${intercomPanelMode === 'tts' ? 'intercom-panel-switch-active' : ''}"
+                  type="button"
+                  data-action="toggle-intercom-panel"
+                  data-panel="tts"
+                  ${controlsDisabled}
+                >
+                  ${escapeHtml(tr('tts'))}
+                </button>
+              `}
           </div>
           ${renderMedia(intercom)}
         </div>
         ${renderBrowserConversationStatus()}
       </section>
 
-      ${intercomPanelMode === 'actions'
+      ${expandedPanels || intercomPanelMode === 'actions'
         ? `
       <section class="panel">
         <div class="section-head compact">
           <p class="eyebrow">${escapeHtml(tr('actions'))}</p>
-          <button class="icon-button" type="button" data-action="close-intercom-panel" aria-label="${escapeAttribute(tr('close_actions_aria'))}">×</button>
+          ${expandedPanels ? '' : `<button class="icon-button" type="button" data-action="close-intercom-panel" aria-label="${escapeAttribute(tr('close_actions_aria'))}">×</button>`}
         </div>
         <div class="secondary-action-grid">
           ${intercom.functions.length > 0
@@ -1177,7 +1183,7 @@ function renderIntercomStage(): string {
       `
         : ''}
 
-      ${intercomPanelMode === 'tts'
+      ${expandedPanels || intercomPanelMode === 'tts'
         ? `
       <section class="panel">
         <div class="section-head compact">
@@ -1192,7 +1198,7 @@ function renderIntercomStage(): string {
             >
               ⚙
             </button>
-            <button class="icon-button" type="button" data-action="close-intercom-panel" aria-label="${escapeAttribute(tr('close_tts_aria'))}">×</button>
+            ${expandedPanels ? '' : `<button class="icon-button" type="button" data-action="close-intercom-panel" aria-label="${escapeAttribute(tr('close_tts_aria'))}">×</button>`}
           </div>
         </div>
         <form class="tts-form" data-form="tts">
@@ -2092,6 +2098,34 @@ function describeLanguage(value: AppLanguage): string {
   }
 }
 
+function shouldExpandIntercomPanels(): boolean {
+  const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+  const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+  return viewportHeight >= 880 || (viewportWidth >= 900 && viewportHeight >= 700);
+}
+
+function setupViewportHeightTracking(): void {
+  const updateViewportHeight = (): void => {
+    const height = window.visualViewport?.height ?? window.innerHeight;
+    document.documentElement.style.setProperty('--app-height', `${Math.round(height)}px`);
+  };
+
+  updateViewportHeight();
+  window.addEventListener('resize', updateViewportHeight);
+  window.visualViewport?.addEventListener('resize', updateViewportHeight);
+  window.visualViewport?.addEventListener('scroll', updateViewportHeight);
+
+  document.addEventListener('focusin', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    window.setTimeout(() => {
+      target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 120);
+  });
+}
+
 function normalizeLanguage(value: string): AppLanguage | null {
   return value === 'en' ? 'en' : value === 'de' ? 'de' : value === 'pl' ? 'pl' : null;
 }
@@ -2193,7 +2227,7 @@ function canUseRtcPreview(intercom: CurrentIntercom): boolean {
 function resolveIntercomSignalingUrls(intercom: CurrentIntercom): string[] {
   const candidates: string[] = [];
   if (intercom.address) {
-    candidates.push(`${isPrivateLikeHost(intercom.address) ? 'ws' : 'wss'}://${intercom.address}`);
+    candidates.push(`${preferSecureIntercomTransport() ? 'wss' : isPrivateLikeHost(intercom.address) ? 'ws' : 'wss'}://${intercom.address}`);
   }
   if (intercom.deviceUuid && intercom.origin) {
     const base = intercom.origin.replace(/\/$/, '').replace(/^http/, 'ws');
@@ -2204,12 +2238,16 @@ function resolveIntercomSignalingUrls(intercom: CurrentIntercom): string[] {
 
 function resolveIntercomHttpBase(intercom: CurrentIntercom): string | null {
   if (intercom.address) {
-    return `${isPrivateLikeHost(intercom.address) ? 'http' : 'https'}://${intercom.address}`;
+    return `${preferSecureIntercomTransport() ? 'https' : isPrivateLikeHost(intercom.address) ? 'http' : 'https'}://${intercom.address}`;
   }
   if (!intercom.deviceUuid || !intercom.origin) {
     return null;
   }
   return `${intercom.origin.replace(/\/$/, '')}/proxy/${encodeURIComponent(intercom.deviceUuid)}/`;
+}
+
+function preferSecureIntercomTransport(): boolean {
+  return self.location.protocol === 'https:';
 }
 
 function isPrivateLikeHost(value: string): boolean {

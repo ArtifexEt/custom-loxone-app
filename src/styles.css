@@ -55,7 +55,7 @@ body {
 
 body,
 #app {
-  height: 100vh;
+  height: var(--app-height, 100vh);
 }
 
 button,
@@ -71,11 +71,15 @@ button {
 
 .shell {
   position: relative;
-  height: 100vh;
+  height: var(--app-height, 100vh);
   padding: 24px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.shell-loading {
+  overflow: auto;
 }
 
 .ambient {
@@ -348,7 +352,7 @@ h3 {
 .splash-screen {
   position: relative;
   z-index: 1;
-  min-height: calc(100vh - 48px);
+  min-height: calc(var(--app-height, 100vh) - 48px);
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(320px, 460px);
   align-items: center;
@@ -1167,13 +1171,19 @@ select:focus {
 @media (max-width: 640px) {
   .shell {
     padding: 16px;
-    min-height: 100vh;
+    min-height: var(--app-height, 100vh);
   }
 
   .panel,
   .overlay-panel {
     padding: 18px;
     border-radius: 24px;
+  }
+
+  .splash-screen {
+    min-height: calc(var(--app-height, 100vh) - 32px);
+    align-items: start;
+    align-content: start;
   }
 
   .media-frame,
