@@ -155,10 +155,11 @@ export class LoxoneClient {
     this.closedManually = false;
     this.handlers.onConnecting();
     await this.disconnect(false);
-    this.ws = await this.openSocket();
 
     try {
-      await this.authenticate();
+      await this.ensureValidToken();
+      this.ws = await this.openSocket();
+      await this.authenticateSocket();
       if (forceReload || this.structure === null) {
         this.structure = await this.loadStructure();
       }
@@ -262,30 +263,43 @@ export class LoxoneClient {
     });
   }
 
-  private async authenticate(): Promise<void> {
+  private async ensureValidToken(): Promise<void> {
     const username = sanitizeAuthSegment(this.credentials.username);
     if (this.credentials.token && !isExpired(this.credentials.tokenValidUntil)) {
-      try {
-        await this.sendCommand(`authwithtoken/${encodeURIComponent(this.credentials.token)}/${encodeURIComponent(username)}`);
-        return;
-      } catch {
-        this.credentials.token = null;
-        this.credentials.tokenValidUntil = null;
-      }
+      return;
     }
 
     const clientUuid = crypto.randomUUID();
-    const tokenPayload = await requestJwtToken(
+    const tokenResult = await requestJwtToken(
       this.credentials.origin,
+      this.hints.serial,
       username,
       this.credentials.password,
       clientUuid,
       'CustomLoxoneApp',
     );
-    const token = asString(tokenPayload.token);
+    this.credentials.origin = tokenResult.origin;
+    const token = asString(tokenResult.payload.token);
     this.credentials.token = token;
-    this.credentials.tokenValidUntil = tokenPayload.validUntil ? String(tokenPayload.validUntil) : null;
-    await this.sendCommand(`authwithtoken/${encodeURIComponent(token)}/${encodeURIComponent(username)}`);
+    this.credentials.tokenValidUntil = tokenResult.payload.validUntil
+      ? String(tokenResult.payload.validUntil)
+      : null;
+  }
+
+  private async authenticateSocket(): Promise<void> {
+    const username = sanitizeAuthSegment(this.credentials.username);
+    if (!this.credentials.token) {
+      throw new Error(rt('loxone_missing_value'));
+    }
+    try {
+      await this.sendCommand(
+        `authwithtoken/${encodeURIComponent(this.credentials.token)}/${encodeURIComponent(username)}`,
+      );
+    } catch (error) {
+      this.credentials.token = null;
+      this.credentials.tokenValidUntil = null;
+      throw error;
+    }
   }
 
   private async loadStructure(): Promise<LoxoneStructure> {
@@ -1477,24 +1491,44 @@ function bytesToArrayBuffer(value: Uint8Array): ArrayBuffer {
 
 async function requestJwtToken(
   origin: string,
+  serial: string | null,
   username: string,
   password: string,
   clientUuid: string,
   clientInfo: string,
-): Promise<Record<string, unknown>> {
-  const publicKeyPem = await fetchPublicKey(origin);
-  const tokenSalts = await requestEncryptedValue(origin, `jdev/sys/getkey2/${encodeURIComponent(username)}`, publicKeyPem);
-  const key = asString(tokenSalts.key);
-  const salt = asString(tokenSalts.salt);
-  const hashAlg = asString(tokenSalts.hashAlg ?? 'SHA1').toUpperCase();
-  const passwordHash = await hashPassword(password, salt, hashAlg);
-  const userHash = await hmacUserHash(username, passwordHash, key, hashAlg);
-  const tokenPath = supportsVersion(JWT_SUPPORT_VERSION, null) ? 'jdev/sys/getjwt/' : 'jdev/sys/gettoken/';
-  return requestEncryptedValue(
-    origin,
-    `${tokenPath}${userHash}/${encodeURIComponent(username)}/${TOKEN_PERMISSION_APP}/${encodeURIComponent(clientUuid)}/${encodeURIComponent(clientInfo)}`,
-    publicKeyPem,
-  );
+): Promise<{ origin: string; payload: Record<string, unknown> }> {
+  const candidates = authBootstrapOrigins(origin, serial);
+  let lastError: unknown = null;
+
+  for (const candidateOrigin of candidates) {
+    try {
+      const publicKeyPem = await fetchPublicKey(candidateOrigin);
+      const tokenSalts = await requestEncryptedValue(
+        candidateOrigin,
+        `jdev/sys/getkey2/${encodeURIComponent(username)}`,
+        publicKeyPem,
+      );
+      const key = asString(tokenSalts.key);
+      const salt = asString(tokenSalts.salt);
+      const hashAlg = asString(tokenSalts.hashAlg ?? 'SHA1').toUpperCase();
+      const passwordHash = await hashPassword(password, salt, hashAlg);
+      const userHash = await hmacUserHash(username, passwordHash, key, hashAlg);
+      const tokenPath = supportsVersion(JWT_SUPPORT_VERSION, null) ? 'jdev/sys/getjwt/' : 'jdev/sys/gettoken/';
+      const payload = await requestEncryptedValue(
+        candidateOrigin,
+        `${tokenPath}${userHash}/${encodeURIComponent(username)}/${TOKEN_PERMISSION_APP}/${encodeURIComponent(clientUuid)}/${encodeURIComponent(clientInfo)}`,
+        publicKeyPem,
+      );
+      return {
+        origin: candidateOrigin,
+        payload,
+      };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw (lastError instanceof Error ? lastError : new Error(rt('loxone_unknown_error')));
 }
 
 async function fetchPublicKey(origin: string): Promise<string> {
@@ -1757,6 +1791,16 @@ function mapAuthBootstrapError(error: unknown, origin: string, command: string):
     return new Error(rt('loxone_auth_cors_blocked', { command, host: target.host }));
   }
   return new Error(rt('loxone_command_error', { code: 0, command }));
+}
+
+function authBootstrapOrigins(origin: string, serial: string | null): string[] {
+  const candidates = socketCandidates(origin, serial);
+  const orderedOrigins = candidates.map((candidate) => candidate.origin);
+  const normalizedOrigin = new URL(origin).toString().replace(/\/$/, '');
+  if (!orderedOrigins.includes(normalizedOrigin)) {
+    orderedOrigins.push(normalizedOrigin);
+  }
+  return orderedOrigins;
 }
 
 function socketCandidates(origin: string, serial: string | null): Array<{ origin: string; wsUrl: string }> {
