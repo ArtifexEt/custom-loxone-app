@@ -1566,7 +1566,7 @@ async function encryptCommand(
   return {
     aesKey,
     aesIv,
-    encryptedCommand: `jdev/sys/fenc/${encryptedPayload}`,
+    encryptedCommand: `jdev/sys/fenc/${encodeURIComponent(encryptedPayload)}`,
     encryptedSessionKey,
   };
 }
