@@ -82,6 +82,17 @@ button {
   overflow: auto;
 }
 
+.shell-loading .splash-screen {
+  min-height: auto;
+  align-items: start;
+  align-content: start;
+  padding-bottom: 32px;
+}
+
+.shell-loading .splash-panel {
+  align-self: start;
+}
+
 .ambient {
   position: absolute;
   border-radius: 999px;

@@ -2101,7 +2101,10 @@ function describeLanguage(value: AppLanguage): string {
 function shouldExpandIntercomPanels(): boolean {
   const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
   const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
-  return viewportHeight >= 880 || (viewportWidth >= 900 && viewportHeight >= 700);
+  return (
+    (viewportWidth >= 1440 && viewportHeight >= 820) ||
+    (viewportWidth >= 1200 && viewportHeight >= 920)
+  );
 }
 
 function setupViewportHeightTracking(): void {
