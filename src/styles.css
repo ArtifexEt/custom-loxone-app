@@ -472,6 +472,7 @@ h3 {
   display: grid;
   gap: 18px;
   min-height: 0;
+  align-content: start;
 }
 
 .media-header {
@@ -482,7 +483,12 @@ h3 {
 }
 
 .media-frame {
+  --media-frame-max-height: clamp(260px, calc(var(--app-height, 100vh) - 320px), 62vh);
   position: relative;
+  width: min(100%, calc(var(--media-frame-max-height) * 16 / 9));
+  max-width: 100%;
+  max-height: var(--media-frame-max-height);
+  margin: 0 auto;
   border-radius: 30px;
   overflow: hidden;
   aspect-ratio: 16 / 9;
@@ -490,6 +496,14 @@ h3 {
   background:
     linear-gradient(180deg, rgba(7, 18, 16, 0.4), rgba(6, 15, 14, 0.72)),
     radial-gradient(circle at center, rgba(140, 255, 178, 0.08), transparent 48%);
+}
+
+.intercom-layout-expanded .media-frame {
+  --media-frame-max-height: clamp(220px, calc(var(--app-height, 100vh) - 430px), 50vh);
+}
+
+.intercom-layout-compact .media-frame {
+  --media-frame-max-height: clamp(240px, calc(var(--app-height, 100vh) - 340px), 58vh);
 }
 
 .media-frame-offline::before {
@@ -584,7 +598,7 @@ h3 {
 
 .media-overlay-button:disabled,
 .function-button:disabled,
-.quick-tts-chip:disabled {
+.saved-messages-button:disabled {
   opacity: 0.42;
   cursor: not-allowed;
   transform: none;
@@ -598,7 +612,6 @@ h3 {
 .primary-action-grid,
 .secondary-action-grid,
 .history-grid,
-.quick-tts,
 .activity-log,
 .view-list {
   display: grid;
@@ -658,16 +671,46 @@ h3 {
   width: 100%;
 }
 
-.quick-tts {
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+.saved-messages-button {
+  border-radius: 18px;
+  padding: 14px 16px;
 }
 
-.quick-tts-chip {
-  border-radius: 16px;
-  border: 1px solid rgba(143, 255, 182, 0.26);
-  background: rgba(143, 255, 182, 0.08);
+.saved-messages-panel {
+  width: min(100%, 720px);
+}
+
+.saved-messages-list {
+  display: grid;
+  gap: 12px;
+}
+
+.saved-message-item {
+  display: grid;
+  gap: 8px;
+  text-align: left;
+  padding: 16px 18px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text);
-  padding: 12px 14px;
+}
+
+.saved-message-item span {
+  color: var(--muted);
+  white-space: pre-wrap;
+}
+
+.saved-message-item-active {
+  border-color: rgba(209, 255, 110, 0.38);
+  background: rgba(164, 255, 136, 0.12);
+}
+
+.saved-messages-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 18px;
 }
 
 .activity-log {

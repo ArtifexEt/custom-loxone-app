@@ -58,6 +58,8 @@ let intercomPanelMode: IntercomPanelMode = null;
 let browserConversationState: BrowserConversationState = 'idle';
 let browserConversationMessage = '';
 let selectedHistoryImage: IntercomHistoryItem | null = null;
+let savedMessagesDialogViewId: string | null = null;
+let selectedSavedMessageId: string | null = null;
 let localMicrophoneStream: MediaStream | null = null;
 let localViewDraft: IntercomViewConfig | null = null;
 let localServerDraft: {
@@ -672,8 +674,23 @@ function handleUiAction(actionElement: HTMLElement): void {
     case 'dismiss-notice':
       post({ type: 'dismissNotice' });
       return;
-    case 'quick-tts':
-      hydrateTtsMessage(actionElement.dataset.message ?? '');
+    case 'open-saved-messages':
+      if (actionElement.dataset.viewId) {
+        openSavedMessagesDialog(actionElement.dataset.viewId);
+      }
+      return;
+    case 'close-saved-messages':
+      closeSavedMessagesDialog();
+      render();
+      return;
+    case 'select-saved-message':
+      selectedSavedMessageId = actionElement.dataset.phraseId ?? null;
+      render();
+      return;
+    case 'confirm-saved-message':
+      if (actionElement.dataset.viewId) {
+        confirmSavedMessage(actionElement.dataset.viewId, actionElement.dataset.phraseId ?? '');
+      }
       return;
     case 'add-tts-row':
       appendTtsRow();
@@ -812,6 +829,7 @@ function render(): void {
       ${state.screen === 'loading' ? renderLoadingScreen() : renderAppShell()}
       ${state.settingsOpen ? renderSettingsOverlay() : ''}
       ${selectedHistoryImage ? renderHistoryImageOverlay(selectedHistoryImage) : ''}
+      ${renderSavedMessagesOverlay()}
       ${state.notice ? renderNotice() : ''}
     </main>
   `);
@@ -1216,7 +1234,7 @@ function renderIntercomStage(): string {
     Boolean(intercom.streamUrl || intercom.snapshotUrl || intercom.cachedPreviewUrl);
 
   return `
-    <article class="intercom-layout">
+    <article class="intercom-layout ${expandedPanels ? 'intercom-layout-expanded' : 'intercom-layout-compact'}">
       <section class="panel media-panel">
         <div class="media-header">
           <div>
@@ -1329,23 +1347,19 @@ function renderIntercomStage(): string {
         <form class="tts-form" data-form="tts">
           <input type="hidden" name="viewId" value="${escapeAttribute(viewId)}" />
           <textarea id="tts-message" name="message" rows="3" placeholder="${escapeAttribute(tr('tts_placeholder'))}" ${controlsDisabled}></textarea>
-          <div class="quick-tts">
-            ${currentView.config.quickTts
-              .map(
-                (phrase) => `
-                  <button
-                    type="button"
-                    class="quick-tts-chip"
-                    data-action="quick-tts"
-                    data-message="${escapeAttribute(phrase.message)}"
-                    ${controlsDisabled}
-                  >
-                    ${escapeHtml(phrase.label)}
-                  </button>
-                `,
-              )
-              .join('')}
-          </div>
+          ${currentView.config.quickTts.length > 0
+            ? `
+              <button
+                type="button"
+                class="ghost-button saved-messages-button"
+                data-action="open-saved-messages"
+                data-view-id="${escapeAttribute(viewId)}"
+                ${controlsDisabled}
+              >
+                ${escapeHtml(tr('saved_messages'))}
+              </button>
+            `
+            : ''}
           <button class="action-button action-button-wide" type="submit" ${controlsDisabled}>${escapeHtml(tr('tts_read'))}</button>
         </form>
       </section>
@@ -1512,6 +1526,58 @@ function renderSettingsOverlay(): string {
         </div>
         ${isAppSettings ? renderAppSettingsContent() : ''}
         ${isViewSettings ? renderViewSettingsContent() : ''}
+      </section>
+    </div>
+  `;
+}
+
+function renderSavedMessagesOverlay(): string {
+  const currentView = state.currentView;
+  if (!savedMessagesDialogViewId || !currentView || currentView.config.id !== savedMessagesDialogViewId) {
+    return '';
+  }
+  const phrases = currentView.config.quickTts.filter((phrase) => phrase.message.trim());
+  if (phrases.length === 0) {
+    return '';
+  }
+  const selectedPhrase = phrases.find((phrase) => phrase.id === selectedSavedMessageId) ?? phrases[0] ?? null;
+  return `
+    <div class="overlay">
+      <section class="overlay-panel saved-messages-panel">
+        <div class="section-head">
+          <p class="eyebrow">${escapeHtml(tr('saved_messages'))}</p>
+          <button class="icon-button" data-action="close-saved-messages" aria-label="${escapeAttribute(tr('close_saved_messages_aria'))}">×</button>
+        </div>
+        <div class="saved-messages-list" role="listbox" aria-label="${escapeAttribute(tr('saved_messages'))}">
+          ${phrases
+            .map(
+              (phrase) => `
+                <button
+                  type="button"
+                  class="saved-message-item ${selectedPhrase?.id === phrase.id ? 'saved-message-item-active' : ''}"
+                  data-action="select-saved-message"
+                  data-phrase-id="${escapeAttribute(phrase.id)}"
+                  aria-selected="${selectedPhrase?.id === phrase.id ? 'true' : 'false'}"
+                >
+                  <strong>${escapeHtml(phrase.label || phrase.message)}</strong>
+                  <span>${escapeHtml(phrase.message)}</span>
+                </button>
+              `,
+            )
+            .join('')}
+        </div>
+        <div class="saved-messages-actions">
+          <button type="button" class="ghost-button" data-action="close-saved-messages">${escapeHtml(tr('cancel'))}</button>
+          <button
+            type="button"
+            class="action-button"
+            data-action="confirm-saved-message"
+            data-view-id="${escapeAttribute(savedMessagesDialogViewId)}"
+            data-phrase-id="${escapeAttribute(selectedPhrase?.id ?? '')}"
+          >
+            ${escapeHtml(tr('send_selected_message'))}
+          </button>
+        </div>
       </section>
     </div>
   `;
@@ -2091,13 +2157,35 @@ function removeTtsRow(phraseId: string | null): void {
   render();
 }
 
-function hydrateTtsMessage(message: string): void {
-  const field = document.querySelector<HTMLTextAreaElement>('#tts-message');
-  if (!field) {
+function openSavedMessagesDialog(viewId: string): void {
+  const view = state.views.find((item) => item.id === viewId);
+  const phrases = view?.quickTts.filter((phrase) => phrase.message.trim()) ?? [];
+  if (phrases.length === 0) {
     return;
   }
-  field.value = message;
-  field.focus();
+  savedMessagesDialogViewId = viewId;
+  selectedSavedMessageId = phrases[0]?.id ?? null;
+  render();
+}
+
+function closeSavedMessagesDialog(): void {
+  savedMessagesDialogViewId = null;
+  selectedSavedMessageId = null;
+}
+
+function confirmSavedMessage(viewId: string, phraseId: string): void {
+  const view = state.views.find((item) => item.id === viewId);
+  const phrase = view?.quickTts.find((item) => item.id === phraseId && item.message.trim());
+  if (!phrase) {
+    return;
+  }
+  post({
+    type: 'sendTts',
+    viewId,
+    message: phrase.message,
+  });
+  closeSavedMessagesDialog();
+  render();
 }
 
 function collectQuickTts(form: HTMLFormElement, includeEmpty = false): QuickTtsPhrase[] {
