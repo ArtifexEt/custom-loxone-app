@@ -2368,6 +2368,9 @@ function resolveHistoryImageUrl(
 }
 
 function resolveIntercomHistoryBase(intercom: CurrentIntercom): string | null {
+  if (intercom.deviceUuid && intercom.origin) {
+    return `${intercom.origin.replace(/\/$/, '')}/proxy/${encodeURIComponent(intercom.deviceUuid)}/`;
+  }
   return intercom.snapshotUrl || intercom.streamUrl || intercom.cachedPreviewUrl || resolveIntercomHttpBase(intercom);
 }
 
