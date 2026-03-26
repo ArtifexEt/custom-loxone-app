@@ -470,7 +470,7 @@ h3 {
   position: relative;
   border-radius: 30px;
   overflow: hidden;
-  min-height: clamp(260px, 44vh, 520px);
+  aspect-ratio: 16 / 9;
   border: 1px solid var(--line-strong);
   background:
     linear-gradient(180deg, rgba(7, 18, 16, 0.4), rgba(6, 15, 14, 0.72)),
@@ -533,13 +533,14 @@ h3 {
 
 .intercom-media {
   width: 100%;
-  height: clamp(260px, 44vh, 520px);
-  object-fit: cover;
+  height: 100%;
+  object-fit: contain;
   display: block;
+  background: rgba(3, 10, 9, 0.88);
 }
 
 .media-empty {
-  min-height: clamp(260px, 44vh, 520px);
+  height: 100%;
   display: grid;
   place-items: center;
   color: var(--muted);
@@ -963,6 +964,10 @@ select:focus {
 
 .view-list-item {
   grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 96px;
+  max-height: 96px;
+  align-items: center;
+  overflow: hidden;
 }
 
 .view-list-item-active {
@@ -970,9 +975,19 @@ select:focus {
   background: rgba(164, 255, 136, 0.1);
 }
 
+.view-list-item > div:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  align-content: center;
+}
+
 .view-list-item p,
 .view-list-item strong {
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tts-editor {
@@ -1162,13 +1177,11 @@ select:focus {
   }
 
   .media-frame,
-  .intercom-media,
   .media-empty {
     min-height: 280px;
   }
 
-  .primary-action-grid,
-  .view-list-item {
+  .primary-action-grid {
     grid-template-columns: 1fr;
   }
 
