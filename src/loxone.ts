@@ -858,6 +858,9 @@ function resolveDirectIntercomMediaUrl(
   credentials: StoredCredentials,
   detailPaths: string[],
 ): string | null {
+  if (self.location.protocol === 'https:') {
+    return null;
+  }
   const addressBase = resolveAddressBase(control, stateValues);
   if (!addressBase) {
     return null;
