@@ -519,7 +519,12 @@ root.addEventListener('pointerdown', (event) => {
     action !== 'toggle-intercom-panel' &&
     action !== 'close-intercom-panel' &&
     action !== 'open-side-panel' &&
-    action !== 'close-side-panel'
+    action !== 'close-side-panel' &&
+    action !== 'connect-toggle' &&
+    action !== 'open-saved-messages' &&
+    action !== 'close-saved-messages' &&
+    action !== 'select-saved-message' &&
+    action !== 'confirm-saved-message'
   ) {
     return;
   }
@@ -538,7 +543,12 @@ root.addEventListener('click', (event) => {
     action === 'toggle-intercom-panel' ||
     action === 'close-intercom-panel' ||
     action === 'open-side-panel' ||
-    action === 'close-side-panel'
+    action === 'close-side-panel' ||
+    action === 'connect-toggle' ||
+    action === 'open-saved-messages' ||
+    action === 'close-saved-messages' ||
+    action === 'select-saved-message' ||
+    action === 'confirm-saved-message'
   ) {
     return;
   }
@@ -1860,10 +1870,6 @@ async function handleConnect(viewId: string): Promise<void> {
 }
 
 async function startBrowserConversation(): Promise<void> {
-  browserConversationState = 'starting';
-  browserConversationMessage = tr('rtc_connecting');
-  render();
-
   if (!navigator.mediaDevices?.getUserMedia) {
     browserConversationState = 'error';
     browserConversationMessage = tr('rtc_browser_unsupported');
@@ -1872,6 +1878,8 @@ async function startBrowserConversation(): Promise<void> {
   }
 
   try {
+    browserConversationState = 'starting';
+    browserConversationMessage = tr('rtc_connecting');
     stopBrowserConversation(false);
     localMicrophoneStream = await navigator.mediaDevices.getUserMedia({
       audio: {
