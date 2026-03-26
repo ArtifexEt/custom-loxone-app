@@ -2342,7 +2342,7 @@ function mapIntercomActivityToHistoryItem(
   }
   const record = value as Record<string, unknown>;
   const dateValue = record.date;
-  const rawPath = record.imagePath ?? record.path ?? record.thumbnail ?? record.image ?? null;
+  const rawPath = resolveHistoryMediaPath(record);
   if (typeof rawPath !== 'string' || !rawPath.trim()) {
     return null;
   }
@@ -2360,11 +2360,23 @@ function resolveHistoryImageUrl(
   mediaBase: string,
   intercom?: CurrentIntercom,
 ): string {
-  const rawPath = record.imagePath ?? record.path ?? record.thumbnail ?? record.image ?? null;
+  const rawPath = resolveHistoryMediaPath(record);
   if (typeof rawPath === 'string' && rawPath.trim()) {
     return inheritMediaAuth(new URL(rawPath, mediaBase), mediaBase, intercom);
   }
   return mediaBase;
+}
+
+function resolveHistoryMediaPath(record: Record<string, unknown>): unknown {
+  return (
+    record.thumbPath ??
+    record.thumbnailPath ??
+    record.imagePath ??
+    record.path ??
+    record.thumbnail ??
+    record.image ??
+    null
+  );
 }
 
 function resolveIntercomHistoryBase(intercom: CurrentIntercom): string | null {
