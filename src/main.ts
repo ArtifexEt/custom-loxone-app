@@ -2362,7 +2362,7 @@ function resolveHistoryImageUrl(
 ): string {
   const rawPath = resolveHistoryMediaPath(record);
   if (typeof rawPath === 'string' && rawPath.trim()) {
-    return inheritMediaAuth(new URL(rawPath, mediaBase), mediaBase, intercom);
+    return inheritMediaAuth(resolveMediaUrlAgainstBase(rawPath, mediaBase), mediaBase, intercom);
   }
   return mediaBase;
 }
@@ -2377,6 +2377,21 @@ function resolveHistoryMediaPath(record: Record<string, unknown>): unknown {
     record.image ??
     null
   );
+}
+
+function resolveMediaUrlAgainstBase(rawPath: string, mediaBase: string): URL {
+  const trimmedPath = rawPath.trim();
+  if (/^https?:\/\//i.test(trimmedPath)) {
+    return new URL(trimmedPath);
+  }
+
+  const base = new URL(mediaBase);
+  const proxyMatch = base.pathname.match(/^(.*\/proxy\/[^/]+)(?:\/.*)?$/);
+  if (trimmedPath.startsWith('/') && proxyMatch) {
+    return new URL(`${proxyMatch[1]}${trimmedPath}`, base.origin);
+  }
+
+  return new URL(trimmedPath, mediaBase);
 }
 
 function resolveIntercomHistoryBase(intercom: CurrentIntercom): string | null {
