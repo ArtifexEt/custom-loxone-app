@@ -275,8 +275,7 @@ export class LoxoneClient {
     }
 
     const clientUuid = crypto.randomUUID();
-    const tokenPayload = await requestJwtToken(
-      this.credentials.origin,
+    const tokenPayload = await this.requestJwtTokenOverSocket(
       username,
       this.credentials.password,
       clientUuid,
@@ -286,6 +285,43 @@ export class LoxoneClient {
     this.credentials.token = token;
     this.credentials.tokenValidUntil = tokenPayload.validUntil ? String(tokenPayload.validUntil) : null;
     await this.sendCommand(`authwithtoken/${encodeURIComponent(token)}/${encodeURIComponent(username)}`);
+  }
+
+  private async requestJwtTokenOverSocket(
+    username: string,
+    password: string,
+    clientUuid: string,
+    clientInfo: string,
+  ): Promise<Record<string, unknown>> {
+    const publicKeyPayload = await this.sendCommand('jdev/sys/getPublicKey');
+    const publicKeyPem = normalizePublicKeyPem(asString(publicKeyPayload.value));
+    const tokenSalts = await this.requestEncryptedValueOverSocket(
+      `jdev/sys/getkey2/${encodeURIComponent(username)}`,
+      publicKeyPem,
+    );
+    const key = asString(tokenSalts.key);
+    const salt = asString(tokenSalts.salt);
+    const hashAlg = asString(tokenSalts.hashAlg ?? 'SHA1').toUpperCase();
+    const passwordHash = await hashPassword(password, salt, hashAlg);
+    const userHash = await hmacUserHash(username, passwordHash, key, hashAlg);
+    const tokenPath = supportsVersion(JWT_SUPPORT_VERSION, null) ? 'jdev/sys/getjwt/' : 'jdev/sys/gettoken/';
+    return this.requestEncryptedValueOverSocket(
+      `${tokenPath}${userHash}/${encodeURIComponent(username)}/${TOKEN_PERMISSION_APP}/${encodeURIComponent(clientUuid)}/${encodeURIComponent(clientInfo)}`,
+      publicKeyPem,
+    );
+  }
+
+  private async requestEncryptedValueOverSocket(
+    command: string,
+    publicKeyPem: string,
+  ): Promise<Record<string, unknown>> {
+    const encrypted = await encryptCommand(command, publicKeyPem);
+    const rawResponse = await this.sendTextCommand(
+      `${encrypted.encryptedCommand}?sk=${encodeURIComponent(encrypted.encryptedSessionKey)}`,
+    );
+    const decrypted = await tryDecryptEncryptedResponse(rawResponse, encrypted.aesKey, encrypted.aesIv);
+    const payload = parseCommandPayload(decrypted ?? rawResponse, command);
+    return coerceMaybeJsonRecord(payload.value);
   }
 
   private async loadStructure(): Promise<LoxoneStructure> {
@@ -1475,62 +1511,6 @@ function bytesToArrayBuffer(value: Uint8Array): ArrayBuffer {
   return value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength) as ArrayBuffer;
 }
 
-
-async function requestJwtToken(
-  origin: string,
-  username: string,
-  password: string,
-  clientUuid: string,
-  clientInfo: string,
-): Promise<Record<string, unknown>> {
-  const publicKeyPem = await fetchPublicKey(origin);
-  const tokenSalts = await requestEncryptedValue(origin, `jdev/sys/getkey2/${encodeURIComponent(username)}`, publicKeyPem);
-  const key = asString(tokenSalts.key);
-  const salt = asString(tokenSalts.salt);
-  const hashAlg = asString(tokenSalts.hashAlg ?? 'SHA1').toUpperCase();
-  const passwordHash = await hashPassword(password, salt, hashAlg);
-  const userHash = await hmacUserHash(username, passwordHash, key, hashAlg);
-  const tokenPath = supportsVersion(JWT_SUPPORT_VERSION, null) ? 'jdev/sys/getjwt/' : 'jdev/sys/gettoken/';
-  return requestEncryptedValue(
-    origin,
-    `${tokenPath}${userHash}/${encodeURIComponent(username)}/${TOKEN_PERMISSION_APP}/${encodeURIComponent(clientUuid)}/${encodeURIComponent(clientInfo)}`,
-    publicKeyPem,
-  );
-}
-
-async function fetchPublicKey(origin: string): Promise<string> {
-  const response = await fetch(new URL('jdev/sys/getPublicKey', ensureTrailingSlash(origin)), {
-    method: 'GET',
-  });
-  const payload = parseCommandPayload(await response.text(), 'jdev/sys/getPublicKey');
-  return normalizePublicKeyPem(asString(payload.value));
-}
-
-async function requestEncryptedValue(
-  origin: string,
-  command: string,
-  publicKeyPem: string,
-): Promise<Record<string, unknown>> {
-  const encrypted = await encryptCommand(command, publicKeyPem);
-  const response = await fetch(buildEncryptedCommandUrl(origin, encrypted), {
-    method: 'GET',
-  });
-  const rawResponse = await response.text();
-  const decrypted = await tryDecryptEncryptedResponse(rawResponse, encrypted.aesKey, encrypted.aesIv);
-  const payload = parseCommandPayload(decrypted ?? rawResponse, command);
-  return coerceMaybeJsonRecord(payload.value);
-}
-
-function buildEncryptedCommandUrl(
-  origin: string,
-  encrypted: {
-    encryptedCommand: string;
-    encryptedSessionKey: string;
-  },
-): string {
-  const base = ensureTrailingSlash(origin);
-  return `${base}${encrypted.encryptedCommand}?sk=${encodeURIComponent(encrypted.encryptedSessionKey)}`;
-}
 
 async function encryptCommand(
   command: string,
