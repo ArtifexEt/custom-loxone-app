@@ -640,8 +640,11 @@ function mergeCredentials(
   payload: SaveServerPayload,
   existing: StoredCredentials | null,
 ): StoredCredentials {
-  const serial = normalizeSerial(payload.serial || existing?.serial || '');
-  const origin = normalizeOrigin(payload.origin || buildCloudDnsOriginString(serial) || '');
+  const explicitSerial = normalizeSerial(payload.serial || '');
+  const origin = normalizeOrigin(payload.origin || buildCloudDnsOriginString(explicitSerial) || existing?.origin || '');
+  const inferredSerial = inferSerialFromOrigin(origin);
+  const preserveExistingSerial = existing && existing.origin === origin ? existing.serial : null;
+  const serial = explicitSerial ?? inferredSerial ?? preserveExistingSerial ?? null;
   const username = payload.username.trim();
   const password = payload.password || existing?.password || '';
 
@@ -711,6 +714,29 @@ function normalizeSerial(value: string): string | null {
     return null;
   }
   return /^[A-Z0-9]+$/.test(trimmed) ? trimmed : null;
+}
+
+function inferSerialFromOrigin(origin: string): string | null {
+  if (!origin) {
+    return null;
+  }
+  try {
+    const url = new URL(origin);
+    if (url.hostname.toLowerCase() === 'dns.loxonecloud.com') {
+      const pathSegment = url.pathname.split('/').filter(Boolean)[0] ?? '';
+      return normalizeSerial(pathSegment);
+    }
+
+    const labels = url.hostname.split('.');
+    const dyndnsIndex = labels.findIndex((label) => label.toLowerCase() === 'dyndns');
+    if (dyndnsIndex > 0) {
+      return normalizeSerial(labels[dyndnsIndex - 1] ?? '');
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 function shouldUseHttpByDefault(value: string): boolean {

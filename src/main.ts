@@ -758,11 +758,12 @@ root.addEventListener('submit', (event) => {
 
   if (form.dataset.form === 'server') {
     const formData = new FormData(form);
+    const serialField = form.querySelector<HTMLInputElement>('input[name="serial"]');
     post({
       type: 'saveServer',
       payload: {
         origin: String(formData.get('origin') ?? ''),
-        serial: String(formData.get('serial') ?? ''),
+        serial: serialField ? String(formData.get('serial') ?? '') : '',
         username: String(formData.get('username') ?? ''),
         password: String(formData.get('password') ?? ''),
       },
@@ -1776,10 +1777,6 @@ function renderServerForm(showSubmit = true): string {
         <input name="origin" placeholder="https://miniserver.local" value="${escapeAttribute(serverForm.origin)}" />
       </label>
       <label>
-        <span>${escapeHtml(tr('serial_number_optional'))}</span>
-        <input name="serial" placeholder="${escapeAttribute(tr('serial_placeholder'))}" value="${escapeAttribute(serverForm.serial ?? '')}" />
-      </label>
-      <label>
         <span>${escapeHtml(tr('login'))}</span>
         <input name="username" required placeholder="uzytkownik" value="${escapeAttribute(serverForm.username)}" />
       </label>
@@ -2030,13 +2027,14 @@ async function persistServerSettingsFromOverlay(): Promise<void> {
     return;
   }
   const formData = new FormData(form);
+  const serialField = form.querySelector<HTMLInputElement>('input[name="serial"]');
   const origin = String(formData.get('origin') ?? '').trim();
-  const serial = String(formData.get('serial') ?? '').trim();
+  const serial = serialField ? String(formData.get('serial') ?? '').trim() : '';
   const username = String(formData.get('username') ?? '').trim();
   const password = String(formData.get('password') ?? '');
   const changed =
     origin !== state.serverForm.origin ||
-    serial !== (state.serverForm.serial ?? '') ||
+    (serialField ? serial !== (state.serverForm.serial ?? '') : false) ||
     username !== state.serverForm.username ||
     password.trim().length > 0;
   if (!changed) {
@@ -2340,9 +2338,12 @@ function syncDraftFromServerForm(form?: HTMLFormElement | null): void {
     return;
   }
   const formData = new FormData(sourceForm);
+  const serialField = sourceForm.querySelector<HTMLInputElement>('input[name="serial"]');
   localServerDraft = {
     origin: String(formData.get('origin') ?? '').trim(),
-    serial: String(formData.get('serial') ?? '').trim().toUpperCase(),
+    serial: serialField
+      ? String(formData.get('serial') ?? '').trim().toUpperCase()
+      : (localServerDraft?.serial ?? state.serverForm.serial ?? ''),
     username: String(formData.get('username') ?? '').trim(),
     password: String(formData.get('password') ?? ''),
     passwordStored: state.serverForm.passwordStored,
