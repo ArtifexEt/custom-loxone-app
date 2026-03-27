@@ -1280,7 +1280,7 @@ function renderIntercomStage(): string {
   const controlsDisabled = realtimeAvailable ? '' : 'disabled';
   const expandedPanels = shouldExpandIntercomPanels();
   const hasVisualMedia = canUseRtcPreview(intercom)
-    ? intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction)
+    ? intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction) || hasLiveMediaFallback(intercom)
     : Boolean(intercom.streamUrl || intercom.snapshotUrl);
   const mediaFrameStateClass = !realtimeAvailable
     ? 'media-frame-offline'
@@ -1993,7 +1993,7 @@ function stopBrowserConversation(renderAfter = true): void {
 
 function renderMedia(intercom: CurrentIntercom): string {
   if (canUseRtcPreview(intercom)) {
-    return `<video id="intercom-live-media" class="intercom-media" autoplay ${browserConversationState === 'active' ? '' : 'muted'} playsinline></video>`;
+    return `<video id="intercom-live-media" class="intercom-media" autoplay ${browserConversationState === 'active' ? '' : 'muted'} playsinline poster="${escapeAttribute(resolveLiveMediaFallback(intercom) ?? '')}"></video>`;
   }
   if (intercom.streamUrl && isVideoLikeUrl(intercom.streamUrl)) {
     return `<video id="intercom-live-media" class="intercom-media" src="${escapeAttribute(intercom.streamUrl)}" controls autoplay ${browserConversationState === 'active' ? '' : 'muted'} playsinline poster="${escapeAttribute(intercom.snapshotUrl ?? '')}"></video>`;
@@ -2003,6 +2003,14 @@ function renderMedia(intercom: CurrentIntercom): string {
     return `<img class="intercom-media" src="${escapeAttribute(imageUrl)}" alt="${escapeAttribute(intercom.name)}" loading="eager" />`;
   }
   return `<div class="media-empty"><p>${escapeHtml(tr('media_empty'))}</p></div>`;
+}
+
+function hasLiveMediaFallback(intercom: CurrentIntercom): boolean {
+  return Boolean(resolveLiveMediaFallback(intercom));
+}
+
+function resolveLiveMediaFallback(intercom: CurrentIntercom): string | null {
+  return intercom.snapshotUrl ?? intercom.streamUrl ?? null;
 }
 
 function persistIntercomPreviewHint(intercom: CurrentIntercom): void {
