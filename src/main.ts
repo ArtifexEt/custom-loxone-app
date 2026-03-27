@@ -84,6 +84,10 @@ const HISTORY_DRAWER_GAP = 12;
 const HISTORY_DRAWER_OVERSCAN_ROWS = 2;
 const HISTORY_CARD_HEIGHT_DESKTOP = 196;
 const HISTORY_CARD_HEIGHT_MOBILE = 236;
+const INTERCOM_ICE_SERVERS: RTCIceServer[] = [
+  { urls: 'stun:stun.loxonecloud.com:3478' },
+  { urls: 'stun:stun.l.google.com:19302' },
+];
 
 type CurrentIntercom = NonNullable<NonNullable<AppViewModel['currentView']>['intercom']>;
 
@@ -98,6 +102,7 @@ class IntercomRtcSession {
   private socket: WebSocket | null = null;
   private peer: RTCPeerConnection | null = null;
   private remoteStream: MediaStream | null = null;
+  private conversationEnabled = false;
   private authReady: Promise<void> | null = null;
   private resolveAuthReady: (() => void) | null = null;
   private rejectAuthReady: ((reason?: unknown) => void) | null = null;
@@ -110,16 +115,30 @@ class IntercomRtcSession {
   private retryTimer: number | null = null;
 
   hasRemoteStreamFor(uuidAction: string): boolean {
-    return this.currentIntercomKey === uuidAction && Boolean(this.remoteStream);
+    return this.currentIntercomKey === uuidAction && this.hasIncomingMedia();
   }
 
   getRemoteStream(): MediaStream | null {
     return this.remoteStream;
   }
 
-  async ensurePreview(intercom: CurrentIntercom): Promise<void> {
+  async ensurePreview(intercom: CurrentIntercom, localAudioStream: MediaStream | null = null): Promise<void> {
+    const wantsConversation = Boolean(localAudioStream?.getAudioTracks().length);
+    if (this.connectPromise) {
+      await this.connectPromise.catch(() => {
+        // Let the follow-up attempt decide whether another retry is needed.
+      });
+      if (
+        this.currentIntercomKey !== intercom.uuidAction ||
+        this.conversationEnabled !== wantsConversation ||
+        !this.hasIncomingMedia()
+      ) {
+        return this.ensurePreview(intercom, localAudioStream);
+      }
+      return;
+    }
     if (!this.connectPromise) {
-      this.connectPromise = this.ensurePreviewInternal(intercom).finally(() => {
+      this.connectPromise = this.ensurePreviewInternal(intercom, localAudioStream).finally(() => {
         this.connectPromise = null;
       });
     }
@@ -131,16 +150,19 @@ class IntercomRtcSession {
     await this.teardown();
   }
 
-  private async ensurePreviewInternal(intercom: CurrentIntercom): Promise<void> {
+  private async ensurePreviewInternal(intercom: CurrentIntercom, localAudioStream: MediaStream | null): Promise<void> {
     const signalingUrls = resolveIntercomSignalingUrls(intercom);
     if (signalingUrls.length === 0 || !intercom.authToken || !intercom.deviceUuid) {
       throw new Error(tr('signaling_data_missing'));
     }
 
+    const wantsConversation = Boolean(localAudioStream?.getAudioTracks().length);
     const intercomChanged = this.currentIntercomKey !== intercom.uuidAction;
-    if (intercomChanged) {
+    const modeChanged = this.conversationEnabled !== wantsConversation;
+    if (intercomChanged || modeChanged) {
       await this.teardown();
       this.currentIntercomKey = intercom.uuidAction;
+      this.conversationEnabled = wantsConversation;
     }
 
     let lastError: unknown = null;
@@ -152,17 +174,20 @@ class IntercomRtcSession {
           this.currentSocketUrl = signalingUrl;
         }
         await this.ensureAuthorized(intercom, signalingUrl);
-        if (this.peer && this.remoteStream) {
+        if (this.peer && this.hasIncomingMedia()) {
           this.clearRetry();
           attachRtcStreamToDom();
           return;
         }
-        await this.startVideo();
+        await this.startVideo(localAudioStream);
         this.clearRetry();
         void this.refreshHistory(intercom);
         return;
       } catch (error) {
         lastError = error;
+        await this.teardown();
+        this.currentIntercomKey = intercom.uuidAction;
+        this.conversationEnabled = wantsConversation;
       }
     }
 
@@ -195,6 +220,7 @@ class IntercomRtcSession {
         this.socket = null;
         this.peer = null;
         this.remoteStream = null;
+        this.conversationEnabled = false;
         if (this.currentIntercomKey) {
           this.scheduleRetry(this.currentIntercomKey);
         }
@@ -322,9 +348,14 @@ class IntercomRtcSession {
     });
   }
 
-  private async startVideo(): Promise<void> {
+  private async startVideo(localAudioStream: MediaStream | null): Promise<void> {
+    const wantsConversation = Boolean(localAudioStream?.getAudioTracks().length);
+    const localAudioTrack = localAudioStream?.getAudioTracks()[0] ?? null;
     this.remoteStream = new MediaStream();
-    this.peer = new RTCPeerConnection();
+    this.peer = new RTCPeerConnection({
+      iceServers: INTERCOM_ICE_SERVERS,
+      iceCandidatePoolSize: 4,
+    });
     this.pendingRemoteCandidates = [];
 
     this.peer.ontrack = (event) => {
@@ -345,7 +376,9 @@ class IntercomRtcSession {
           event.candidate.sdpMLineIndex,
           event.candidate.sdpMid,
           event.candidate.usernameFragment,
-        ]);
+        ]).catch(() => {
+          // Candidate ACKs can race with reconnects and are safe to ignore.
+        });
         return;
       }
       this.sendRaw({
@@ -355,12 +388,18 @@ class IntercomRtcSession {
     };
 
     this.peer.addTransceiver('video', { direction: 'recvonly' });
+    const audioTransceiver = this.peer.addTransceiver('audio', {
+      direction: localAudioTrack ? 'sendrecv' : 'recvonly',
+    });
+    if (localAudioTrack) {
+      await audioTransceiver.sender.replaceTrack(localAudioTrack);
+    }
     const offer = await this.peer.createOffer();
     await this.peer.setLocalDescription(offer);
     const answer = (await this.request('call', [
       this.peer.localDescription,
       'new',
-      false,
+      wantsConversation,
       0,
     ])) as RTCSessionDescriptionInit | null;
     if (!answer) {
@@ -403,7 +442,7 @@ class IntercomRtcSession {
           return;
         }
         this.pendingCommands.delete(id);
-        reject(new Error(`Timeout metody signalingu: ${method}`));
+        reject(new Error(tr('signaling_timeout', { method })));
       }, 10000);
     });
   }
@@ -444,9 +483,14 @@ class IntercomRtcSession {
     this.pendingRemoteCandidates = [];
     this.currentIntercomKey = null;
     this.currentSocketUrl = null;
+    this.conversationEnabled = false;
     this.authReady = null;
     this.resolveAuthReady = null;
     this.rejectAuthReady = null;
+  }
+
+  private hasIncomingMedia(): boolean {
+    return Boolean(this.remoteStream && this.remoteStream.getTracks().length > 0);
   }
 
   private scheduleRetry(uuidAction: string): void {
@@ -847,7 +891,10 @@ function render(): void {
     ensureHistoryImages(intercom);
   }
   if (intercom && canUseRtcPreview(intercom) && !intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction)) {
-    void intercomRtcSession.ensurePreview(intercom).catch(() => {
+    const rtcAudioStream = browserConversationState === 'active' || browserConversationState === 'starting'
+      ? localMicrophoneStream
+      : null;
+    void intercomRtcSession.ensurePreview(intercom, rtcAudioStream).catch(() => {
       // Keep current fallback UI; stream setup is best-effort.
     });
   }
@@ -1231,9 +1278,25 @@ function renderIntercomStage(): string {
   const realtimeAvailable = isRealtimeAvailable();
   const controlsDisabled = realtimeAvailable ? '' : 'disabled';
   const expandedPanels = shouldExpandIntercomPanels();
-  const hasVisualMedia =
-    intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction) ||
-    Boolean(intercom.streamUrl || intercom.snapshotUrl || intercom.cachedPreviewUrl);
+  const hasVisualMedia = canUseRtcPreview(intercom)
+    ? intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction)
+    : Boolean(intercom.streamUrl || intercom.snapshotUrl);
+  const mediaFrameStateClass = !realtimeAvailable
+    ? 'media-frame-offline'
+    : hasVisualMedia
+      ? ''
+      : 'media-frame-connecting';
+  const mediaFrameOverlay = !realtimeAvailable
+    ? `<div class="media-frame-status-overlay"><span>${escapeHtml(tr('offline_intercom'))}</span></div>`
+    : hasVisualMedia
+      ? ''
+      : `<div class="media-frame-status-overlay"><span>${escapeHtml(tr('rtc_connecting'))}</span></div>`;
+  const connectLabel =
+    browserConversationState === 'active'
+      ? tr('disconnect')
+      : intercom.doorbellActive
+        ? tr('answer')
+        : tr('connect');
 
   return `
     <article class="intercom-layout ${expandedPanels ? 'intercom-layout-expanded' : 'intercom-layout-compact'}">
@@ -1247,8 +1310,8 @@ function renderIntercomStage(): string {
             <button class="icon-button" data-action="show-view-settings" data-view-id="${escapeAttribute(viewId)}" aria-label="${escapeAttribute(tr('view_settings_aria'))}">⚙</button>
           </div>
         </div>
-        <div class="media-frame ${intercom.doorbellActive ? 'media-frame-bell-active' : ''} ${browserConversationState === 'active' ? 'media-frame-conversation-active' : ''} ${realtimeAvailable || hasVisualMedia ? '' : 'media-frame-offline'}">
-          ${realtimeAvailable || hasVisualMedia ? '' : `<div class="media-frame-offline-overlay"><span>${escapeHtml(tr('offline_intercom'))}</span></div>`}
+        <div class="media-frame ${intercom.doorbellActive ? 'media-frame-bell-active' : ''} ${browserConversationState === 'active' ? 'media-frame-conversation-active' : ''} ${mediaFrameStateClass}">
+          ${mediaFrameOverlay}
           <div class="media-overlay-controls">
             <button
               class="ghost-button media-overlay-button"
@@ -1256,7 +1319,7 @@ function renderIntercomStage(): string {
               data-view-id="${escapeAttribute(viewId)}"
               ${intercom.supportsAnswer ? controlsDisabled : 'disabled'}
             >
-              ${escapeHtml(browserConversationState === 'active' ? tr('disconnect') : tr('connect'))}
+              ${escapeHtml(connectLabel)}
             </button>
             ${intercom.supportsMute
               ? `
@@ -1837,7 +1900,7 @@ function renderNotice(): string {
 }
 
 function renderBrowserConversationStatus(): string {
-  if (browserConversationState !== 'error' && browserConversationState !== 'starting') {
+  if (browserConversationState !== 'error') {
     return '';
   }
   const tone = 'empty-copy';
@@ -1853,15 +1916,16 @@ function isRealtimeAvailable(): boolean {
 }
 
 async function handleConnect(viewId: string): Promise<void> {
+  const intercom = state.currentView?.intercom ?? null;
   post({
     type: 'runBuiltInAction',
     viewId,
-    action: 'connect',
+    action: intercom?.doorbellActive ? 'answer' : 'connect',
   });
-  await startBrowserConversation();
+  await startBrowserConversation(intercom);
 }
 
-async function startBrowserConversation(): Promise<void> {
+async function startBrowserConversation(intercom: CurrentIntercom | null): Promise<void> {
   if (!navigator.mediaDevices?.getUserMedia) {
     browserConversationState = 'error';
     browserConversationMessage = tr('rtc_browser_unsupported');
@@ -1881,6 +1945,11 @@ async function startBrowserConversation(): Promise<void> {
       },
       video: false,
     });
+    if (intercom) {
+      await intercomRtcSession.ensurePreview(intercom, localMicrophoneStream);
+    }
+    browserConversationState = 'active';
+    browserConversationMessage = '';
     const liveMedia = document.querySelector<HTMLVideoElement>('#intercom-live-media');
     if (liveMedia) {
       liveMedia.muted = false;
@@ -1891,8 +1960,6 @@ async function startBrowserConversation(): Promise<void> {
         // Autoplay may still be blocked for some streams.
       }
     }
-    browserConversationState = 'active';
-    browserConversationMessage = '';
     render();
   } catch (error) {
     browserConversationState = 'error';
@@ -1902,6 +1969,7 @@ async function startBrowserConversation(): Promise<void> {
 }
 
 function stopBrowserConversation(renderAfter = true): void {
+  const intercom = state.currentView?.intercom ?? null;
   if (localMicrophoneStream) {
     for (const track of localMicrophoneStream.getTracks()) {
       track.stop();
@@ -1914,6 +1982,13 @@ function stopBrowserConversation(renderAfter = true): void {
   if (liveMedia) {
     liveMedia.muted = true;
   }
+  if (intercom) {
+    void intercomRtcSession.disconnect().then(() => {
+      void intercomRtcSession.ensurePreview(intercom).catch(() => {
+        // Keep striped loading state if preview restart fails.
+      });
+    });
+  }
   if (renderAfter) {
     render();
   }
@@ -1921,12 +1996,12 @@ function stopBrowserConversation(renderAfter = true): void {
 
 function renderMedia(intercom: CurrentIntercom): string {
   if (canUseRtcPreview(intercom)) {
-    return `<video id="intercom-live-media" class="intercom-media" autoplay ${browserConversationState === 'active' ? '' : 'muted'} playsinline poster="${escapeAttribute(intercom.snapshotUrl ?? intercom.cachedPreviewUrl ?? '')}"></video>`;
+    return `<video id="intercom-live-media" class="intercom-media" autoplay ${browserConversationState === 'active' ? '' : 'muted'} playsinline></video>`;
   }
   if (intercom.streamUrl && isVideoLikeUrl(intercom.streamUrl)) {
-    return `<video id="intercom-live-media" class="intercom-media" src="${escapeAttribute(intercom.streamUrl)}" controls autoplay ${browserConversationState === 'active' ? '' : 'muted'} playsinline poster="${escapeAttribute(intercom.snapshotUrl ?? intercom.cachedPreviewUrl ?? '')}"></video>`;
+    return `<video id="intercom-live-media" class="intercom-media" src="${escapeAttribute(intercom.streamUrl)}" controls autoplay ${browserConversationState === 'active' ? '' : 'muted'} playsinline poster="${escapeAttribute(intercom.snapshotUrl ?? '')}"></video>`;
   }
-  const imageUrl = intercom.streamUrl || intercom.snapshotUrl || intercom.cachedPreviewUrl;
+  const imageUrl = intercom.streamUrl || intercom.snapshotUrl;
   if (imageUrl) {
     return `<img class="intercom-media" src="${escapeAttribute(imageUrl)}" alt="${escapeAttribute(intercom.name)}" loading="eager" />`;
   }

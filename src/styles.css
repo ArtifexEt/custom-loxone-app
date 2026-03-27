@@ -506,7 +506,8 @@ h3 {
   --media-frame-max-height: clamp(240px, calc(var(--app-height, 100vh) - 340px), 58vh);
 }
 
-.media-frame-offline::before {
+.media-frame-offline::before,
+.media-frame-connecting::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -522,7 +523,7 @@ h3 {
   pointer-events: none;
 }
 
-.media-frame-offline-overlay {
+.media-frame-status-overlay {
   position: absolute;
   inset: 0;
   z-index: 2;
@@ -533,7 +534,7 @@ h3 {
   pointer-events: none;
 }
 
-.media-frame-offline-overlay span {
+.media-frame-status-overlay span {
   border-radius: 999px;
   border: 1px solid rgba(198, 248, 218, 0.18);
   background: rgba(6, 17, 15, 0.78);
@@ -616,6 +617,10 @@ h3 {
 .view-list {
   display: grid;
   gap: 12px;
+}
+
+.view-list {
+  align-content: start;
 }
 
 .primary-action-grid {
@@ -952,11 +957,14 @@ h3 {
   display: grid;
   grid-template-columns: minmax(300px, 0.8fr) minmax(0, 1.2fr);
   gap: 20px;
+  align-items: start;
 }
 
 .settings-panel {
   display: grid;
   gap: 18px;
+  align-content: start;
+  align-self: start;
 }
 
 .settings-grid-single {

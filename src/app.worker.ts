@@ -550,6 +550,7 @@ function captureIntercomBellHistory(
       ...cache.intercomHistoryByUuidAction,
       [control.uuidAction]: [timestamp, ...existing].slice(0, 40),
     };
+    setInfoNotice(t(resolveLanguage(), 'intercom_ring_prompt'));
     changed = true;
   }
   if (changed) {
