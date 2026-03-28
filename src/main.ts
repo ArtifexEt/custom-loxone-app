@@ -175,6 +175,7 @@ class IntercomRtcSession {
           this.currentSocketUrl = signalingUrl;
         }
         await this.ensureAuthorized(intercom, signalingUrl);
+        void this.refreshHistory(intercom);
         if (this.peer && this.hasIncomingMedia()) {
           this.clearRetry();
           attachRtcStreamToDom();
@@ -182,7 +183,6 @@ class IntercomRtcSession {
         }
         await this.startVideo(localAudioStream);
         this.clearRetry();
-        void this.refreshHistory(intercom);
         return;
       } catch (error) {
         lastError = error;
@@ -2037,6 +2037,9 @@ function hasLiveMediaFallback(intercom: CurrentIntercom): boolean {
 }
 
 function resolveLiveMediaFallback(intercom: CurrentIntercom): string | null {
+  if (canUseRtcPreview(intercom)) {
+    return intercom.snapshotUrl ?? intercom.streamUrl ?? null;
+  }
   return intercom.streamUrl ?? intercom.snapshotUrl ?? null;
 }
 
