@@ -240,10 +240,12 @@ class IntercomRtcSession {
         this.rejectAuthReady = null;
         this.authReady = null;
         this.socket = null;
-        this.peer = null;
-        this.remoteStream = null;
-        this.conversationEnabled = false;
-        if (this.currentIntercomKey) {
+        const peerHealthy = this.hasIncomingMedia() || this.isPeerSessionPending();
+        if (!peerHealthy) {
+          this.peer = null;
+          this.remoteStream = null;
+        }
+        if (this.currentIntercomKey && !peerHealthy) {
           this.scheduleRetry(this.currentIntercomKey);
         }
         render();
@@ -574,7 +576,11 @@ class IntercomRtcSession {
       if (!intercom || intercom.uuidAction !== uuidAction) {
         return;
       }
-      void this.ensurePreview(intercom).catch(() => {
+      const rtcAudioStream =
+        browserConversationState === 'active' || browserConversationState === 'starting'
+          ? localMicrophoneStream
+          : null;
+      void this.ensurePreview(intercom, rtcAudioStream).catch(() => {
         // Keep existing fallback UI; retry stays best-effort.
       });
     }, 3000);
