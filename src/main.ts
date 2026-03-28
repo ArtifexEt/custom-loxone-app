@@ -1389,12 +1389,12 @@ function renderIntercomStage(): string {
   const hasVisualMedia = canUseRtcPreview(intercom)
     ? intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction) || hasLiveMediaFallback(intercom)
     : Boolean(intercom.streamUrl || intercom.snapshotUrl);
-  const mediaFrameStateClass = !realtimeAvailable
+  const mediaFrameStateClass = !realtimeAvailable && !hasVisualMedia
     ? 'media-frame-offline'
     : hasVisualMedia
       ? ''
       : 'media-frame-connecting';
-  const mediaFrameOverlay = !realtimeAvailable
+  const mediaFrameOverlay = !realtimeAvailable && !hasVisualMedia
     ? `<div class="media-frame-status-overlay"><span>${escapeHtml(tr('offline_intercom'))}</span></div>`
     : hasVisualMedia
       ? ''
