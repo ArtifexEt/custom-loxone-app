@@ -111,6 +111,7 @@ interface LoxoneConnectionHints {
 }
 
 interface IntercomTransportProfile {
+  deviceUuid: string | null;
   mode: IntercomTransportMode;
   mediaAuthMode: IntercomMediaAuthMode;
   signalingUrl: string | null;
@@ -527,6 +528,7 @@ export function buildIntercomViewModel(
   const transport = credentials
     ? resolveIntercomTransportProfile(summary, mediaControl, stateValues, credentials)
     : {
+        deviceUuid: null,
         mode: 'none',
         mediaAuthMode: 'none',
         signalingUrl: null,
@@ -588,7 +590,7 @@ export function buildIntercomViewModel(
     uuidAction: summary.uuidAction,
     name: summary.name,
     roomName: summary.roomName,
-    deviceUuid: resolveIntercomDeviceUuid(summary),
+    deviceUuid: transport.deviceUuid,
     address: transport.addressHost,
     origin: transport.runtimeOrigin,
     authToken: credentials?.token ?? null,
@@ -772,6 +774,7 @@ function resolveIntercomTransportProfile(
     const signalingUrl = addressBase.replace(/^http/i, addressBase.startsWith('https://') ? 'wss' : 'ws');
     const mediaBaseUrl = signAbsoluteUrl(ensureTrailingSlash(addressBase), credentials, 'intercom', intercomAuth);
     return {
+      deviceUuid,
       mode: 'lan-direct',
       mediaAuthMode: 'basic',
       signalingUrl,
@@ -790,6 +793,7 @@ function resolveIntercomTransportProfile(
     const mediaBaseUrl = `${runtimeOrigin.replace(/\/$/, '')}${rootPath}/`;
     const signalingUrl = mediaBaseUrl.replace(/^http/i, runtimeOrigin.startsWith('https://') ? 'wss' : 'ws');
     return {
+      deviceUuid,
       mode: 'secure-proxy',
       mediaAuthMode: 'token',
       signalingUrl,
@@ -804,6 +808,7 @@ function resolveIntercomTransportProfile(
   }
 
   return {
+    deviceUuid,
     mode: 'none',
     mediaAuthMode: 'none',
     signalingUrl: null,
