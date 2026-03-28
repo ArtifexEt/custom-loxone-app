@@ -85,6 +85,7 @@ let livePreviewRefreshTimer: number | null = null;
 let livePreviewRefreshKey = '';
 let livePreviewRefreshInFlight = false;
 let lastPersistedPreviewHintKey = '';
+let rtcPlaybackRetryTimer: number | null = null;
 
 const HISTORY_DRAWER_GAP = 12;
 const HISTORY_DRAWER_OVERSCAN_ROWS = 2;
@@ -3119,14 +3120,21 @@ function formatBellLabel(timestamp: string): string {
 function attachRtcStreamToDom(): void {
   const media = document.querySelector('#intercom-live-media');
   const stream = intercomRtcSession.getRemoteStream();
-  if (!(media instanceof HTMLVideoElement) || !stream || media.srcObject === stream) {
+  if (!(media instanceof HTMLVideoElement) || !stream) {
     return;
   }
-  media.srcObject = stream;
+  const isNewStream = media.srcObject !== stream;
+  if (isNewStream) {
+    media.srcObject = stream;
+    media.addEventListener('loadedmetadata', () => {
+      void ensureRtcVideoPlayback(media, true);
+    }, { once: true });
+    media.addEventListener('canplay', () => {
+      void ensureRtcVideoPlayback(media, true);
+    }, { once: true });
+  }
   media.muted = browserConversationState !== 'active';
-  void media.play().catch(() => {
-    // Autoplay may still be blocked until user interaction.
-  });
+  void ensureRtcVideoPlayback(media, isNewStream);
 }
 
 function normalizeRtcAnswer(value: unknown): RTCSessionDescriptionInit | null {
@@ -3148,4 +3156,42 @@ function normalizeRtcAnswer(value: unknown): RTCSessionDescriptionInit | null {
 
 function toMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+async function ensureRtcVideoPlayback(media: HTMLVideoElement, forceRetry = false): Promise<void> {
+  media.autoplay = true;
+  media.playsInline = true;
+  try {
+    await media.play();
+  } catch {
+    // Some browsers need another kick after metadata/canplay or after a
+    // render-driven element replacement.
+  }
+
+  if (rtcPlaybackRetryTimer !== null) {
+    window.clearTimeout(rtcPlaybackRetryTimer);
+    rtcPlaybackRetryTimer = null;
+  }
+
+  const needsRetry =
+    forceRetry ||
+    media.paused ||
+    media.readyState < HTMLMediaElement.HAVE_CURRENT_DATA ||
+    media.currentTime === 0;
+
+  if (!needsRetry) {
+    return;
+  }
+
+  rtcPlaybackRetryTimer = window.setTimeout(() => {
+    rtcPlaybackRetryTimer = null;
+    const liveMedia = document.querySelector('#intercom-live-media');
+    if (!(liveMedia instanceof HTMLVideoElement) || !liveMedia.srcObject) {
+      return;
+    }
+    void liveMedia.play().catch(() => {
+      // Keep the RTC preview best-effort; some kiosk browsers still require
+      // a later retry once the frame pipeline is warm.
+    });
+  }, 750);
 }
