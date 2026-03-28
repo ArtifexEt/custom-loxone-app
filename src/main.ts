@@ -289,6 +289,18 @@ class IntercomRtcSession {
     message: { id: number; method: string; params?: unknown[] },
     intercom: CurrentIntercom,
   ): Promise<void> {
+    const respondOk = (data?: unknown) => {
+      this.sendRaw({
+        jsonrpc: '2.0',
+        result: {
+          code: 200,
+          message: 'Ok',
+          ...(data === undefined ? {} : { data }),
+        },
+        id: message.id,
+      });
+    };
+
     if (message.method === 'authenticate') {
       const params = Array.isArray(message.params) ? message.params : [];
       const [sessionToken, modulus, exponent, publicKey] = params;
@@ -300,15 +312,7 @@ class IntercomRtcSession {
         exponent: typeof exponent === 'string' ? exponent : null,
         publicKey: typeof publicKey === 'string' ? publicKey : null,
       });
-      this.sendRaw({
-        jsonrpc: '2.0',
-        result: {
-          code: 200,
-          message: 'Ok',
-          data: authPayload,
-        },
-        id: message.id,
-      });
+      respondOk(authPayload);
       return;
     }
 
@@ -333,25 +337,19 @@ class IntercomRtcSession {
       } else {
         this.pendingRemoteCandidates.push(candidate);
       }
-      this.sendRaw({
-        jsonrpc: '2.0',
-        result: {
-          code: 200,
-          message: 'Ok',
-        },
-        id: message.id,
-      });
+      respondOk();
       return;
     }
 
-    this.sendRaw({
-      jsonrpc: '2.0',
-      error: {
-        code: -32061,
-        message: 'Method not found',
-      },
-      id: message.id,
-    });
+    if (message.method === 'reachMode' || message.method === 'info' || message.method === 'callState') {
+      respondOk();
+      return;
+    }
+
+    // Intercom signaling can invoke benign client RPCs that do not require
+    // local handling. Rejecting them tears down the RTC bootstrap, so keep the
+    // session permissive unless a method really needs client-side work.
+    respondOk();
   }
 
   private async startVideo(localAudioStream: MediaStream | null): Promise<void> {
@@ -2049,9 +2047,10 @@ async function startBrowserConversation(intercom: CurrentIntercom | null): Promi
 
   const attemptId = ++browserConversationAttempt;
   try {
+    await resetBrowserConversationSession(false);
     browserConversationState = 'starting';
     browserConversationMessage = tr('rtc_connecting');
-    stopBrowserConversation(false);
+    render();
     localMicrophoneStream = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: true,
@@ -2100,6 +2099,10 @@ function stopBrowserConversation(renderAfter = true, cancelPending = true): void
   if (cancelPending) {
     browserConversationAttempt += 1;
   }
+  void resetBrowserConversationSession(true, renderAfter);
+}
+
+async function resetBrowserConversationSession(restartPreview: boolean, renderAfter = false): Promise<void> {
   const intercom = state.currentView?.intercom ?? null;
   if (localMicrophoneStream) {
     for (const track of localMicrophoneStream.getTracks()) {
@@ -2107,17 +2110,16 @@ function stopBrowserConversation(renderAfter = true, cancelPending = true): void
     }
     localMicrophoneStream = null;
   }
-  browserConversationState = 'idle';
-  browserConversationMessage = '';
   const liveMedia = document.querySelector('#intercom-live-media');
   if (liveMedia instanceof HTMLVideoElement) {
     liveMedia.muted = true;
   }
-  if (intercom) {
-    void intercomRtcSession.disconnect().then(() => {
-      void intercomRtcSession.ensurePreview(intercom).catch(() => {
-        // Keep striped loading state if preview restart fails.
-      });
+  await intercomRtcSession.disconnect();
+  browserConversationState = 'idle';
+  browserConversationMessage = '';
+  if (restartPreview && intercom) {
+    void intercomRtcSession.ensurePreview(intercom).catch(() => {
+      // Keep striped loading state if preview restart fails.
     });
   }
   if (renderAfter) {
