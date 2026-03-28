@@ -1,5 +1,5 @@
-const APP_CACHE = 'custom-loxone-app-shell-v1';
-const RUNTIME_CACHE = 'custom-loxone-app-runtime-v1';
+const APP_CACHE = 'custom-loxone-app-shell-v2';
+const RUNTIME_CACHE = 'custom-loxone-app-runtime-v2';
 const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
 
 self.addEventListener('install', (event) => {
@@ -32,13 +32,12 @@ self.addEventListener('fetch', (event) => {
   }
 
   const destination = request.destination;
-  if (
-    destination === 'image' ||
-    destination === 'video' ||
-    destination === 'script' ||
-    destination === 'style' ||
-    destination === 'worker'
-  ) {
+  if (destination === 'script' || destination === 'style' || destination === 'worker') {
+    event.respondWith(networkFirst(request, RUNTIME_CACHE));
+    return;
+  }
+
+  if (destination === 'image' || destination === 'video') {
     event.respondWith(staleWhileRevalidate(request, RUNTIME_CACHE));
   }
 });
