@@ -2072,8 +2072,8 @@ async function startBrowserConversation(intercom: CurrentIntercom | null): Promi
     }
     browserConversationState = 'active';
     browserConversationMessage = '';
-    const liveMedia = document.querySelector<HTMLVideoElement>('#intercom-live-media');
-    if (liveMedia) {
+    const liveMedia = document.querySelector('#intercom-live-media');
+    if (liveMedia instanceof HTMLVideoElement) {
       liveMedia.muted = false;
       liveMedia.volume = 1;
       try {
@@ -2106,8 +2106,8 @@ function stopBrowserConversation(renderAfter = true, cancelPending = true): void
   }
   browserConversationState = 'idle';
   browserConversationMessage = '';
-  const liveMedia = document.querySelector<HTMLVideoElement>('#intercom-live-media');
-  if (liveMedia) {
+  const liveMedia = document.querySelector('#intercom-live-media');
+  if (liveMedia instanceof HTMLVideoElement) {
     liveMedia.muted = true;
   }
   if (intercom) {
@@ -3002,9 +3002,9 @@ function formatBellLabel(timestamp: string): string {
 }
 
 function attachRtcStreamToDom(): void {
-  const media = document.querySelector<HTMLVideoElement>('#intercom-live-media');
+  const media = document.querySelector('#intercom-live-media');
   const stream = intercomRtcSession.getRemoteStream();
-  if (!media || !stream || media.srcObject === stream) {
+  if (!(media instanceof HTMLVideoElement) || !stream || media.srcObject === stream) {
     return;
   }
   media.srcObject = stream;
