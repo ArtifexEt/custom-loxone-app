@@ -80,6 +80,8 @@ let historyDrawerViewportHeight = 0;
 let historyVirtualWindowKey = '';
 let pendingFocusSelector: string | null = null;
 let deferredRenderRequested = false;
+let livePreviewRefreshNonce = 0;
+let livePreviewRefreshTimer: number | null = null;
 
 const HISTORY_DRAWER_GAP = 12;
 const HISTORY_DRAWER_OVERSCAN_ROWS = 2;
@@ -896,6 +898,7 @@ function render(): void {
     persistIntercomPreviewHint(intercom);
     ensureHistoryImages(intercom);
   }
+  syncLivePreviewRefresh(intercom ?? null);
   if (intercom && canUseRtcPreview(intercom) && !intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction)) {
     const rtcAudioStream = browserConversationState === 'active' || browserConversationState === 'starting'
       ? localMicrophoneStream
@@ -904,6 +907,34 @@ function render(): void {
       // Keep current fallback UI; stream setup is best-effort.
     });
   }
+}
+
+function syncLivePreviewRefresh(intercom: CurrentIntercom | null): void {
+  const shouldRefresh =
+    Boolean(intercom) &&
+    !state.settingsOpen &&
+    !selectedHistoryImage &&
+    !savedMessagesDialogViewId &&
+    canUseRtcPreview(intercom!) &&
+    !intercomRtcSession.hasRemoteStreamFor(intercom!.uuidAction) &&
+    Boolean(resolveRtcSnapshotPreviewUrl(intercom!));
+
+  if (!shouldRefresh) {
+    if (livePreviewRefreshTimer !== null) {
+      window.clearInterval(livePreviewRefreshTimer);
+      livePreviewRefreshTimer = null;
+    }
+    return;
+  }
+
+  if (livePreviewRefreshTimer !== null) {
+    return;
+  }
+
+  livePreviewRefreshTimer = window.setInterval(() => {
+    livePreviewRefreshNonce = Date.now();
+    render();
+  }, 1500);
 }
 
 function shouldDeferRenderForActiveEditor(): boolean {
@@ -2022,13 +2053,18 @@ function renderMedia(intercom: CurrentIntercom): string {
     }
     const liveFallback = resolveLiveMediaFallback(intercom);
     if (liveFallback) {
-      return renderMediaUrl(liveFallback, intercom.snapshotUrl, intercom.name);
+      return renderMediaUrl(
+        liveFallback,
+        intercom.snapshotUrl,
+        intercom.name,
+        shouldBustLivePreviewCache(intercom, liveFallback),
+      );
     }
     return `<video id="intercom-live-media" class="intercom-media" autoplay ${browserConversationState === 'active' ? '' : 'muted'} playsinline></video>`;
   }
   const liveUrl = resolveLiveMediaFallback(intercom);
   return liveUrl
-    ? renderMediaUrl(liveUrl, intercom.snapshotUrl, intercom.name)
+    ? renderMediaUrl(liveUrl, intercom.snapshotUrl, intercom.name, false)
     : `<div class="media-empty"><p>${escapeHtml(tr('media_empty'))}</p></div>`;
 }
 
@@ -2038,13 +2074,17 @@ function hasLiveMediaFallback(intercom: CurrentIntercom): boolean {
 
 function resolveLiveMediaFallback(intercom: CurrentIntercom): string | null {
   if (canUseRtcPreview(intercom)) {
-    return intercom.snapshotUrl ?? intercom.streamUrl ?? null;
+    const proxySnapshot = resolveRtcSnapshotPreviewUrl(intercom);
+    if (preferSecureIntercomTransport()) {
+      return proxySnapshot ?? intercom.snapshotUrl ?? intercom.streamUrl ?? null;
+    }
+    return intercom.streamUrl ?? intercom.snapshotUrl ?? proxySnapshot ?? null;
   }
   return intercom.streamUrl ?? intercom.snapshotUrl ?? null;
 }
 
-function renderMediaUrl(url: string, snapshotUrl: string | null, alt: string): string {
-  const resolvedUrl = state.currentView?.intercom ? resolveRenderableMediaUrl(url, state.currentView.intercom, false) : url;
+function renderMediaUrl(url: string, snapshotUrl: string | null, alt: string, bustCache = false): string {
+  const resolvedUrl = state.currentView?.intercom ? resolveRenderableMediaUrl(url, state.currentView.intercom, bustCache) : url;
   const resolvedPoster =
     snapshotUrl && state.currentView?.intercom
       ? resolveRenderableMediaUrl(snapshotUrl, state.currentView.intercom, false)
@@ -2619,6 +2659,19 @@ function isVideoLikeUrl(value: string): boolean {
 
 function canUseRtcPreview(intercom: CurrentIntercom): boolean {
   return Boolean(intercom.deviceUuid && intercom.authToken && (intercom.address || intercom.origin));
+}
+
+function resolveRtcSnapshotPreviewUrl(intercom: CurrentIntercom): string | null {
+  const httpBase = resolveIntercomHttpBase(intercom);
+  if (!httpBase) {
+    return null;
+  }
+  return new URL('jpg/image.jpg', httpBase.endsWith('/') ? httpBase : `${httpBase}/`).toString();
+}
+
+function shouldBustLivePreviewCache(intercom: CurrentIntercom, sourceUrl: string): boolean {
+  const proxySnapshot = resolveRtcSnapshotPreviewUrl(intercom);
+  return Boolean(proxySnapshot && sourceUrl === proxySnapshot && livePreviewRefreshNonce);
 }
 
 function resolveIntercomSignalingUrls(intercom: CurrentIntercom): string[] {
