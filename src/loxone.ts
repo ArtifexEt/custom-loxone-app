@@ -1643,7 +1643,12 @@ function buildEncryptedCommandUrl(
   },
 ): string {
   const base = ensureTrailingSlash(origin);
-  return `${base}${encrypted.encryptedCommand}?sk=${encodeURIComponent(encrypted.encryptedSessionKey)}`;
+  const baseUrl = new URL(base);
+  const expectsScopedCommand = baseUrl.pathname.endsWith('/jdev/sys/');
+  const commandPath = expectsScopedCommand
+    ? encrypted.encryptedCommand.replace(/^jdev\/sys\//, '')
+    : encrypted.encryptedCommand;
+  return `${base}${commandPath}?sk=${encodeURIComponent(encrypted.encryptedSessionKey)}`;
 }
 
 
