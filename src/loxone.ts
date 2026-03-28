@@ -3,7 +3,9 @@ import forge from 'node-forge';
 import type {
   ActivityLogSourceSummary,
   IntercomFunction,
+  IntercomMediaAuthMode,
   IntercomSummary,
+  IntercomTransportMode,
   IntercomViewConfig,
   IntercomViewModel,
   LoxoneControl,
@@ -106,6 +108,19 @@ interface LoxoneClientHandlers {
 
 interface LoxoneConnectionHints {
   serial: string | null;
+}
+
+interface IntercomTransportProfile {
+  mode: IntercomTransportMode;
+  mediaAuthMode: IntercomMediaAuthMode;
+  signalingUrl: string | null;
+  mediaBaseUrl: string | null;
+  historyBaseUrl: string | null;
+  mediaRootPath: string | null;
+  snapshotUrl: string | null;
+  streamUrl: string | null;
+  runtimeOrigin: string | null;
+  addressHost: string | null;
 }
 
 interface PendingHeader {
@@ -509,14 +524,32 @@ export function buildIntercomViewModel(
   const microphoneMuted = lookupBooleanState(summary, stateValues, MUTE_STATE_CANDIDATES);
   const supportsAnswer = supportsIntercomAnswer(summary);
   const supportsMute = supportsIntercomMute(summary);
-  const runtimeOrigin = credentials ? effectiveOrigin(credentials) : null;
+  const transport = credentials
+    ? resolveIntercomTransportProfile(summary, mediaControl, stateValues, credentials)
+    : {
+        mode: 'none',
+        mediaAuthMode: 'none',
+        signalingUrl: null,
+        mediaBaseUrl: null,
+        historyBaseUrl: null,
+        mediaRootPath: null,
+        snapshotUrl: null,
+        streamUrl: null,
+        runtimeOrigin: null,
+        addressHost: null,
+      } satisfies IntercomTransportProfile;
 
-  const streamUrl = credentials ? resolveMediaUrl(mediaControl, stateValues, STREAM_DETAIL_PATHS, credentials) : null;
+  const streamUrl = transport.streamUrl;
   const snapshotUrl =
-    credentials
-      ? resolveMediaUrl(mediaControl, stateValues, SNAPSHOT_DETAIL_PATHS, credentials) ??
-        signUrl(runtimeOrigin!, `camimage/${encodeURIComponent(summary.uuidAction)}`, credentials, 'server')
-      : null;
+    transport.snapshotUrl ??
+    (credentials && transport.runtimeOrigin
+      ? signUrl(
+          transport.runtimeOrigin,
+          `camimage/${encodeURIComponent(summary.uuidAction)}`,
+          credentials,
+          'server',
+        )
+      : null);
 
   const nativeHistoryTokens = parseLastBellEvents(mediaControl, stateValues);
   const historyTokens = mergeHistoryTokens(nativeHistoryTokens, cachedHistoryByUuidAction[summary.uuidAction] ?? []);
@@ -527,13 +560,13 @@ export function buildIntercomViewModel(
         imageUrl:
           nativeHistoryTokens.length > 0
             ? signUrl(
-                runtimeOrigin!,
+                transport.runtimeOrigin!,
                 `camimage/${encodeURIComponent(summary.uuidAction)}/${encodeURIComponent(timestamp)}`,
                 credentials,
                 'server',
               )
             : signUrl(
-                runtimeOrigin!,
+                transport.runtimeOrigin!,
                 `camimage/${encodeURIComponent(summary.uuidAction)}?event=${encodeURIComponent(timestamp)}`,
                 credentials,
                 'server',
@@ -556,9 +589,15 @@ export function buildIntercomViewModel(
     name: summary.name,
     roomName: summary.roomName,
     deviceUuid: resolveIntercomDeviceUuid(summary),
-    address: resolveAddressHost(mediaControl, stateValues) ?? resolveAddressHost(summary, stateValues),
-    origin: runtimeOrigin,
+    address: transport.addressHost,
+    origin: transport.runtimeOrigin,
     authToken: credentials?.token ?? null,
+    transportMode: transport.mode,
+    mediaAuthMode: transport.mediaAuthMode,
+    signalingUrl: transport.signalingUrl,
+    mediaBaseUrl: transport.mediaBaseUrl,
+    historyBaseUrl: transport.historyBaseUrl,
+    mediaRootPath: transport.mediaRootPath,
     doorbellActive,
     microphoneMuted,
     supportsAnswer,
@@ -717,6 +756,67 @@ function hasIntercomMediaSignals(control: LoxoneControl): boolean {
   return detailPaths.some((path) => getNestedValue(control.details, path) != null);
 }
 
+function resolveIntercomTransportProfile(
+  control: LoxoneControl,
+  mediaControl: LoxoneControl,
+  stateValues: Record<string, LoxoneStateValue>,
+  credentials: StoredCredentials,
+): IntercomTransportProfile {
+  const runtimeOrigin = effectiveOrigin(credentials);
+  const deviceUuid = resolveIntercomDeviceUuid(control);
+  const addressBase = resolveAddressBase(mediaControl, stateValues) ?? resolveAddressBase(control, stateValues);
+  const addressHost = addressBase ? new URL(addressBase).host : null;
+
+  if (addressBase && self.location.protocol !== 'https:') {
+    const intercomAuth = resolveIntercomAuth(mediaControl, credentials);
+    const signalingUrl = addressBase.replace(/^http/i, addressBase.startsWith('https://') ? 'wss' : 'ws');
+    const mediaBaseUrl = signAbsoluteUrl(ensureTrailingSlash(addressBase), credentials, 'intercom', intercomAuth);
+    return {
+      mode: 'lan-direct',
+      mediaAuthMode: 'basic',
+      signalingUrl,
+      mediaBaseUrl,
+      historyBaseUrl: mediaBaseUrl,
+      mediaRootPath: null,
+      snapshotUrl: signUrl(addressBase, DIRECT_INTERCOM_SNAPSHOT_PATHS[0], credentials, 'intercom', intercomAuth),
+      streamUrl: signUrl(addressBase, DIRECT_INTERCOM_STREAM_PATHS[0], credentials, 'intercom', intercomAuth),
+      runtimeOrigin,
+      addressHost,
+    };
+  }
+
+  if (runtimeOrigin && deviceUuid) {
+    const rootPath = `/proxy/${encodeURIComponent(deviceUuid)}`;
+    const mediaBaseUrl = `${runtimeOrigin.replace(/\/$/, '')}${rootPath}/`;
+    const signalingUrl = mediaBaseUrl.replace(/^http/i, runtimeOrigin.startsWith('https://') ? 'wss' : 'ws');
+    return {
+      mode: 'secure-proxy',
+      mediaAuthMode: 'token',
+      signalingUrl,
+      mediaBaseUrl,
+      historyBaseUrl: mediaBaseUrl,
+      mediaRootPath: rootPath,
+      snapshotUrl: new URL('jpg/image.jpg', mediaBaseUrl).toString(),
+      streamUrl: new URL('mjpg/video.mjpg', mediaBaseUrl).toString(),
+      runtimeOrigin,
+      addressHost,
+    };
+  }
+
+  return {
+    mode: 'none',
+    mediaAuthMode: 'none',
+    signalingUrl: null,
+    mediaBaseUrl: null,
+    historyBaseUrl: null,
+    mediaRootPath: null,
+    snapshotUrl: resolveConfiguredMediaUrl(mediaControl, stateValues, SNAPSHOT_DETAIL_PATHS, credentials),
+    streamUrl: resolveConfiguredMediaUrl(mediaControl, stateValues, STREAM_DETAIL_PATHS, credentials),
+    runtimeOrigin,
+    addressHost,
+  };
+}
+
 function mergeHistoryTokens(...sources: string[][]): string[] {
   const seen = new Set<string>();
   const tokens = sources
@@ -851,7 +951,7 @@ function splitEventLogText(value: string): string[] {
     .filter(Boolean);
 }
 
-function resolveMediaUrl(
+function resolveConfiguredMediaUrl(
   control: LoxoneControl,
   stateValues: Record<string, LoxoneStateValue>,
   detailPaths: string[],
@@ -874,32 +974,6 @@ function resolveMediaUrl(
     if (resolved) {
       return resolved;
     }
-  }
-  return resolveDirectIntercomMediaUrl(control, stateValues, credentials, detailPaths);
-}
-
-function resolveDirectIntercomMediaUrl(
-  control: LoxoneControl,
-  stateValues: Record<string, LoxoneStateValue>,
-  credentials: StoredCredentials,
-  detailPaths: string[],
-): string | null {
-  if (self.location.protocol === 'https:') {
-    return null;
-  }
-  const addressBase = resolveAddressBase(control, stateValues);
-  if (!addressBase) {
-    return null;
-  }
-  const candidates =
-    detailPaths === STREAM_DETAIL_PATHS
-      ? DIRECT_INTERCOM_STREAM_PATHS
-      : detailPaths === SNAPSHOT_DETAIL_PATHS
-        ? DIRECT_INTERCOM_SNAPSHOT_PATHS
-        : [];
-  const intercomAuth = resolveIntercomAuth(control, credentials);
-  for (const path of candidates) {
-    return signUrl(addressBase, path, credentials, 'intercom', intercomAuth);
   }
   return null;
 }
@@ -1035,21 +1109,6 @@ function resolveAddressBaseValue(value: unknown): string | null {
     }
   }
   return null;
-}
-
-function resolveAddressHost(
-  control: LoxoneControl,
-  stateValues: Record<string, LoxoneStateValue>,
-): string | null {
-  const base = resolveAddressBase(control, stateValues);
-  if (!base) {
-    return null;
-  }
-  try {
-    return new URL(base).host;
-  } catch {
-    return null;
-  }
 }
 
 function resolveIntercomDeviceUuid(control: LoxoneControl): string | null {

@@ -2267,10 +2267,13 @@ function hasLiveMediaFallback(intercom: CurrentIntercom): boolean {
 function resolveLiveMediaFallback(intercom: CurrentIntercom): string | null {
   if (canUseRtcPreview(intercom)) {
     const proxySnapshot = resolveRtcSnapshotPreviewUrl(intercom);
-    if (preferSecureIntercomTransport()) {
-      return proxySnapshot ?? intercom.snapshotUrl ?? intercom.streamUrl ?? null;
+    if (intercom.transportMode === 'secure-proxy') {
+      return proxySnapshot ?? intercom.streamUrl ?? null;
     }
-    return intercom.streamUrl ?? intercom.snapshotUrl ?? proxySnapshot ?? null;
+    if (intercom.transportMode === 'lan-direct') {
+      return intercom.streamUrl ?? intercom.snapshotUrl ?? proxySnapshot ?? null;
+    }
+    return proxySnapshot ?? intercom.streamUrl ?? intercom.snapshotUrl ?? null;
   }
   return intercom.streamUrl ?? intercom.snapshotUrl ?? null;
 }
@@ -2854,53 +2857,15 @@ function isVideoLikeUrl(value: string): boolean {
 }
 
 function canUseRtcPreview(intercom: CurrentIntercom): boolean {
-  return Boolean(intercom.deviceUuid && intercom.authToken && (intercom.address || intercom.origin));
+  return Boolean(intercom.deviceUuid && intercom.authToken && intercom.signalingUrl);
 }
 
 function resolveRtcSnapshotPreviewUrl(intercom: CurrentIntercom): string | null {
-  const httpBase = resolveIntercomHttpBase(intercom);
-  if (!httpBase) {
-    return null;
-  }
-  return new URL('jpg/image.jpg', httpBase.endsWith('/') ? httpBase : `${httpBase}/`).toString();
+  return intercom.transportMode === 'secure-proxy' ? intercom.snapshotUrl : null;
 }
 
 function resolveIntercomSignalingUrls(intercom: CurrentIntercom): string[] {
-  const candidates: string[] = [];
-  if (intercom.deviceUuid && intercom.origin) {
-    const base = intercom.origin.replace(/\/$/, '').replace(/^http/, 'ws');
-    candidates.push(`${base}/proxy/${encodeURIComponent(intercom.deviceUuid)}/`);
-  }
-  if (intercom.address && !preferSecureIntercomTransport()) {
-    candidates.push(`${isPrivateLikeHost(intercom.address) ? 'ws' : 'wss'}://${intercom.address}`);
-  }
-  return Array.from(new Set(candidates));
-}
-
-function resolveIntercomHttpBase(intercom: CurrentIntercom): string | null {
-  if (!intercom.deviceUuid || !intercom.origin) {
-    if (intercom.address) {
-      return `${preferSecureIntercomTransport() ? 'https' : isPrivateLikeHost(intercom.address) ? 'http' : 'https'}://${intercom.address}`;
-    }
-    return null;
-  }
-  return `${intercom.origin.replace(/\/$/, '')}/proxy/${encodeURIComponent(intercom.deviceUuid)}/`;
-}
-
-function preferSecureIntercomTransport(): boolean {
-  return self.location.protocol === 'https:';
-}
-
-function isPrivateLikeHost(value: string): boolean {
-  const host = value.split(':', 1)[0].trim().toLowerCase();
-  return (
-    host === 'localhost' ||
-    host.endsWith('.local') ||
-    /^127(?:\.\d{1,3}){3}$/.test(host) ||
-    /^10(?:\.\d{1,3}){3}$/.test(host) ||
-    /^192\.168(?:\.\d{1,3}){2}$/.test(host) ||
-    /^172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2}$/.test(host)
-  );
+  return intercom.signalingUrl ? [intercom.signalingUrl] : [];
 }
 
 async function buildIntercomAuthenticationPayload(input: {
@@ -3019,69 +2984,60 @@ function resolveHistoryMediaPath(record: Record<string, unknown>): unknown {
 
 function resolveMediaUrlAgainstBase(rawPath: string, mediaBase: string): URL {
   const trimmedPath = rawPath.trim();
+  const intercom = state.currentView?.intercom ?? null;
+  const base = new URL(mediaBase);
   if (/^https?:\/\//i.test(trimmedPath)) {
-    return new URL(trimmedPath);
+    const absolute = new URL(trimmedPath);
+    if (intercom?.transportMode === 'secure-proxy' && intercom.mediaRootPath) {
+      return new URL(`${intercom.mediaRootPath}${absolute.pathname}${absolute.search}`, base.origin);
+    }
+    return absolute;
   }
 
-  const base = new URL(mediaBase);
-  const proxyMatch = base.pathname.match(/^(.*\/proxy\/[^/]+)(?:\/.*)?$/);
-  if (trimmedPath.startsWith('/') && proxyMatch) {
-    return new URL(`${proxyMatch[1]}${trimmedPath}`, base.origin);
+  if (trimmedPath.startsWith('/') && intercom?.mediaRootPath) {
+    return new URL(`${intercom.mediaRootPath}${trimmedPath}`, base.origin);
   }
 
   return new URL(trimmedPath, mediaBase);
 }
 
 function resolveIntercomHistoryBase(intercom: CurrentIntercom): string | null {
-  if (intercom.deviceUuid && intercom.origin) {
-    return `${intercom.origin.replace(/\/$/, '')}/proxy/${encodeURIComponent(intercom.deviceUuid)}/`;
-  }
-  return intercom.snapshotUrl || intercom.streamUrl || intercom.cachedPreviewUrl || resolveIntercomHttpBase(intercom);
+  return intercom.historyBaseUrl || intercom.mediaBaseUrl || intercom.snapshotUrl || intercom.streamUrl || intercom.cachedPreviewUrl;
 }
 
 function inheritMediaAuth(url: URL, mediaBase: string, intercom?: CurrentIntercom): string {
   const base = new URL(mediaBase);
-  if (!url.username && base.username && url.host === base.host) {
-    url.username = base.username;
-    url.password = base.password;
-  }
-  if (!url.username && intercom?.origin && intercom.authToken && url.host === new URL(intercom.origin).host) {
-    url.searchParams.set('auth', intercom.authToken);
-    url.searchParams.set('cacheBuster', Date.now().toString());
-  }
-  return rewriteMixedContentMediaUrl(url, intercom).toString();
-}
-
-function rewriteMixedContentMediaUrl(url: URL, intercom?: CurrentIntercom): URL {
-  if (
-    self.location.protocol === 'https:' &&
-    url.protocol === 'http:' &&
-    isPrivateLikeHost(url.hostname) &&
-    intercom?.origin &&
-    intercom.deviceUuid
-  ) {
-    const secureOrigin = new URL(intercom.origin);
-    if (secureOrigin.protocol === 'https:') {
-      const proxyUrl = new URL(
-        `/proxy/${encodeURIComponent(intercom.deviceUuid)}${url.pathname}${url.search}`,
-        `${secureOrigin.origin}/`,
-      );
-      return proxyUrl;
+  if (intercom?.mediaAuthMode === 'basic') {
+    if (!url.username && base.username && url.host === base.host) {
+      url.username = base.username;
+      url.password = base.password;
     }
+    url.searchParams.delete('auth');
+    url.searchParams.delete('autht');
+    return url.toString();
   }
-  return url;
+  if (intercom?.mediaAuthMode === 'token' && intercom.authToken) {
+    url.username = '';
+    url.password = '';
+    url.searchParams.delete('auth');
+    url.searchParams.set('autht', intercom.authToken);
+  }
+  return url.toString();
 }
 
 function resolveRenderableMediaUrl(sourceUrl: string, intercom: CurrentIntercom, bustCache: boolean): string {
-  const url = rewriteMixedContentMediaUrl(new URL(sourceUrl), intercom);
-  url.username = '';
-  url.password = '';
-  const intercomOrigin = intercom.origin ? new URL(intercom.origin) : null;
-  const usesServerMedia =
-    Boolean(intercomOrigin && url.host === intercomOrigin.host) ||
-    url.pathname.includes('/proxy/') ||
-    url.pathname.includes('/camimage/');
-  if (usesServerMedia && intercom.authToken) {
+  const url = new URL(sourceUrl);
+  if (intercom.mediaAuthMode === 'basic') {
+    const mediaBase = intercom.mediaBaseUrl ? new URL(intercom.mediaBaseUrl) : null;
+    if (!url.username && mediaBase?.username && url.host === mediaBase.host) {
+      url.username = mediaBase.username;
+      url.password = mediaBase.password;
+    }
+    url.searchParams.delete('auth');
+    url.searchParams.delete('autht');
+  } else if (intercom.mediaAuthMode === 'token' && intercom.authToken) {
+    url.username = '';
+    url.password = '';
     url.searchParams.set('autht', intercom.authToken);
     url.searchParams.delete('auth');
   }

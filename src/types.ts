@@ -128,6 +128,9 @@ export interface ActivityLogItem {
   label: string;
 }
 
+export type IntercomTransportMode = 'secure-proxy' | 'lan-direct' | 'none';
+export type IntercomMediaAuthMode = 'token' | 'basic' | 'none';
+
 export interface IntercomViewModel {
   uuidAction: string;
   name: string;
@@ -136,6 +139,12 @@ export interface IntercomViewModel {
   address: string | null;
   origin: string | null;
   authToken: string | null;
+  transportMode: IntercomTransportMode;
+  mediaAuthMode: IntercomMediaAuthMode;
+  signalingUrl: string | null;
+  mediaBaseUrl: string | null;
+  historyBaseUrl: string | null;
+  mediaRootPath: string | null;
   doorbellActive: boolean;
   microphoneMuted: boolean;
   supportsAnswer: boolean;
