@@ -226,6 +226,7 @@ async function upsertView(view: IntercomViewConfig): Promise<void> {
   config.lastViewId = normalized.id;
   config.defaultViewId = config.defaultViewId ?? normalized.id;
   await persistConfig();
+  await hydrateIntercomSecuredDetails();
   emitState();
 }
 
@@ -417,8 +418,12 @@ async function hydrateIntercomSecuredDetails(): Promise<void> {
   }
   let nextStructure = cache.structure;
   let changed = false;
+  const targets = listHydrationIntercoms(cache.structure);
+  if (targets.length === 0) {
+    return;
+  }
 
-  for (const intercom of listIntercoms(cache.structure)) {
+  for (const intercom of targets) {
     try {
       const securedDetails = await client.fetchSecuredDetails(intercom.uuidAction);
       if (Object.keys(securedDetails).length === 0) {
@@ -441,6 +446,35 @@ async function hydrateIntercomSecuredDetails(): Promise<void> {
     updatedAt: new Date().toISOString(),
   };
   scheduleCachePersist();
+}
+
+function listHydrationIntercoms(structure: NonNullable<CachedRuntime['structure']>) {
+  const configuredIds = new Set<string>();
+
+  for (const view of config.views) {
+    if (view.type === 'intercom' && view.intercomUuidAction) {
+      configuredIds.add(view.intercomUuidAction);
+    }
+  }
+
+  if (draftView?.intercomUuidAction) {
+    configuredIds.add(draftView.intercomUuidAction);
+  }
+
+  const currentEditorView =
+    draftView && draftView.id === settingsEditorViewId
+      ? draftView
+      : config.views.find((item) => item.id === settingsEditorViewId) ?? null;
+
+  if (currentEditorView?.intercomUuidAction) {
+    configuredIds.add(currentEditorView.intercomUuidAction);
+  }
+
+  if (configuredIds.size === 0) {
+    return [];
+  }
+
+  return listIntercoms(structure).filter((intercom) => configuredIds.has(intercom.uuidAction));
 }
 
 function emitState(): void {

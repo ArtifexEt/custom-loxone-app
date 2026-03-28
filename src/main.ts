@@ -72,16 +72,19 @@ let localServerDraft: {
 } | null = null;
 let browserHistoryByIntercomUuidAction = new Map<string, IntercomHistoryItem[]>();
 let historyImageCache = new Map<string, string>();
-let pendingHistoryImageLoads = new Map<string, Promise<string | null>>();
 let failedHistoryImageLoads = new Set<string>();
+let pendingHistoryImageCacheReads = new Set<string>();
+let pendingHistoryImageCacheWrites = new Set<string>();
 let activeHistoryIntercomKey: string | null = null;
 let historyDrawerScrollTop = 0;
 let historyDrawerViewportHeight = 0;
 let historyVirtualWindowKey = '';
 let pendingFocusSelector: string | null = null;
 let deferredRenderRequested = false;
-let livePreviewRefreshNonce = 0;
 let livePreviewRefreshTimer: number | null = null;
+let livePreviewRefreshKey = '';
+let livePreviewRefreshInFlight = false;
+let lastPersistedPreviewHintKey = '';
 
 const HISTORY_DRAWER_GAP = 12;
 const HISTORY_DRAWER_OVERSCAN_ROWS = 2;
@@ -533,11 +536,15 @@ worker.onmessage = (event: MessageEvent<WorkerToMainMessage>) => {
   if (nextIntercomKey !== activeHistoryIntercomKey) {
     activeHistoryIntercomKey = nextIntercomKey;
     historyImageCache = new Map();
-    pendingHistoryImageLoads = new Map();
     failedHistoryImageLoads = new Set();
+    pendingHistoryImageCacheReads = new Set();
+    pendingHistoryImageCacheWrites = new Set();
     historyDrawerScrollTop = 0;
     historyDrawerViewportHeight = 0;
     historyVirtualWindowKey = '';
+    livePreviewRefreshKey = '';
+    livePreviewRefreshInFlight = false;
+    lastPersistedPreviewHintKey = '';
   }
   if (!state.currentView?.intercom) {
     sidePanelOpen = false;
@@ -864,6 +871,22 @@ root.addEventListener(
   true,
 );
 
+root.addEventListener(
+  'load',
+  (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLImageElement)) {
+      return;
+    }
+    const sourceUrl = target.dataset.historySourceUrl;
+    if (!sourceUrl || target.currentSrc.startsWith('data:')) {
+      return;
+    }
+    void cacheHistoryImageFromElement(target, sourceUrl);
+  },
+  true,
+);
+
 registerServiceWorker();
 setupViewportHeightTracking();
 post({ type: 'bootstrap', browserLanguage: navigator.language });
@@ -896,7 +919,9 @@ function render(): void {
   const intercom = state.currentView?.intercom;
   if (intercom) {
     persistIntercomPreviewHint(intercom);
-    ensureHistoryImages(intercom);
+    void hydrateVisibleHistoryCache(intercom);
+  } else {
+    lastPersistedPreviewHintKey = '';
   }
   syncLivePreviewRefresh(intercom ?? null);
   if (intercom && canUseRtcPreview(intercom) && !intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction)) {
@@ -910,31 +935,78 @@ function render(): void {
 }
 
 function syncLivePreviewRefresh(intercom: CurrentIntercom | null): void {
+  const previewUrl = intercom ? resolveRtcSnapshotPreviewUrl(intercom) : null;
   const shouldRefresh =
     Boolean(intercom) &&
+    state.connection.status === 'online' &&
     !state.settingsOpen &&
     !selectedHistoryImage &&
     !savedMessagesDialogViewId &&
     canUseRtcPreview(intercom!) &&
     !intercomRtcSession.hasRemoteStreamFor(intercom!.uuidAction) &&
-    Boolean(resolveRtcSnapshotPreviewUrl(intercom!));
+    Boolean(previewUrl);
 
   if (!shouldRefresh) {
     if (livePreviewRefreshTimer !== null) {
       window.clearInterval(livePreviewRefreshTimer);
       livePreviewRefreshTimer = null;
     }
+    livePreviewRefreshKey = '';
+    livePreviewRefreshInFlight = false;
+    return;
+  }
+
+  const nextRefreshKey = `${intercom!.uuidAction}:${previewUrl!}`;
+  if (livePreviewRefreshTimer !== null && livePreviewRefreshKey === nextRefreshKey) {
     return;
   }
 
   if (livePreviewRefreshTimer !== null) {
+    window.clearInterval(livePreviewRefreshTimer);
+  }
+
+  livePreviewRefreshKey = nextRefreshKey;
+  livePreviewRefreshInFlight = false;
+  void refreshLivePreviewImage(intercom!, true);
+  livePreviewRefreshTimer = window.setInterval(() => {
+    void refreshLivePreviewImage(intercom!);
+  }, 6000);
+}
+
+async function refreshLivePreviewImage(intercom: CurrentIntercom, force = false): Promise<void> {
+  if (document.hidden) {
+    return;
+  }
+  if (livePreviewRefreshInFlight && !force) {
+    return;
+  }
+  if (state.currentView?.intercom?.uuidAction !== intercom.uuidAction || intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction)) {
     return;
   }
 
-  livePreviewRefreshTimer = window.setInterval(() => {
-    livePreviewRefreshNonce = Date.now();
-    render();
-  }, 1500);
+  const mediaElement = document.querySelector<HTMLImageElement>('#intercom-live-media');
+  if (!(mediaElement instanceof HTMLImageElement)) {
+    return;
+  }
+
+  const proxySnapshot = resolveRtcSnapshotPreviewUrl(intercom);
+  if (!proxySnapshot) {
+    return;
+  }
+
+  const nextUrl = resolveRenderableMediaUrl(proxySnapshot, intercom, true);
+  if (!force && mediaElement.dataset.refreshUrl === nextUrl) {
+    return;
+  }
+
+  livePreviewRefreshInFlight = true;
+  const settle = () => {
+    livePreviewRefreshInFlight = false;
+  };
+  mediaElement.addEventListener('load', settle, { once: true });
+  mediaElement.addEventListener('error', settle, { once: true });
+  mediaElement.dataset.refreshUrl = nextUrl;
+  mediaElement.src = nextUrl;
 }
 
 function shouldDeferRenderForActiveEditor(): boolean {
@@ -1551,7 +1623,9 @@ function renderHistoryPanel(intercom: NonNullable<AppViewModel['currentView']>['
                       <img
                         src="${escapeAttribute(resolveHistoryImageDisplayUrl(item.imageUrl, intercom) ?? TRANSPARENT_1PX)}"
                         alt="${escapeAttribute(item.label)}"
-                        loading="eager"
+                        loading="lazy"
+                        decoding="async"
+                        data-history-source-url="${escapeAttribute(item.imageUrl)}"
                         data-loading="${historyImageCache.has(cacheKey) ? 'false' : 'true'}"
                       />
                     </span>
@@ -1721,6 +1795,9 @@ function renderHistoryImageOverlay(item: IntercomHistoryItem): string {
             class="history-lightbox-image"
             src="${escapeAttribute(imageSrc)}"
             alt="${escapeAttribute(item.label)}"
+            loading="eager"
+            decoding="async"
+            data-history-source-url="${escapeAttribute(item.imageUrl)}"
           />
           <p class="history-lightbox-caption">${escapeHtml(item.label)}</p>
         </div>
@@ -2057,7 +2134,7 @@ function renderMedia(intercom: CurrentIntercom): string {
         liveFallback,
         intercom.snapshotUrl,
         intercom.name,
-        shouldBustLivePreviewCache(intercom, liveFallback),
+        false,
       );
     }
     return `<video id="intercom-live-media" class="intercom-media" autoplay ${browserConversationState === 'active' ? '' : 'muted'} playsinline></video>`;
@@ -2092,14 +2169,20 @@ function renderMediaUrl(url: string, snapshotUrl: string | null, alt: string, bu
   if (isVideoLikeUrl(url)) {
     return `<video id="intercom-live-media" class="intercom-media" src="${escapeAttribute(resolvedUrl)}" controls autoplay ${browserConversationState === 'active' ? '' : 'muted'} playsinline poster="${escapeAttribute(resolvedPoster ?? '')}"></video>`;
   }
-  return `<img class="intercom-media" src="${escapeAttribute(resolvedUrl)}" alt="${escapeAttribute(alt)}" loading="eager" />`;
+  return `<img id="intercom-live-media" class="intercom-media" src="${escapeAttribute(resolvedUrl)}" alt="${escapeAttribute(alt)}" loading="eager" decoding="async" />`;
 }
 
 function persistIntercomPreviewHint(intercom: CurrentIntercom): void {
   const previewUrl = intercom.snapshotUrl ?? intercom.streamUrl ?? intercom.cachedPreviewUrl ?? null;
   if (!previewUrl) {
+    lastPersistedPreviewHintKey = '';
     return;
   }
+  const previewKey = `${intercom.uuidAction}:${previewUrl}`;
+  if (previewKey === lastPersistedPreviewHintKey) {
+    return;
+  }
+  lastPersistedPreviewHintKey = previewKey;
   post({ type: 'cacheIntercomPreview', uuidAction: intercom.uuidAction, url: previewUrl });
 }
 
@@ -2141,59 +2224,6 @@ async function persistServerSettingsFromOverlay(): Promise<void> {
   });
 }
 
-function ensureHistoryImages(intercom: CurrentIntercom): void {
-  const historyItems = collectHistoryItemsToLoad(intercom);
-  for (const item of historyItems) {
-    const cacheKey = normalizeHistoryImageCacheKey(item.imageUrl);
-    if (
-      historyImageCache.has(cacheKey) ||
-      pendingHistoryImageLoads.has(cacheKey) ||
-      failedHistoryImageLoads.has(cacheKey)
-    ) {
-      continue;
-    }
-    const pending = loadHistoryImage(item.imageUrl, intercom)
-      .then((dataUrl) => {
-        if (dataUrl) {
-          historyImageCache.set(cacheKey, dataUrl);
-          render();
-        } else {
-          failedHistoryImageLoads.add(cacheKey);
-        }
-        return dataUrl;
-      })
-      .finally(() => {
-        pendingHistoryImageLoads.delete(cacheKey);
-      });
-    pendingHistoryImageLoads.set(cacheKey, pending);
-  }
-}
-
-function collectHistoryItemsToLoad(intercom: CurrentIntercom): IntercomHistoryItem[] {
-  const historyItems = browserHistoryByIntercomUuidAction.get(intercom.uuidAction) ?? intercom.history;
-  const items = new Map<string, IntercomHistoryItem>();
-
-  if (sidePanelOpen && sidePanelTab === 'history') {
-    for (const item of getHistoryVirtualizationState(historyItems).items) {
-      items.set(item.timestamp, item);
-    }
-  }
-
-  if (selectedHistoryImage) {
-    items.set(selectedHistoryImage.timestamp, selectedHistoryImage);
-    const previous = getAdjacentHistoryImage(-1);
-    const next = getAdjacentHistoryImage(1);
-    if (previous) {
-      items.set(previous.timestamp, previous);
-    }
-    if (next) {
-      items.set(next.timestamp, next);
-    }
-  }
-
-  return Array.from(items.values());
-}
-
 function getHistoryVirtualizationState(items: IntercomHistoryItem[]): {
   items: IntercomHistoryItem[];
   topSpacerHeight: number;
@@ -2232,38 +2262,48 @@ function resolveHistoryRowHeight(): number {
   return cardHeight + HISTORY_DRAWER_GAP;
 }
 
-async function loadHistoryImage(sourceUrl: string, intercom: CurrentIntercom): Promise<string | null> {
-  const cacheKey = normalizeHistoryImageCacheKey(sourceUrl);
-  const cached = historyImageCache.get(cacheKey) ?? (await loadMediaCacheEntry(cacheKey));
-  if (cached) {
-    historyImageCache.set(cacheKey, cached);
-    return cached;
-  }
-  const requestUrl = buildHistoryImageRequestUrl(sourceUrl, intercom, true);
-  return await new Promise((resolve) => {
-    const image = new Image();
-    image.crossOrigin = '';
-    image.onload = () => {
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = image.naturalWidth;
-        canvas.height = image.naturalHeight;
-        const context = canvas.getContext('2d');
-        if (!context) {
-          resolve(null);
-          return;
-        }
-        context.drawImage(image, 0, 0);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.86);
-        void saveMediaCacheEntry(cacheKey, dataUrl);
-        resolve(dataUrl);
-      } catch {
-        resolve(null);
+async function hydrateVisibleHistoryCache(intercom: CurrentIntercom): Promise<void> {
+  const items = collectVisibleHistoryItems(intercom);
+  for (const item of items) {
+    const cacheKey = normalizeHistoryImageCacheKey(item.imageUrl);
+    if (
+      historyImageCache.has(cacheKey) ||
+      pendingHistoryImageCacheReads.has(cacheKey)
+    ) {
+      continue;
+    }
+    pendingHistoryImageCacheReads.add(cacheKey);
+    try {
+      const cached = await loadMediaCacheEntry(cacheKey);
+      if (cached) {
+        historyImageCache.set(cacheKey, cached);
+        render();
       }
-    };
-    image.onerror = () => resolve(null);
-    image.src = requestUrl;
-  });
+    } finally {
+      pendingHistoryImageCacheReads.delete(cacheKey);
+    }
+  }
+}
+
+function collectVisibleHistoryItems(intercom: CurrentIntercom): IntercomHistoryItem[] {
+  if (!sidePanelOpen && !selectedHistoryImage) {
+    return [];
+  }
+
+  const historyItems = browserHistoryByIntercomUuidAction.get(intercom.uuidAction) ?? intercom.history;
+  const items = new Map<string, IntercomHistoryItem>();
+
+  if (sidePanelOpen && sidePanelTab === 'history') {
+    for (const item of getHistoryVirtualizationState(historyItems).items) {
+      items.set(item.timestamp, item);
+    }
+  }
+
+  if (selectedHistoryImage) {
+    items.set(selectedHistoryImage.timestamp, selectedHistoryImage);
+  }
+
+  return Array.from(items.values());
 }
 
 function resolveHistoryImageDisplayUrl(sourceUrl: string, intercom: CurrentIntercom): string | null {
@@ -2283,6 +2323,46 @@ function normalizeHistoryImageCacheKey(sourceUrl: string): string {
   url.searchParams.delete('autht');
   url.searchParams.delete('cacheBuster');
   return url.toString();
+}
+
+async function cacheHistoryImageFromElement(image: HTMLImageElement, sourceUrl: string): Promise<void> {
+  const cacheKey = normalizeHistoryImageCacheKey(sourceUrl);
+  if (
+    historyImageCache.has(cacheKey) ||
+    failedHistoryImageLoads.has(cacheKey) ||
+    pendingHistoryImageCacheWrites.has(cacheKey) ||
+    image.naturalWidth === 0 ||
+    image.naturalHeight === 0
+  ) {
+    return;
+  }
+
+  pendingHistoryImageCacheWrites.add(cacheKey);
+  try {
+    const cached = await loadMediaCacheEntry(cacheKey);
+    if (cached) {
+      historyImageCache.set(cacheKey, cached);
+      return;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const context = canvas.getContext('2d');
+    if (!context) {
+      failedHistoryImageLoads.add(cacheKey);
+      return;
+    }
+    context.drawImage(image, 0, 0);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.86);
+    historyImageCache.set(cacheKey, dataUrl);
+    void saveMediaCacheEntry(cacheKey, dataUrl);
+    render();
+  } catch {
+    failedHistoryImageLoads.add(cacheKey);
+  } finally {
+    pendingHistoryImageCacheWrites.delete(cacheKey);
+  }
 }
 
 function resolveIntercomName(uuidAction: string | null): string {
@@ -2667,11 +2747,6 @@ function resolveRtcSnapshotPreviewUrl(intercom: CurrentIntercom): string | null 
     return null;
   }
   return new URL('jpg/image.jpg', httpBase.endsWith('/') ? httpBase : `${httpBase}/`).toString();
-}
-
-function shouldBustLivePreviewCache(intercom: CurrentIntercom, sourceUrl: string): boolean {
-  const proxySnapshot = resolveRtcSnapshotPreviewUrl(intercom);
-  return Boolean(proxySnapshot && sourceUrl === proxySnapshot && livePreviewRefreshNonce);
 }
 
 function resolveIntercomSignalingUrls(intercom: CurrentIntercom): string[] {
