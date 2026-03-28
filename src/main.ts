@@ -967,7 +967,6 @@ function syncLivePreviewRefresh(intercom: CurrentIntercom | null): void {
 
   livePreviewRefreshKey = nextRefreshKey;
   livePreviewRefreshInFlight = false;
-  void refreshLivePreviewImage(intercom!, true);
   livePreviewRefreshTimer = window.setInterval(() => {
     void refreshLivePreviewImage(intercom!);
   }, 6000);
