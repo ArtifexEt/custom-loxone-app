@@ -121,6 +121,7 @@ class IntercomRtcSession {
   private previewDeadlineTimer: number | null = null;
   private infoInitialized = false;
   private previewStartAt: number | null = null;
+  private firstRenderedVideoFrameAt: number | null = null;
 
   hasRemoteStreamFor(uuidAction: string): boolean {
     return this.currentIntercomKey === uuidAction && this.hasIncomingVideo();
@@ -132,6 +133,15 @@ class IntercomRtcSession {
 
   getRemoteStream(): MediaStream | null {
     return this.remoteStream;
+  }
+
+  noteRenderedVideoFrame(): boolean {
+    const firstFrame = this.firstRenderedVideoFrameAt === null;
+    this.firstRenderedVideoFrameAt = Date.now();
+    if (firstFrame) {
+      this.clearPreviewDeadline();
+    }
+    return firstFrame;
   }
 
   async ensurePreview(intercom: CurrentIntercom, localAudioStream: MediaStream | null = null): Promise<void> {
@@ -394,6 +404,7 @@ class IntercomRtcSession {
     const localAudioTrack = localAudioStream?.getAudioTracks()[0] ?? null;
     this.remoteStream = new MediaStream();
     this.previewStartAt = Date.now();
+    this.firstRenderedVideoFrameAt = null;
     this.peer = new RTCPeerConnection({
       iceServers: INTERCOM_ICE_SERVERS,
       iceCandidatePoolSize: 4,
@@ -407,9 +418,6 @@ class IntercomRtcSession {
         this.remoteStream = stream;
       } else if (this.remoteStream) {
         this.remoteStream.addTrack(event.track);
-      }
-      if (this.hasIncomingVideo()) {
-        this.clearPreviewDeadline();
       }
       attachRtcStreamToDom();
       render();
@@ -573,9 +581,14 @@ class IntercomRtcSession {
     this.authReady = null;
     this.resolveAuthReady = null;
     this.rejectAuthReady = null;
+    this.firstRenderedVideoFrameAt = null;
   }
 
   private hasIncomingVideo(): boolean {
+    return this.firstRenderedVideoFrameAt !== null;
+  }
+
+  private hasRemoteVideoTrack(): boolean {
     return Boolean(this.remoteStream && this.remoteStream.getVideoTracks().length > 0);
   }
 
@@ -595,6 +608,9 @@ class IntercomRtcSession {
     }
     if (this.previewStartAt && Date.now() - this.previewStartAt > RTC_PREVIEW_STALL_MS) {
       return false;
+    }
+    if (this.hasRemoteVideoTrack()) {
+      return true;
     }
     return (
       connectionState === 'new' ||
@@ -3001,6 +3017,11 @@ function attachRtcStreamToDom(): void {
   if (!(media instanceof HTMLVideoElement) || !stream) {
     return;
   }
+  const markFrameVisible = () => {
+    if (intercomRtcSession.noteRenderedVideoFrame()) {
+      render();
+    }
+  };
   const isNewStream = media.srcObject !== stream;
   if (isNewStream) {
     media.srcObject = stream;
@@ -3010,6 +3031,16 @@ function attachRtcStreamToDom(): void {
     media.addEventListener('canplay', () => {
       void ensureRtcVideoPlayback(media, true);
     }, { once: true });
+    media.addEventListener('loadeddata', markFrameVisible, { once: true });
+    media.addEventListener('playing', markFrameVisible, { once: true });
+    media.addEventListener('timeupdate', markFrameVisible, { once: true });
+    if ('requestVideoFrameCallback' in media) {
+      (media as HTMLVideoElement & {
+        requestVideoFrameCallback?: (callback: () => void) => number;
+      }).requestVideoFrameCallback?.(() => {
+        markFrameVisible();
+      });
+    }
   }
   media.muted = browserConversationState !== 'active';
   void ensureRtcVideoPlayback(media, isNewStream);
