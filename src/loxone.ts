@@ -763,7 +763,7 @@ function resolveIntercomTransportProfile(
   credentials: StoredCredentials,
 ): IntercomTransportProfile {
   const runtimeOrigin = effectiveOrigin(credentials);
-  const deviceUuid = resolveIntercomDeviceUuid(control);
+  const deviceUuid = resolveIntercomDeviceUuid(control) ?? resolveIntercomDeviceUuid(mediaControl);
   const addressBase = resolveAddressBase(mediaControl, stateValues) ?? resolveAddressBase(control, stateValues);
   const addressHost = addressBase ? new URL(addressBase).host : null;
 
@@ -1112,8 +1112,40 @@ function resolveAddressBaseValue(value: unknown): string | null {
 }
 
 function resolveIntercomDeviceUuid(control: LoxoneControl): string | null {
-  const value = getNestedValue(control.details, 'deviceUuid');
-  return typeof value === 'string' && value.trim() ? value.trim() : null;
+  for (const path of ['deviceUuid', 'videoInfo.deviceUuid']) {
+    const value = getNestedValue(control.details, path);
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  const proxyPathCandidate = extractProxyDeviceUuidFromValue(control.details);
+  return proxyPathCandidate;
+}
+
+function extractProxyDeviceUuidFromValue(value: unknown): string | null {
+  if (typeof value === 'string') {
+    const match = value.match(/\/proxy\/([^/?#]+)/i);
+    return match?.[1] ? decodeURIComponent(match[1]) : null;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const resolved = extractProxyDeviceUuidFromValue(item);
+      if (resolved) {
+        return resolved;
+      }
+    }
+    return null;
+  }
+  if (value && typeof value === 'object') {
+    for (const nested of Object.values(value as Record<string, unknown>)) {
+      const resolved = extractProxyDeviceUuidFromValue(nested);
+      if (resolved) {
+        return resolved;
+      }
+    }
+  }
+  return null;
 }
 
 function normalizeBaseUrl(value: string): string | null {
