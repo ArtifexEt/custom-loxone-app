@@ -2046,7 +2046,7 @@ function buildCloudDnsOrigin(serial: string): URL | null {
   if (!normalizedSerial) {
     return null;
   }
-  return new URL(`https://dns.loxonecloud.com/${encodeURIComponent(normalizedSerial)}/`);
+  return new URL(`https://connect.loxonecloud.com/${encodeURIComponent(normalizedSerial)}/`);
 }
 
 function isPrivateHost(hostname: string): boolean {

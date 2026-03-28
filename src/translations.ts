@@ -137,7 +137,7 @@ const TRANSLATIONS = {
     socket_https_local_ws_blocked:
       'This HTTPS app cannot connect to a local ws:// or http:// Loxone address. Use local hosting over http:// for the local IP, or switch the server address to {host}.',
     socket_https_local_ws_blocked_generic:
-      'This HTTPS app cannot connect to a local ws:// or http:// Loxone address. Use local hosting over http:// for the local IP, or switch to your HTTPS CloudDNS host under dyndns.loxonecloud.com.',
+      'This HTTPS app cannot connect to a local ws:// or http:// Loxone address. Use local hosting over http:// for the local IP, or switch to your HTTPS Loxone Cloud host under connect.loxonecloud.com.',
     socket_open_failed: 'Could not open the websocket to Loxone.',
     startup_ready: 'App started.',
     server_saved:
@@ -311,7 +311,7 @@ const TRANSLATIONS = {
     socket_https_local_ws_blocked:
       'Ta aplikacja uruchomiona po HTTPS nie może połączyć się z lokalnym adresem Loxone po ws:// lub http://. Użyj lokalnego hostingu po http:// dla lokalnego IP albo zmień adres serwera na {host}.',
     socket_https_local_ws_blocked_generic:
-      'Ta aplikacja uruchomiona po HTTPS nie może połączyć się z lokalnym adresem Loxone po ws:// lub http://. Użyj lokalnego hostingu po http:// dla lokalnego IP albo przełącz adres serwera na swój host HTTPS w dyndns.loxonecloud.com.',
+      'Ta aplikacja uruchomiona po HTTPS nie może połączyć się z lokalnym adresem Loxone po ws:// lub http://. Użyj lokalnego hostingu po http:// dla lokalnego IP albo przełącz adres serwera na swój host HTTPS w connect.loxonecloud.com.',
     socket_open_failed: 'Nie udało się otworzyć websocketu do Loxone.',
     startup_ready: 'Aplikacja uruchomiona.',
     server_saved:
@@ -485,7 +485,7 @@ const TRANSLATIONS = {
     socket_https_local_ws_blocked:
       'Diese per HTTPS geladene App kann sich nicht mit einer lokalen Loxone-Adresse über ws:// oder http:// verbinden. Verwenden Sie lokales Hosting über http:// für die lokale IP oder wechseln Sie die Serveradresse zu {host}.',
     socket_https_local_ws_blocked_generic:
-      'Diese per HTTPS geladene App kann sich nicht mit einer lokalen Loxone-Adresse über ws:// oder http:// verbinden. Verwenden Sie lokales Hosting über http:// für die lokale IP oder wechseln Sie zu Ihrem HTTPS-CloudDNS-Host unter dyndns.loxonecloud.com.',
+      'Diese per HTTPS geladene App kann sich nicht mit einer lokalen Loxone-Adresse über ws:// oder http:// verbinden. Verwenden Sie lokales Hosting über http:// für die lokale IP oder wechseln Sie zu Ihrem HTTPS-Loxone-Cloud-Host unter connect.loxonecloud.com.',
     socket_open_failed: 'Das Websocket zu Loxone konnte nicht geöffnet werden.',
     startup_ready: 'App gestartet.',
     server_saved:

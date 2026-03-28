@@ -740,14 +740,18 @@ function normalizeOrigin(value: string): string {
 
 function isCloudDnsLikeHost(hostname: string): boolean {
   const lower = hostname.trim().toLowerCase();
-  return lower === 'dns.loxonecloud.com' || lower.endsWith('.dyndns.loxonecloud.com');
+  return (
+    lower === 'dns.loxonecloud.com' ||
+    lower === 'connect.loxonecloud.com' ||
+    lower.endsWith('.dyndns.loxonecloud.com')
+  );
 }
 
 function buildCloudDnsOriginString(serial: string | null): string | null {
   if (!serial) {
     return null;
   }
-  return `https://dns.loxonecloud.com/${encodeURIComponent(serial)}`;
+  return `https://connect.loxonecloud.com/${encodeURIComponent(serial)}`;
 }
 
 function normalizeSerial(value: string): string | null {
@@ -764,7 +768,8 @@ function inferSerialFromOrigin(origin: string): string | null {
   }
   try {
     const url = new URL(origin);
-    if (url.hostname.toLowerCase() === 'dns.loxonecloud.com') {
+    const hostname = url.hostname.toLowerCase();
+    if (hostname === 'dns.loxonecloud.com' || hostname === 'connect.loxonecloud.com') {
       const pathSegment = url.pathname.split('/').filter(Boolean)[0] ?? '';
       return normalizeSerial(pathSegment);
     }
@@ -836,7 +841,8 @@ async function refreshResolvedOriginInBackground(): Promise<void> {
 
 function isCloudDnsOrigin(origin: string): boolean {
   try {
-    return new URL(origin).hostname.toLowerCase() === 'dns.loxonecloud.com';
+    const hostname = new URL(origin).hostname.toLowerCase();
+    return hostname === 'dns.loxonecloud.com' || hostname === 'connect.loxonecloud.com';
   } catch {
     return false;
   }
