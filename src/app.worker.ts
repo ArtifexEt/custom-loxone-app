@@ -694,11 +694,19 @@ function normalizeOrigin(value: string): string {
     ? trimmed
     : `${shouldUseHttpByDefault(trimmed) ? 'http' : 'https'}://${trimmed}`;
   const url = new URL(withScheme);
+  if (isCloudDnsLikeHost(url.hostname)) {
+    url.protocol = 'https:';
+  }
   url.search = '';
   url.hash = '';
   const normalizedPath = url.pathname.replace(/\/{2,}/g, '/');
   url.pathname = normalizedPath.endsWith('/') ? normalizedPath : `${normalizedPath}/`;
   return url.toString().replace(/\/$/, normalizedPath === '/' ? '' : '/');
+}
+
+function isCloudDnsLikeHost(hostname: string): boolean {
+  const lower = hostname.trim().toLowerCase();
+  return lower === 'dns.loxonecloud.com' || lower.endsWith('.dyndns.loxonecloud.com');
 }
 
 function buildCloudDnsOriginString(serial: string | null): string | null {

@@ -57,6 +57,7 @@ let sidePanelTab: SidePanelTab = 'history';
 let intercomPanelMode: IntercomPanelMode = null;
 let browserConversationState: BrowserConversationState = 'idle';
 let browserConversationMessage = '';
+let browserConversationAttempt = 0;
 let selectedHistoryImage: IntercomHistoryItem | null = null;
 let savedMessagesDialogViewId: string | null = null;
 let selectedSavedMessageId: string | null = null;
@@ -540,7 +541,7 @@ worker.onmessage = (event: MessageEvent<WorkerToMainMessage>) => {
     sidePanelOpen = false;
     intercomPanelMode = null;
     selectedHistoryImage = null;
-    stopBrowserConversation(false);
+    stopBrowserConversation(false, false);
     void intercomRtcSession.disconnect();
   }
   render();
@@ -700,7 +701,7 @@ function handleUiAction(actionElement: HTMLElement): void {
       return;
     case 'connect-toggle':
       if (actionElement.dataset.viewId) {
-        if (browserConversationState === 'active') {
+        if (browserConversationState === 'active' || browserConversationState === 'starting') {
           stopBrowserConversation(true);
         } else {
           void handleConnect(actionElement.dataset.viewId);
@@ -757,6 +758,10 @@ root.addEventListener('submit', (event) => {
   }
 
   if (form.dataset.form === 'server') {
+    const activeElement = document.activeElement;
+    if (activeElement instanceof HTMLElement && form.contains(activeElement)) {
+      activeElement.blur();
+    }
     const formData = new FormData(form);
     const serialField = form.querySelector<HTMLInputElement>('input[name="serial"]');
     post({
@@ -1293,7 +1298,7 @@ function renderIntercomStage(): string {
       ? ''
       : `<div class="media-frame-status-overlay"><span>${escapeHtml(tr('rtc_connecting'))}</span></div>`;
   const connectLabel =
-    browserConversationState === 'active'
+    browserConversationState === 'active' || browserConversationState === 'starting'
       ? tr('disconnect')
       : intercom.doorbellActive
         ? tr('answer')
@@ -1513,7 +1518,7 @@ function renderHistoryPanel(intercom: NonNullable<AppViewModel['currentView']>['
                   >
                     <span class="history-card-media">
                       <img
-                        src="${escapeAttribute(historyImageCache.get(cacheKey) ?? TRANSPARENT_1PX)}"
+                        src="${escapeAttribute(resolveHistoryImageDisplayUrl(item.imageUrl, intercom) ?? TRANSPARENT_1PX)}"
                         alt="${escapeAttribute(item.label)}"
                         loading="eager"
                         data-loading="${historyImageCache.has(cacheKey) ? 'false' : 'true'}"
@@ -1650,7 +1655,9 @@ function renderSavedMessagesOverlay(): string {
 }
 
 function renderHistoryImageOverlay(item: IntercomHistoryItem): string {
-  const imageSrc = historyImageCache.get(normalizeHistoryImageCacheKey(item.imageUrl)) ?? item.imageUrl;
+  const intercom = state.currentView?.intercom ?? null;
+  const imageSrc =
+    intercom ? resolveHistoryImageDisplayUrl(item.imageUrl, intercom) ?? item.imageUrl : historyImageCache.get(normalizeHistoryImageCacheKey(item.imageUrl)) ?? item.imageUrl;
   const previous = getAdjacentHistoryImage(-1);
   const next = getAdjacentHistoryImage(1);
   return `
@@ -1930,6 +1937,7 @@ async function startBrowserConversation(intercom: CurrentIntercom | null): Promi
     return;
   }
 
+  const attemptId = ++browserConversationAttempt;
   try {
     browserConversationState = 'starting';
     browserConversationMessage = tr('rtc_connecting');
@@ -1942,8 +1950,18 @@ async function startBrowserConversation(intercom: CurrentIntercom | null): Promi
       },
       video: false,
     });
+    if (attemptId !== browserConversationAttempt) {
+      for (const track of localMicrophoneStream.getTracks()) {
+        track.stop();
+      }
+      localMicrophoneStream = null;
+      return;
+    }
     if (intercom) {
       await intercomRtcSession.ensurePreview(intercom, localMicrophoneStream);
+    }
+    if (attemptId !== browserConversationAttempt) {
+      return;
     }
     browserConversationState = 'active';
     browserConversationMessage = '';
@@ -1959,13 +1977,19 @@ async function startBrowserConversation(intercom: CurrentIntercom | null): Promi
     }
     render();
   } catch (error) {
+    if (attemptId !== browserConversationAttempt) {
+      return;
+    }
     browserConversationState = 'error';
     browserConversationMessage = tr('rtc_audio_failed', { message: toMessage(error) });
     render();
   }
 }
 
-function stopBrowserConversation(renderAfter = true): void {
+function stopBrowserConversation(renderAfter = true, cancelPending = true): void {
+  if (cancelPending) {
+    browserConversationAttempt += 1;
+  }
   const intercom = state.currentView?.intercom ?? null;
   if (localMicrophoneStream) {
     for (const track of localMicrophoneStream.getTracks()) {
@@ -1993,16 +2017,19 @@ function stopBrowserConversation(renderAfter = true): void {
 
 function renderMedia(intercom: CurrentIntercom): string {
   if (canUseRtcPreview(intercom)) {
-    return `<video id="intercom-live-media" class="intercom-media" autoplay ${browserConversationState === 'active' ? '' : 'muted'} playsinline poster="${escapeAttribute(resolveLiveMediaFallback(intercom) ?? '')}"></video>`;
+    if (intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction)) {
+      return `<video id="intercom-live-media" class="intercom-media" autoplay ${browserConversationState === 'active' ? '' : 'muted'} playsinline></video>`;
+    }
+    const liveFallback = resolveLiveMediaFallback(intercom);
+    if (liveFallback) {
+      return renderMediaUrl(liveFallback, intercom.snapshotUrl, intercom.name);
+    }
+    return `<video id="intercom-live-media" class="intercom-media" autoplay ${browserConversationState === 'active' ? '' : 'muted'} playsinline></video>`;
   }
-  if (intercom.streamUrl && isVideoLikeUrl(intercom.streamUrl)) {
-    return `<video id="intercom-live-media" class="intercom-media" src="${escapeAttribute(intercom.streamUrl)}" controls autoplay ${browserConversationState === 'active' ? '' : 'muted'} playsinline poster="${escapeAttribute(intercom.snapshotUrl ?? '')}"></video>`;
-  }
-  const imageUrl = intercom.streamUrl || intercom.snapshotUrl;
-  if (imageUrl) {
-    return `<img class="intercom-media" src="${escapeAttribute(imageUrl)}" alt="${escapeAttribute(intercom.name)}" loading="eager" />`;
-  }
-  return `<div class="media-empty"><p>${escapeHtml(tr('media_empty'))}</p></div>`;
+  const liveUrl = resolveLiveMediaFallback(intercom);
+  return liveUrl
+    ? renderMediaUrl(liveUrl, intercom.snapshotUrl, intercom.name)
+    : `<div class="media-empty"><p>${escapeHtml(tr('media_empty'))}</p></div>`;
 }
 
 function hasLiveMediaFallback(intercom: CurrentIntercom): boolean {
@@ -2010,7 +2037,19 @@ function hasLiveMediaFallback(intercom: CurrentIntercom): boolean {
 }
 
 function resolveLiveMediaFallback(intercom: CurrentIntercom): string | null {
-  return intercom.snapshotUrl ?? intercom.streamUrl ?? null;
+  return intercom.streamUrl ?? intercom.snapshotUrl ?? null;
+}
+
+function renderMediaUrl(url: string, snapshotUrl: string | null, alt: string): string {
+  const resolvedUrl = state.currentView?.intercom ? resolveRenderableMediaUrl(url, state.currentView.intercom, false) : url;
+  const resolvedPoster =
+    snapshotUrl && state.currentView?.intercom
+      ? resolveRenderableMediaUrl(snapshotUrl, state.currentView.intercom, false)
+      : snapshotUrl;
+  if (isVideoLikeUrl(url)) {
+    return `<video id="intercom-live-media" class="intercom-media" src="${escapeAttribute(resolvedUrl)}" controls autoplay ${browserConversationState === 'active' ? '' : 'muted'} playsinline poster="${escapeAttribute(resolvedPoster ?? '')}"></video>`;
+  }
+  return `<img class="intercom-media" src="${escapeAttribute(resolvedUrl)}" alt="${escapeAttribute(alt)}" loading="eager" />`;
 }
 
 function persistIntercomPreviewHint(intercom: CurrentIntercom): void {
@@ -2157,7 +2196,7 @@ async function loadHistoryImage(sourceUrl: string, intercom: CurrentIntercom): P
     historyImageCache.set(cacheKey, cached);
     return cached;
   }
-  const requestUrl = buildHistoryImageRequestUrl(sourceUrl, intercom);
+  const requestUrl = buildHistoryImageRequestUrl(sourceUrl, intercom, true);
   return await new Promise((resolve) => {
     const image = new Image();
     image.crossOrigin = '';
@@ -2184,14 +2223,13 @@ async function loadHistoryImage(sourceUrl: string, intercom: CurrentIntercom): P
   });
 }
 
-function buildHistoryImageRequestUrl(sourceUrl: string, intercom: CurrentIntercom): string {
-  const url = rewriteMixedContentMediaUrl(new URL(sourceUrl), intercom);
-  if (intercom.authToken) {
-    url.searchParams.set('autht', intercom.authToken);
-    url.searchParams.delete('auth');
-  }
-  url.searchParams.set('cacheBuster', Date.now().toString());
-  return url.toString();
+function resolveHistoryImageDisplayUrl(sourceUrl: string, intercom: CurrentIntercom): string | null {
+  const cacheKey = normalizeHistoryImageCacheKey(sourceUrl);
+  return historyImageCache.get(cacheKey) ?? buildHistoryImageRequestUrl(sourceUrl, intercom, false);
+}
+
+function buildHistoryImageRequestUrl(sourceUrl: string, intercom: CurrentIntercom, bustCache: boolean): string {
+  return resolveRenderableMediaUrl(sourceUrl, intercom, bustCache);
 }
 
 function normalizeHistoryImageCacheKey(sourceUrl: string): string {
@@ -2785,6 +2823,27 @@ function rewriteMixedContentMediaUrl(url: URL, intercom?: CurrentIntercom): URL 
     }
   }
   return url;
+}
+
+function resolveRenderableMediaUrl(sourceUrl: string, intercom: CurrentIntercom, bustCache: boolean): string {
+  const url = rewriteMixedContentMediaUrl(new URL(sourceUrl), intercom);
+  url.username = '';
+  url.password = '';
+  const intercomOrigin = intercom.origin ? new URL(intercom.origin) : null;
+  const usesServerMedia =
+    Boolean(intercomOrigin && url.host === intercomOrigin.host) ||
+    url.pathname.includes('/proxy/') ||
+    url.pathname.includes('/camimage/');
+  if (usesServerMedia && intercom.authToken) {
+    url.searchParams.set('autht', intercom.authToken);
+    url.searchParams.delete('auth');
+  }
+  if (bustCache) {
+    url.searchParams.set('cacheBuster', Date.now().toString());
+  } else {
+    url.searchParams.delete('cacheBuster');
+  }
+  return url.toString();
 }
 
 function normalizeIntercomActivityDate(value: unknown): string {
