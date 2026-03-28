@@ -81,9 +81,6 @@ let historyDrawerViewportHeight = 0;
 let historyVirtualWindowKey = '';
 let pendingFocusSelector: string | null = null;
 let deferredRenderRequested = false;
-let livePreviewRefreshTimer: number | null = null;
-let livePreviewRefreshKey = '';
-let livePreviewRefreshInFlight = false;
 let lastPersistedPreviewHintKey = '';
 let rtcPlaybackRetryTimer: number | null = null;
 
@@ -91,7 +88,7 @@ const HISTORY_DRAWER_GAP = 12;
 const HISTORY_DRAWER_OVERSCAN_ROWS = 2;
 const HISTORY_CARD_HEIGHT_DESKTOP = 196;
 const HISTORY_CARD_HEIGHT_MOBILE = 236;
-const LIVE_PREVIEW_REFRESH_MS = 1200;
+const RTC_PREVIEW_STALL_MS = 8000;
 const INTERCOM_ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.loxonecloud.com:3478' },
   { urls: 'stun:stun.l.google.com:19302' },
@@ -121,10 +118,12 @@ class IntercomRtcSession {
   private currentSocketUrl: string | null = null;
   private connectPromise: Promise<void> | null = null;
   private retryTimer: number | null = null;
+  private previewDeadlineTimer: number | null = null;
   private infoInitialized = false;
+  private previewStartAt: number | null = null;
 
   hasRemoteStreamFor(uuidAction: string): boolean {
-    return this.currentIntercomKey === uuidAction && this.hasIncomingMedia();
+    return this.currentIntercomKey === uuidAction && this.hasIncomingVideo();
   }
 
   hasPendingSessionFor(uuidAction: string): boolean {
@@ -144,7 +143,7 @@ class IntercomRtcSession {
       if (
         this.currentIntercomKey !== intercom.uuidAction ||
         this.conversationEnabled !== wantsConversation ||
-        !this.hasIncomingMedia()
+        !this.hasIncomingVideo()
       ) {
         return this.ensurePreview(intercom, localAudioStream);
       }
@@ -188,8 +187,9 @@ class IntercomRtcSession {
         }
         await this.ensureAuthorized(intercom, signalingUrl);
         await this.ensureInfo();
-        if (this.peer && this.hasIncomingMedia()) {
+        if (this.peer && this.hasIncomingVideo()) {
           this.clearRetry();
+          this.clearPreviewDeadline();
           attachRtcStreamToDom();
           void this.refreshHistory(intercom);
           return;
@@ -248,7 +248,7 @@ class IntercomRtcSession {
         this.authReady = null;
         this.socket = null;
         this.infoInitialized = false;
-        const peerHealthy = this.hasIncomingMedia() || this.isPeerSessionPending();
+        const peerHealthy = this.hasIncomingVideo() || this.isPeerSessionPending();
         if (!peerHealthy) {
           this.peer = null;
           this.remoteStream = null;
@@ -393,11 +393,13 @@ class IntercomRtcSession {
     const wantsConversation = Boolean(localAudioStream?.getAudioTracks().length);
     const localAudioTrack = localAudioStream?.getAudioTracks()[0] ?? null;
     this.remoteStream = new MediaStream();
+    this.previewStartAt = Date.now();
     this.peer = new RTCPeerConnection({
       iceServers: INTERCOM_ICE_SERVERS,
       iceCandidatePoolSize: 4,
     });
     this.pendingRemoteCandidates = [];
+    this.armPreviewDeadline();
 
     this.peer.ontrack = (event) => {
       const [stream] = event.streams;
@@ -405,6 +407,9 @@ class IntercomRtcSession {
         this.remoteStream = stream;
       } else if (this.remoteStream) {
         this.remoteStream.addTrack(event.track);
+      }
+      if (this.hasIncomingVideo()) {
+        this.clearPreviewDeadline();
       }
       attachRtcStreamToDom();
       render();
@@ -541,6 +546,7 @@ class IntercomRtcSession {
 
   private async teardown(): Promise<void> {
     this.rejectAllPending(new Error(tr('session_reset')));
+    this.clearPreviewDeadline();
     if (this.peer) {
       this.peer.ontrack = null;
       this.peer.onicecandidate = null;
@@ -563,21 +569,22 @@ class IntercomRtcSession {
     this.currentSocketUrl = null;
     this.conversationEnabled = false;
     this.infoInitialized = false;
+    this.previewStartAt = null;
     this.authReady = null;
     this.resolveAuthReady = null;
     this.rejectAuthReady = null;
   }
 
-  private hasIncomingMedia(): boolean {
-    return Boolean(this.remoteStream && this.remoteStream.getTracks().length > 0);
+  private hasIncomingVideo(): boolean {
+    return Boolean(this.remoteStream && this.remoteStream.getVideoTracks().length > 0);
   }
 
   private isPeerSessionPending(): boolean {
     if (!this.peer) {
       return false;
     }
-    if (this.hasIncomingMedia()) {
-      return true;
+    if (this.hasIncomingVideo()) {
+      return false;
     }
     const { connectionState, iceConnectionState, signalingState } = this.peer;
     if (connectionState === 'failed' || connectionState === 'closed') {
@@ -586,13 +593,14 @@ class IntercomRtcSession {
     if (iceConnectionState === 'failed' || iceConnectionState === 'closed') {
       return false;
     }
+    if (this.previewStartAt && Date.now() - this.previewStartAt > RTC_PREVIEW_STALL_MS) {
+      return false;
+    }
     return (
       connectionState === 'new' ||
       connectionState === 'connecting' ||
       iceConnectionState === 'new' ||
       iceConnectionState === 'checking' ||
-      iceConnectionState === 'connected' ||
-      iceConnectionState === 'completed' ||
       signalingState === 'have-local-offer' ||
       signalingState === 'have-remote-offer'
     );
@@ -624,6 +632,29 @@ class IntercomRtcSession {
       this.retryTimer = null;
     }
   }
+
+  private armPreviewDeadline(): void {
+    const uuidAction = this.currentIntercomKey;
+    this.clearPreviewDeadline();
+    this.previewDeadlineTimer = window.setTimeout(() => {
+      this.previewDeadlineTimer = null;
+      if (!uuidAction || this.hasIncomingVideo()) {
+        return;
+      }
+      void this.teardown().finally(() => {
+        this.currentIntercomKey = uuidAction;
+        this.scheduleRetry(uuidAction);
+        render();
+      });
+    }, RTC_PREVIEW_STALL_MS);
+  }
+
+  private clearPreviewDeadline(): void {
+    if (this.previewDeadlineTimer !== null) {
+      window.clearTimeout(this.previewDeadlineTimer);
+      this.previewDeadlineTimer = null;
+    }
+  }
 }
 
 const intercomRtcSession = new IntercomRtcSession();
@@ -645,8 +676,6 @@ worker.onmessage = (event: MessageEvent<WorkerToMainMessage>) => {
     historyDrawerScrollTop = 0;
     historyDrawerViewportHeight = 0;
     historyVirtualWindowKey = '';
-    livePreviewRefreshKey = '';
-    livePreviewRefreshInFlight = false;
     lastPersistedPreviewHintKey = '';
   }
   if (!state.currentView?.intercom) {
@@ -1026,7 +1055,6 @@ function render(): void {
   } else {
     lastPersistedPreviewHintKey = '';
   }
-  syncLivePreviewRefresh(intercom ?? null);
   if (
     intercom &&
     canUseRtcPreview(intercom) &&
@@ -1036,85 +1064,8 @@ function render(): void {
     const rtcAudioStream = browserConversationState === 'active' || browserConversationState === 'starting'
       ? localMicrophoneStream
       : null;
-    void intercomRtcSession.ensurePreview(intercom, rtcAudioStream).catch(() => {
-      // Keep current fallback UI; stream setup is best-effort.
-    });
+    void intercomRtcSession.ensurePreview(intercom, rtcAudioStream).catch(() => undefined);
   }
-}
-
-function syncLivePreviewRefresh(intercom: CurrentIntercom | null): void {
-  const previewUrl = intercom ? resolveRtcSnapshotPreviewUrl(intercom) : null;
-  const shouldRefresh =
-    Boolean(intercom) &&
-    state.connection.status === 'online' &&
-    !state.settingsOpen &&
-    !selectedHistoryImage &&
-    !savedMessagesDialogViewId &&
-    canUseRtcPreview(intercom!) &&
-    !intercomRtcSession.hasRemoteStreamFor(intercom!.uuidAction) &&
-    Boolean(previewUrl);
-
-  if (!shouldRefresh) {
-    if (livePreviewRefreshTimer !== null) {
-      window.clearInterval(livePreviewRefreshTimer);
-      livePreviewRefreshTimer = null;
-    }
-    livePreviewRefreshKey = '';
-    livePreviewRefreshInFlight = false;
-    return;
-  }
-
-  const nextRefreshKey = `${intercom!.uuidAction}:${previewUrl!}`;
-  if (livePreviewRefreshTimer !== null && livePreviewRefreshKey === nextRefreshKey) {
-    return;
-  }
-
-  if (livePreviewRefreshTimer !== null) {
-    window.clearInterval(livePreviewRefreshTimer);
-  }
-
-  livePreviewRefreshKey = nextRefreshKey;
-  livePreviewRefreshInFlight = false;
-  void refreshLivePreviewImage(intercom!, true);
-  livePreviewRefreshTimer = window.setInterval(() => {
-    void refreshLivePreviewImage(intercom!);
-  }, LIVE_PREVIEW_REFRESH_MS);
-}
-
-async function refreshLivePreviewImage(intercom: CurrentIntercom, force = false): Promise<void> {
-  if (document.hidden) {
-    return;
-  }
-  if (livePreviewRefreshInFlight && !force) {
-    return;
-  }
-  if (state.currentView?.intercom?.uuidAction !== intercom.uuidAction || intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction)) {
-    return;
-  }
-
-  const mediaElement = document.querySelector<HTMLImageElement>('#intercom-live-media');
-  if (!(mediaElement instanceof HTMLImageElement)) {
-    return;
-  }
-
-  const proxySnapshot = resolveRtcSnapshotPreviewUrl(intercom);
-  if (!proxySnapshot) {
-    return;
-  }
-
-  const nextUrl = resolveRenderableMediaUrl(proxySnapshot, intercom, true);
-  if (!force && mediaElement.dataset.refreshUrl === nextUrl) {
-    return;
-  }
-
-  livePreviewRefreshInFlight = true;
-  const settle = () => {
-    livePreviewRefreshInFlight = false;
-  };
-  mediaElement.addEventListener('load', settle, { once: true });
-  mediaElement.addEventListener('error', settle, { once: true });
-  mediaElement.dataset.refreshUrl = nextUrl;
-  mediaElement.src = nextUrl;
 }
 
 function shouldDeferRenderForActiveEditor(): boolean {
@@ -1499,8 +1450,8 @@ function renderIntercomStage(): string {
   const controlsDisabled = realtimeAvailable ? '' : 'disabled';
   const expandedPanels = shouldExpandIntercomPanels();
   const hasVisualMedia = canUseRtcPreview(intercom)
-    ? intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction) || hasLiveMediaFallback(intercom)
-    : Boolean(intercom.streamUrl || intercom.snapshotUrl);
+    ? intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction)
+    : Boolean(resolveNonRtcMediaUrl(intercom));
   const mediaFrameStateClass = !realtimeAvailable && !hasVisualMedia
     ? 'media-frame-offline'
     : hasVisualMedia
@@ -2240,41 +2191,15 @@ async function resetBrowserConversationSession(restartPreview: boolean, renderAf
 
 function renderMedia(intercom: CurrentIntercom): string {
   if (canUseRtcPreview(intercom)) {
-    if (intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction)) {
-      return `<video id="intercom-live-media" class="intercom-media" autoplay ${browserConversationState === 'active' ? '' : 'muted'} playsinline></video>`;
-    }
-    const liveFallback = resolveLiveMediaFallback(intercom);
-    if (liveFallback) {
-      return renderMediaUrl(
-        liveFallback,
-        intercom.snapshotUrl,
-        intercom.name,
-        false,
-      );
-    }
     return `<video id="intercom-live-media" class="intercom-media" autoplay ${browserConversationState === 'active' ? '' : 'muted'} playsinline></video>`;
   }
-  const liveUrl = resolveLiveMediaFallback(intercom);
+  const liveUrl = resolveNonRtcMediaUrl(intercom);
   return liveUrl
     ? renderMediaUrl(liveUrl, intercom.snapshotUrl, intercom.name, false)
     : `<div class="media-empty"><p>${escapeHtml(tr('media_empty'))}</p></div>`;
 }
 
-function hasLiveMediaFallback(intercom: CurrentIntercom): boolean {
-  return Boolean(resolveLiveMediaFallback(intercom));
-}
-
-function resolveLiveMediaFallback(intercom: CurrentIntercom): string | null {
-  if (canUseRtcPreview(intercom)) {
-    const proxySnapshot = resolveRtcSnapshotPreviewUrl(intercom);
-    if (intercom.transportMode === 'secure-proxy') {
-      return proxySnapshot ?? intercom.streamUrl ?? null;
-    }
-    if (intercom.transportMode === 'lan-direct') {
-      return intercom.streamUrl ?? intercom.snapshotUrl ?? proxySnapshot ?? null;
-    }
-    return proxySnapshot ?? intercom.streamUrl ?? intercom.snapshotUrl ?? null;
-  }
+function resolveNonRtcMediaUrl(intercom: CurrentIntercom): string | null {
   return intercom.streamUrl ?? intercom.snapshotUrl ?? null;
 }
 
@@ -2858,10 +2783,6 @@ function isVideoLikeUrl(value: string): boolean {
 
 function canUseRtcPreview(intercom: CurrentIntercom): boolean {
   return Boolean(intercom.deviceUuid && intercom.authToken && intercom.signalingUrl);
-}
-
-function resolveRtcSnapshotPreviewUrl(intercom: CurrentIntercom): string | null {
-  return intercom.transportMode === 'secure-proxy' ? intercom.snapshotUrl : null;
 }
 
 function resolveIntercomSignalingUrls(intercom: CurrentIntercom): string[] {
