@@ -90,6 +90,7 @@ const HISTORY_DRAWER_GAP = 12;
 const HISTORY_DRAWER_OVERSCAN_ROWS = 2;
 const HISTORY_CARD_HEIGHT_DESKTOP = 196;
 const HISTORY_CARD_HEIGHT_MOBILE = 236;
+const LIVE_PREVIEW_REFRESH_MS = 1200;
 const INTERCOM_ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.loxonecloud.com:3478' },
   { urls: 'stun:stun.l.google.com:19302' },
@@ -1043,9 +1044,10 @@ function syncLivePreviewRefresh(intercom: CurrentIntercom | null): void {
 
   livePreviewRefreshKey = nextRefreshKey;
   livePreviewRefreshInFlight = false;
+  void refreshLivePreviewImage(intercom!, true);
   livePreviewRefreshTimer = window.setInterval(() => {
     void refreshLivePreviewImage(intercom!);
-  }, 6000);
+  }, LIVE_PREVIEW_REFRESH_MS);
 }
 
 async function refreshLivePreviewImage(intercom: CurrentIntercom, force = false): Promise<void> {
