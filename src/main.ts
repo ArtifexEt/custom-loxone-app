@@ -124,6 +124,10 @@ class IntercomRtcSession {
     return this.currentIntercomKey === uuidAction && this.hasIncomingMedia();
   }
 
+  hasPendingSessionFor(uuidAction: string): boolean {
+    return this.currentIntercomKey === uuidAction && this.isPeerSessionPending();
+  }
+
   getRemoteStream(): MediaStream | null {
     return this.remoteStream;
   }
@@ -185,6 +189,18 @@ class IntercomRtcSession {
           this.clearRetry();
           attachRtcStreamToDom();
           return;
+        }
+        if (this.peer && this.isPeerSessionPending()) {
+          this.clearRetry();
+          attachRtcStreamToDom();
+          return;
+        }
+        if (this.peer) {
+          await this.teardown();
+          this.currentIntercomKey = intercom.uuidAction;
+          this.currentSocketUrl = signalingUrl;
+          this.conversationEnabled = wantsConversation;
+          await this.ensureAuthorized(intercom, signalingUrl);
         }
         await this.startVideo(localAudioStream);
         this.clearRetry();
@@ -373,6 +389,30 @@ class IntercomRtcSession {
       render();
     };
 
+    this.peer.onconnectionstatechange = () => {
+      if (!this.peer) {
+        return;
+      }
+      if (this.peer.connectionState === 'failed' || this.peer.connectionState === 'disconnected') {
+        if (this.currentIntercomKey) {
+          this.scheduleRetry(this.currentIntercomKey);
+        }
+      }
+      render();
+    };
+
+    this.peer.oniceconnectionstatechange = () => {
+      if (!this.peer) {
+        return;
+      }
+      if (this.peer.iceConnectionState === 'failed' || this.peer.iceConnectionState === 'disconnected') {
+        if (this.currentIntercomKey) {
+          this.scheduleRetry(this.currentIntercomKey);
+        }
+      }
+      render();
+    };
+
     this.peer.onicecandidate = (event) => {
       if (event.candidate) {
         void this.request('addIceCandidate', [
@@ -495,6 +535,33 @@ class IntercomRtcSession {
 
   private hasIncomingMedia(): boolean {
     return Boolean(this.remoteStream && this.remoteStream.getTracks().length > 0);
+  }
+
+  private isPeerSessionPending(): boolean {
+    if (!this.peer) {
+      return false;
+    }
+    if (this.hasIncomingMedia()) {
+      return true;
+    }
+    const { connectionState, iceConnectionState, signalingState } = this.peer;
+    if (connectionState === 'failed' || connectionState === 'closed') {
+      return false;
+    }
+    if (iceConnectionState === 'failed' || iceConnectionState === 'closed') {
+      return false;
+    }
+    return (
+      connectionState === 'new' ||
+      connectionState === 'connecting' ||
+      iceConnectionState === 'new' ||
+      iceConnectionState === 'checking' ||
+      iceConnectionState === 'connected' ||
+      iceConnectionState === 'completed' ||
+      signalingState === 'have-local-offer' ||
+      signalingState === 'have-remote-offer' ||
+      signalingState === 'stable'
+    );
   }
 
   private scheduleRetry(uuidAction: string): void {
@@ -922,7 +989,12 @@ function render(): void {
     lastPersistedPreviewHintKey = '';
   }
   syncLivePreviewRefresh(intercom ?? null);
-  if (intercom && canUseRtcPreview(intercom) && !intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction)) {
+  if (
+    intercom &&
+    canUseRtcPreview(intercom) &&
+    !intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction) &&
+    !intercomRtcSession.hasPendingSessionFor(intercom.uuidAction)
+  ) {
     const rtcAudioStream = browserConversationState === 'active' || browserConversationState === 'starting'
       ? localMicrophoneStream
       : null;
