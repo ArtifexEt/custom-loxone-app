@@ -18,6 +18,7 @@ import { localeForLanguage, rt } from './translations';
 const WS_PATH = 'ws/rfc6455';
 const TOKEN_PERMISSION_APP = '4';
 const JWT_SUPPORT_VERSION = '10.1.12.11';
+const AUTH_BOOTSTRAP_RETRIES = 2;
 const KEEPALIVE_RESPONSE = 6;
 const OUT_OF_SERVICE = 5;
 const TEXT_MESSAGE = 0;
@@ -771,7 +772,7 @@ function resolveIntercomTransportProfile(
 
   if (addressBase && self.location.protocol !== 'https:') {
     const intercomAuth = resolveIntercomAuth(mediaControl, credentials);
-    const signalingUrl = addressBase.replace(/^http/i, addressBase.startsWith('https://') ? 'wss' : 'ws');
+    const signalingUrl = toWebSocketUrl(addressBase);
     const mediaBaseUrl = signAbsoluteUrl(ensureTrailingSlash(addressBase), credentials, 'intercom', intercomAuth);
     return {
       deviceUuid,
@@ -791,7 +792,7 @@ function resolveIntercomTransportProfile(
   if (runtimeOrigin && deviceUuid) {
     const rootPath = `/proxy/${encodeURIComponent(deviceUuid)}`;
     const mediaBaseUrl = `${runtimeOrigin.replace(/\/$/, '')}${rootPath}/`;
-    const signalingUrl = mediaBaseUrl.replace(/^http/i, runtimeOrigin.startsWith('https://') ? 'wss' : 'ws');
+    const signalingUrl = toWebSocketUrl(mediaBaseUrl);
     return {
       deviceUuid,
       mode: 'secure-proxy',
@@ -1162,6 +1163,12 @@ function normalizeBaseUrl(value: string): string | null {
     return `${isPrivateHost(host) ? 'http' : 'https'}://${host}`;
   }
   return `${isPrivateHost(value) ? 'http' : 'https'}://${value}`;
+}
+
+function toWebSocketUrl(value: string): string {
+  const url = new URL(value);
+  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+  return url.toString();
 }
 
 function pickAuthMode(url: string, origin: string): 'server' | 'intercom' {
@@ -1645,31 +1652,36 @@ async function requestJwtToken(
   let lastError: unknown = null;
 
   for (const candidateOrigin of candidates) {
-    try {
-      const { publicKeyPem, resolvedOrigin } = await fetchPublicKey(candidateOrigin);
-      const tokenSalts = await requestEncryptedValue(
-        resolvedOrigin,
-        `jdev/sys/getkey2/${encodeURIComponent(username)}`,
-        publicKeyPem,
-      );
-      const key = asString(tokenSalts.key);
-      const salt = asString(tokenSalts.salt);
-      const hashAlg = asString(tokenSalts.hashAlg ?? 'SHA1').toUpperCase();
-      const passwordHash = await hashPassword(password, salt, hashAlg);
-      const userHash = await hmacUserHash(username, passwordHash, key, hashAlg);
-      const tokenPath = supportsVersion(JWT_SUPPORT_VERSION, null) ? 'jdev/sys/getjwt/' : 'jdev/sys/gettoken/';
-      const payload = await requestEncryptedValue(
-        resolvedOrigin,
-        `${tokenPath}${userHash}/${encodeURIComponent(username)}/${TOKEN_PERMISSION_APP}/${encodeURIComponent(clientUuid)}/${encodeURIComponent(clientInfo)}`,
-        publicKeyPem,
-      );
-      return {
-        origin: candidateOrigin,
-        resolvedOrigin,
-        payload,
-      };
-    } catch (error) {
-      lastError = error;
+    for (let attempt = 0; attempt < AUTH_BOOTSTRAP_RETRIES; attempt += 1) {
+      try {
+        const { publicKeyPem, resolvedOrigin } = await fetchPublicKey(candidateOrigin);
+        const tokenSalts = await requestEncryptedValue(
+          resolvedOrigin,
+          `jdev/sys/getkey2/${encodeURIComponent(username)}`,
+          publicKeyPem,
+        );
+        const key = asString(tokenSalts.key);
+        const salt = asString(tokenSalts.salt);
+        const hashAlg = asString(tokenSalts.hashAlg ?? 'SHA1').toUpperCase();
+        const passwordHash = await hashPassword(password, salt, hashAlg);
+        const userHash = await hmacUserHash(username, passwordHash, key, hashAlg);
+        const tokenPath = supportsVersion(JWT_SUPPORT_VERSION, null) ? 'jdev/sys/getjwt/' : 'jdev/sys/gettoken/';
+        const payload = await requestEncryptedValue(
+          resolvedOrigin,
+          `${tokenPath}${userHash}/${encodeURIComponent(username)}/${TOKEN_PERMISSION_APP}/${encodeURIComponent(clientUuid)}/${encodeURIComponent(clientInfo)}`,
+          publicKeyPem,
+        );
+        return {
+          origin: candidateOrigin,
+          resolvedOrigin,
+          payload,
+        };
+      } catch (error) {
+        lastError = error;
+        if (attempt >= AUTH_BOOTSTRAP_RETRIES - 1) {
+          break;
+        }
+      }
     }
   }
 
