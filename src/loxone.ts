@@ -1144,6 +1144,13 @@ function resolveAuthResponseOrigin(origin: string, responseUrl: string, commandP
   return response.toString().replace(/\/$/, '');
 }
 
+function resolveAuthBootstrapOrigin(responseUrl: string): string {
+  const url = new URL('.', responseUrl);
+  url.search = '';
+  url.hash = '';
+  return url.toString();
+}
+
 function isIntercomControl(control: LoxoneControl): boolean {
   const type = normalizeText(control.type);
   if (INTERCOM_TYPE_HINTS.some((hint) => type.includes(normalizeText(hint)))) {
@@ -1550,9 +1557,9 @@ async function requestJwtToken(
 
   for (const candidateOrigin of candidates) {
     try {
-      const { publicKeyPem, resolvedOrigin } = await fetchPublicKey(candidateOrigin);
+      const { publicKeyPem, resolvedOrigin, authOrigin } = await fetchPublicKey(candidateOrigin);
       const tokenSalts = await requestEncryptedValue(
-        resolvedOrigin,
+        authOrigin,
         `jdev/sys/getkey2/${encodeURIComponent(username)}`,
         publicKeyPem,
       );
@@ -1563,7 +1570,7 @@ async function requestJwtToken(
       const userHash = await hmacUserHash(username, passwordHash, key, hashAlg);
       const tokenPath = supportsVersion(JWT_SUPPORT_VERSION, null) ? 'jdev/sys/getjwt/' : 'jdev/sys/gettoken/';
       const payload = await requestEncryptedValue(
-        resolvedOrigin,
+        authOrigin,
         `${tokenPath}${userHash}/${encodeURIComponent(username)}/${TOKEN_PERMISSION_APP}/${encodeURIComponent(clientUuid)}/${encodeURIComponent(clientInfo)}`,
         publicKeyPem,
       );
@@ -1580,7 +1587,7 @@ async function requestJwtToken(
   throw (lastError instanceof Error ? lastError : new Error(rt('loxone_unknown_error')));
 }
 
-async function fetchPublicKey(origin: string): Promise<{ publicKeyPem: string; resolvedOrigin: string }> {
+async function fetchPublicKey(origin: string): Promise<{ publicKeyPem: string; resolvedOrigin: string; authOrigin: string }> {
   try {
     const response = await fetch(new URL('jdev/sys/getPublicKey', ensureTrailingSlash(origin)), {
       method: 'GET',
@@ -1589,6 +1596,7 @@ async function fetchPublicKey(origin: string): Promise<{ publicKeyPem: string; r
     return {
       publicKeyPem: normalizePublicKeyPem(asString(payload.value)),
       resolvedOrigin: resolveAuthResponseOrigin(origin, response.url, 'jdev/sys/getPublicKey'),
+      authOrigin: resolveAuthBootstrapOrigin(response.url),
     };
   } catch (error) {
     throw mapAuthBootstrapError(error, origin, 'jdev/sys/getPublicKey');
