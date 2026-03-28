@@ -113,13 +113,14 @@ class IntercomRtcSession {
   private authReady: Promise<void> | null = null;
   private resolveAuthReady: (() => void) | null = null;
   private rejectAuthReady: ((reason?: unknown) => void) | null = null;
-  private commandId = 1;
+  private commandId = 1000;
   private pendingCommands = new Map<number, { resolve: (value: unknown) => void; reject: (reason?: unknown) => void }>();
   private pendingRemoteCandidates: RTCIceCandidateInit[] = [];
   private currentIntercomKey: string | null = null;
   private currentSocketUrl: string | null = null;
   private connectPromise: Promise<void> | null = null;
   private retryTimer: number | null = null;
+  private infoInitialized = false;
 
   hasRemoteStreamFor(uuidAction: string): boolean {
     return this.currentIntercomKey === uuidAction && this.hasIncomingMedia();
@@ -185,15 +186,17 @@ class IntercomRtcSession {
           this.currentSocketUrl = signalingUrl;
         }
         await this.ensureAuthorized(intercom, signalingUrl);
-        void this.refreshHistory(intercom);
+        await this.ensureInfo();
         if (this.peer && this.hasIncomingMedia()) {
           this.clearRetry();
           attachRtcStreamToDom();
+          void this.refreshHistory(intercom);
           return;
         }
         if (this.peer && this.isPeerSessionPending()) {
           this.clearRetry();
           attachRtcStreamToDom();
+          void this.refreshHistory(intercom);
           return;
         }
         if (this.peer) {
@@ -202,9 +205,11 @@ class IntercomRtcSession {
           this.currentSocketUrl = signalingUrl;
           this.conversationEnabled = wantsConversation;
           await this.ensureAuthorized(intercom, signalingUrl);
+          await this.ensureInfo();
         }
         await this.startVideo(localAudioStream);
         this.clearRetry();
+        void this.refreshHistory(intercom);
         return;
       } catch (error) {
         lastError = error;
@@ -241,6 +246,7 @@ class IntercomRtcSession {
         this.rejectAuthReady = null;
         this.authReady = null;
         this.socket = null;
+        this.infoInitialized = false;
         const peerHealthy = this.hasIncomingMedia() || this.isPeerSessionPending();
         if (!peerHealthy) {
           this.peer = null;
@@ -287,6 +293,14 @@ class IntercomRtcSession {
         this.rejectAuthReady = null;
         return;
       }
+      await this.handleRpcCall(
+        {
+          id: null,
+          method: message.method,
+          params: message.params,
+        },
+        intercom,
+      );
       return;
     }
 
@@ -305,10 +319,13 @@ class IntercomRtcSession {
   }
 
   private async handleRpcCall(
-    message: { id: number; method: string; params?: unknown[] },
+    message: { id: number | null; method: string; params?: unknown[] },
     intercom: CurrentIntercom,
   ): Promise<void> {
     const respondOk = (data?: unknown) => {
+      if (message.id === null) {
+        return;
+      }
       this.sendRaw({
         jsonrpc: '2.0',
         result: {
@@ -435,21 +452,22 @@ class IntercomRtcSession {
     };
 
     this.peer.addTransceiver('video', { direction: 'recvonly' });
-    const audioTransceiver = this.peer.addTransceiver('audio', {
-      direction: localAudioTrack ? 'sendrecv' : 'recvonly',
-    });
     if (localAudioTrack) {
+      const audioTransceiver = this.peer.addTransceiver('audio', {
+        direction: 'sendrecv',
+      });
       await audioTransceiver.sender.replaceTrack(localAudioTrack);
     }
     const offer = await this.peer.createOffer();
     await this.peer.setLocalDescription(offer);
-    const answer = (await this.request('call', [
+    const rawAnswer = await this.request('call', [
       this.peer.localDescription,
       'new',
       wantsConversation,
       0,
-    ])) as RTCSessionDescriptionInit | null;
-    if (!answer) {
+    ]);
+    const answer = normalizeRtcAnswer(rawAnswer);
+    if (!answer?.sdp) {
       throw new Error(tr('intercom_no_sdp'));
     }
     await this.peer.setRemoteDescription(answer);
@@ -470,6 +488,18 @@ class IntercomRtcSession {
       }
     } catch {
       // Keep existing fallback history from worker.
+    }
+  }
+
+  private async ensureInfo(): Promise<void> {
+    if (this.infoInitialized || !this.socket || this.socket.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    this.infoInitialized = true;
+    try {
+      await this.request('info');
+    } catch {
+      // Some intercoms do not need this extra handshake step.
     }
   }
 
@@ -531,6 +561,7 @@ class IntercomRtcSession {
     this.currentIntercomKey = null;
     this.currentSocketUrl = null;
     this.conversationEnabled = false;
+    this.infoInitialized = false;
     this.authReady = null;
     this.resolveAuthReady = null;
     this.rejectAuthReady = null;
@@ -562,8 +593,7 @@ class IntercomRtcSession {
       iceConnectionState === 'connected' ||
       iceConnectionState === 'completed' ||
       signalingState === 'have-local-offer' ||
-      signalingState === 'have-remote-offer' ||
-      signalingState === 'stable'
+      signalingState === 'have-remote-offer'
     );
   }
 
@@ -3097,6 +3127,23 @@ function attachRtcStreamToDom(): void {
   void media.play().catch(() => {
     // Autoplay may still be blocked until user interaction.
   });
+}
+
+function normalizeRtcAnswer(value: unknown): RTCSessionDescriptionInit | null {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+  const record = value as Record<string, unknown>;
+  const sdp = typeof record.sdp === 'string' ? record.sdp : null;
+  if (!sdp) {
+    return null;
+  }
+  const rawType = typeof record.type === 'string' ? record.type : 'answer';
+  const type: RTCSdpType =
+    rawType === 'offer' || rawType === 'answer' || rawType === 'pranswer' || rawType === 'rollback'
+      ? rawType
+      : 'answer';
+  return { type, sdp };
 }
 
 function toMessage(error: unknown): string {
