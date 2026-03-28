@@ -1247,11 +1247,14 @@ function syncElementState(target: HTMLElement, source: HTMLElement): void {
 }
 
 function renderLoadingScreen(): string {
+  const hasSavedServerConfiguration =
+    Boolean(state.serverForm.origin.trim()) &&
+    Boolean(state.serverForm.username.trim()) &&
+    state.serverForm.passwordStored;
   const showForm =
-    !state.serverForm.username ||
+    !hasSavedServerConfiguration ||
     state.connection.status === 'error' ||
-    state.connection.status === 'offline' ||
-    state.connection.status === 'idle';
+    state.connection.status === 'offline';
   const title = showForm ? tr('loading_title_configure') : tr('loading_title_starting');
   const copy = showForm ? tr('loading_copy_configure') : tr('loading_copy_starting');
 
