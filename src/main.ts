@@ -2160,6 +2160,10 @@ function isRealtimeAvailable(): boolean {
 
 async function handleConnect(viewId: string): Promise<void> {
   const intercom = state.currentView?.intercom ?? null;
+  if (intercom && isIntercomConversationActive(intercom)) {
+    stopBrowserConversation(true);
+    return;
+  }
   post({
     type: 'runBuiltInAction',
     viewId,
@@ -2884,7 +2888,7 @@ function canUseRtcPreview(intercom: CurrentIntercom): boolean {
 }
 
 function canUseBrowserConversation(intercom: CurrentIntercom): boolean {
-  return canUseRtcPreview(intercom) && intercom.transportMode === 'lan-direct';
+  return canUseRtcPreview(intercom) && intercom.transportMode === 'secure-proxy';
 }
 
 function resolveIntercomSignalingUrls(intercom: CurrentIntercom): string[] {
