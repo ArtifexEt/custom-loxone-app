@@ -107,6 +107,8 @@ const TRANSLATIONS = {
     rtc_connecting: 'Connecting…',
     rtc_browser_unsupported: 'This browser does not support microphone access.',
     rtc_audio_failed: 'Could not start browser audio: {message}.',
+    rtc_manual_connect_unavailable:
+      'Manual browser conversation is not available for this intercom connection yet.',
     media_empty: 'No intercom image available',
     auto_first_intercom: 'Automatically select the first intercom',
     misc_other: 'Other',
@@ -281,6 +283,8 @@ const TRANSLATIONS = {
     rtc_connecting: 'Łączenie…',
     rtc_browser_unsupported: 'Przeglądarka nie obsługuje mikrofonu.',
     rtc_audio_failed: 'Nie udało się uruchomić audio przeglądarki: {message}.',
+    rtc_manual_connect_unavailable:
+      'Ręczne uruchomienie rozmowy z poziomu przeglądarki nie jest jeszcze dostępne dla tego połączenia interkomu.',
     media_empty: 'Brak obrazu interkomu',
     auto_first_intercom: 'Automatyczny wybór pierwszego interkomu',
     misc_other: 'Pozostałe',
@@ -455,6 +459,8 @@ const TRANSLATIONS = {
     rtc_connecting: 'Verbinden…',
     rtc_browser_unsupported: 'Der Browser unterstützt keinen Mikrofonzugriff.',
     rtc_audio_failed: 'Browser-Audio konnte nicht gestartet werden: {message}.',
+    rtc_manual_connect_unavailable:
+      'Eine manuelle Browser-Verbindung ist für diese Intercom-Verbindung noch nicht verfügbar.',
     media_empty: 'Kein Intercom-Bild verfügbar',
     auto_first_intercom: 'Erstes Intercom automatisch wählen',
     misc_other: 'Sonstige',

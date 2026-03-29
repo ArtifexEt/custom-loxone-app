@@ -2185,9 +2185,17 @@ async function handleConnect(viewId: string): Promise<void> {
       action: 'answer',
     });
   }
-  if (!canUseBrowserConversation(intercom)) {
-    browserConversationState = 'idle';
-    browserConversationMessage = '';
+  const canStartConversation =
+    canUseBrowserConversation(intercom) &&
+    intercomRtcSession.supportsConversationUpgradeFor(intercom.uuidAction);
+  if (!canStartConversation) {
+    if (!intercom.doorbellActive) {
+      browserConversationState = 'error';
+      browserConversationMessage = tr('rtc_manual_connect_unavailable');
+    } else {
+      browserConversationState = 'idle';
+      browserConversationMessage = '';
+    }
     render();
     return;
   }
