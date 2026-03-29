@@ -122,6 +122,7 @@ class IntercomRtcSession {
   private previewDeadlineTimer: number | null = null;
   private previewStartAt: number | null = null;
   private firstRenderedVideoFrameAt: number | null = null;
+  private remoteVideoTrackSeen = false;
   private historyLoadedForKey: string | null = null;
   private historyLoadingForKey: string | null = null;
 
@@ -134,7 +135,7 @@ class IntercomRtcSession {
   }
 
   hasRemoteTrackFor(uuidAction: string): boolean {
-    return this.currentIntercomKey === uuidAction && this.hasRemoteVideoTrack();
+    return this.currentIntercomKey === uuidAction && this.remoteVideoTrackSeen;
   }
 
   isConversationEnabledFor(uuidAction: string): boolean {
@@ -412,6 +413,7 @@ class IntercomRtcSession {
     const wantsConversation = Boolean(localAudioStream?.getAudioTracks().length);
     const localAudioTrack = localAudioStream?.getAudioTracks()[0] ?? null;
     this.remoteStream = new MediaStream();
+    this.remoteVideoTrackSeen = false;
     this.previewStartAt = Date.now();
     this.firstRenderedVideoFrameAt = null;
     this.peer = new RTCPeerConnection({
@@ -423,6 +425,9 @@ class IntercomRtcSession {
 
     this.peer.ontrack = (event) => {
       const [stream] = event.streams;
+      if (event.track?.kind === 'video') {
+        this.remoteVideoTrackSeen = true;
+      }
       if (stream) {
         this.remoteStream = stream;
       } else if (this.remoteStream) {
@@ -587,6 +592,7 @@ class IntercomRtcSession {
     this.resolveAuthReady = null;
     this.rejectAuthReady = null;
     this.firstRenderedVideoFrameAt = null;
+    this.remoteVideoTrackSeen = false;
     this.historyLoadingForKey = null;
   }
 
@@ -2270,7 +2276,11 @@ async function resetBrowserConversationSession(restartPreview: boolean, renderAf
 }
 
 function renderMedia(intercom: CurrentIntercom): string {
-  if (canUseRtcPreview(intercom) && intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction)) {
+  if (
+    canUseRtcPreview(intercom) &&
+    (intercomRtcSession.hasRemoteTrackFor(intercom.uuidAction) ||
+      intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction))
+  ) {
     return `<video id="intercom-live-media" class="intercom-media" autoplay ${isIntercomConversationActive(intercom) ? '' : 'muted'} playsinline></video>`;
   }
   const liveUrl = resolveFallbackMediaUrl(intercom);
