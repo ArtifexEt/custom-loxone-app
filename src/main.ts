@@ -81,7 +81,6 @@ let historyDrawerViewportHeight = 0;
 let historyVirtualWindowKey = '';
 let pendingFocusSelector: string | null = null;
 let deferredRenderRequested = false;
-let lastPersistedPreviewHintKey = '';
 let rtcPlaybackRetryTimer: number | null = null;
 
 const HISTORY_DRAWER_GAP = 12;
@@ -122,6 +121,8 @@ class IntercomRtcSession {
   private infoInitialized = false;
   private previewStartAt: number | null = null;
   private firstRenderedVideoFrameAt: number | null = null;
+  private historyLoadedForKey: string | null = null;
+  private historyLoadingForKey: string | null = null;
 
   hasRemoteStreamFor(uuidAction: string): boolean {
     return this.currentIntercomKey === uuidAction && this.hasIncomingVideo();
@@ -129,6 +130,10 @@ class IntercomRtcSession {
 
   hasPendingSessionFor(uuidAction: string): boolean {
     return this.currentIntercomKey === uuidAction && this.isPeerSessionPending();
+  }
+
+  hasRemoteTrackFor(uuidAction: string): boolean {
+    return this.currentIntercomKey === uuidAction && this.hasRemoteVideoTrack();
   }
 
   getRemoteStream(): MediaStream | null {
@@ -185,6 +190,8 @@ class IntercomRtcSession {
       await this.teardown();
       this.currentIntercomKey = intercom.uuidAction;
       this.conversationEnabled = wantsConversation;
+      this.historyLoadedForKey = null;
+      this.historyLoadingForKey = null;
     }
 
     let lastError: unknown = null;
@@ -493,15 +500,24 @@ class IntercomRtcSession {
   }
 
   private async refreshHistory(intercom: CurrentIntercom): Promise<void> {
+    if (this.historyLoadedForKey === intercom.uuidAction || this.historyLoadingForKey === intercom.uuidAction) {
+      return;
+    }
+    this.historyLoadingForKey = intercom.uuidAction;
     try {
       const response = await this.request('getLastActivities', [0, 100, 2]);
       const items = mapIntercomActivitiesToHistory(response, intercom);
       if (items.length > 0) {
         browserHistoryByIntercomUuidAction.set(intercom.uuidAction, items);
-        render();
       }
+      this.historyLoadedForKey = intercom.uuidAction;
+      render();
     } catch {
       // Keep existing fallback history from worker.
+    } finally {
+      if (this.historyLoadingForKey === intercom.uuidAction) {
+        this.historyLoadingForKey = null;
+      }
     }
   }
 
@@ -582,6 +598,7 @@ class IntercomRtcSession {
     this.resolveAuthReady = null;
     this.rejectAuthReady = null;
     this.firstRenderedVideoFrameAt = null;
+    this.historyLoadingForKey = null;
   }
 
   private hasIncomingVideo(): boolean {
@@ -692,7 +709,6 @@ worker.onmessage = (event: MessageEvent<WorkerToMainMessage>) => {
     historyDrawerScrollTop = 0;
     historyDrawerViewportHeight = 0;
     historyVirtualWindowKey = '';
-    lastPersistedPreviewHintKey = '';
   }
   if (!state.currentView?.intercom) {
     sidePanelOpen = false;
@@ -1066,10 +1082,7 @@ function render(): void {
   }
   const intercom = state.currentView?.intercom;
   if (intercom) {
-    persistIntercomPreviewHint(intercom);
     void hydrateVisibleHistoryCache(intercom);
-  } else {
-    lastPersistedPreviewHintKey = '';
   }
   if (
     intercom &&
@@ -1467,7 +1480,7 @@ function renderIntercomStage(): string {
   const expandedPanels = shouldExpandIntercomPanels();
   const hasVisualMedia = canUseRtcPreview(intercom)
     ? intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction)
-    : Boolean(resolveNonRtcMediaUrl(intercom));
+    : Boolean(resolveFallbackMediaUrl(intercom));
   const mediaFrameStateClass = !realtimeAvailable && !hasVisualMedia
     ? 'media-frame-offline'
     : hasVisualMedia
@@ -2206,16 +2219,20 @@ async function resetBrowserConversationSession(restartPreview: boolean, renderAf
 }
 
 function renderMedia(intercom: CurrentIntercom): string {
-  if (canUseRtcPreview(intercom)) {
+  if (canUseRtcPreview(intercom) && intercomRtcSession.hasRemoteTrackFor(intercom.uuidAction)) {
     return `<video id="intercom-live-media" class="intercom-media" autoplay ${browserConversationState === 'active' ? '' : 'muted'} playsinline></video>`;
   }
-  const liveUrl = resolveNonRtcMediaUrl(intercom);
+  const liveUrl = resolveFallbackMediaUrl(intercom);
   return liveUrl
     ? renderMediaUrl(liveUrl, intercom.snapshotUrl, intercom.name, false)
     : `<div class="media-empty"><p>${escapeHtml(tr('media_empty'))}</p></div>`;
 }
 
-function resolveNonRtcMediaUrl(intercom: CurrentIntercom): string | null {
+function resolveFallbackMediaUrl(intercom: CurrentIntercom): string | null {
+  if (canUseRtcPreview(intercom)) {
+    const proxySnapshotUrl = resolveProxySnapshotUrl(intercom);
+    return proxySnapshotUrl ?? intercom.snapshotUrl ?? intercom.streamUrl ?? null;
+  }
   return intercom.streamUrl ?? intercom.snapshotUrl ?? null;
 }
 
@@ -2229,20 +2246,6 @@ function renderMediaUrl(url: string, snapshotUrl: string | null, alt: string, bu
     return `<video id="intercom-live-media" class="intercom-media" src="${escapeAttribute(resolvedUrl)}" controls autoplay ${browserConversationState === 'active' ? '' : 'muted'} playsinline poster="${escapeAttribute(resolvedPoster ?? '')}"></video>`;
   }
   return `<img id="intercom-live-media" class="intercom-media" src="${escapeAttribute(resolvedUrl)}" alt="${escapeAttribute(alt)}" loading="eager" decoding="async" />`;
-}
-
-function persistIntercomPreviewHint(intercom: CurrentIntercom): void {
-  const previewUrl = intercom.snapshotUrl ?? intercom.streamUrl ?? intercom.cachedPreviewUrl ?? null;
-  if (!previewUrl) {
-    lastPersistedPreviewHintKey = '';
-    return;
-  }
-  const previewKey = `${intercom.uuidAction}:${previewUrl}`;
-  if (previewKey === lastPersistedPreviewHintKey) {
-    return;
-  }
-  lastPersistedPreviewHintKey = previewKey;
-  post({ type: 'cacheIntercomPreview', uuidAction: intercom.uuidAction, url: previewUrl });
 }
 
 async function closeSettingsOverlay(): Promise<void> {
@@ -2939,11 +2942,45 @@ function resolveMediaUrlAgainstBase(rawPath: string, mediaBase: string): URL {
 }
 
 function resolveIntercomHistoryBase(intercom: CurrentIntercom): string | null {
-  return intercom.historyBaseUrl || intercom.mediaBaseUrl || intercom.snapshotUrl || intercom.streamUrl || intercom.cachedPreviewUrl;
+  return resolveProxyMediaBase(intercom) || intercom.historyBaseUrl || intercom.mediaBaseUrl || null;
+}
+
+function resolveProxyMediaBase(intercom: CurrentIntercom): string | null {
+  if (!intercom.origin || !intercom.deviceUuid) {
+    return null;
+  }
+  return `${intercom.origin.replace(/\/$/, '')}/proxy/${encodeURIComponent(intercom.deviceUuid)}/`;
+}
+
+function resolveProxySnapshotUrl(intercom: CurrentIntercom): string | null {
+  const proxyBase = resolveProxyMediaBase(intercom);
+  return proxyBase ? new URL('jpg/image.jpg', proxyBase).toString() : null;
+}
+
+function isServerMediaUrl(url: URL, intercom?: CurrentIntercom): boolean {
+  if (url.pathname.includes('/proxy/') || url.pathname.includes('/camimage/')) {
+    return true;
+  }
+  if (!intercom?.origin) {
+    return false;
+  }
+  try {
+    return new URL(intercom.origin).host === url.host;
+  } catch {
+    return false;
+  }
 }
 
 function inheritMediaAuth(url: URL, mediaBase: string, intercom?: CurrentIntercom): string {
   const base = new URL(mediaBase);
+  const useServerToken = Boolean(intercom?.authToken && isServerMediaUrl(url, intercom));
+  if (useServerToken) {
+    url.username = '';
+    url.password = '';
+    url.searchParams.delete('auth');
+    url.searchParams.set('autht', intercom!.authToken!);
+    return url.toString();
+  }
   if (intercom?.mediaAuthMode === 'basic') {
     if (!url.username && base.username && url.host === base.host) {
       url.username = base.username;
@@ -2964,7 +3001,13 @@ function inheritMediaAuth(url: URL, mediaBase: string, intercom?: CurrentInterco
 
 function resolveRenderableMediaUrl(sourceUrl: string, intercom: CurrentIntercom, bustCache: boolean): string {
   const url = new URL(sourceUrl);
-  if (intercom.mediaAuthMode === 'basic') {
+  const useServerToken = Boolean(intercom.authToken && isServerMediaUrl(url, intercom));
+  if (useServerToken) {
+    url.username = '';
+    url.password = '';
+    url.searchParams.set('autht', intercom.authToken!);
+    url.searchParams.delete('auth');
+  } else if (intercom.mediaAuthMode === 'basic') {
     const mediaBase = intercom.mediaBaseUrl ? new URL(intercom.mediaBaseUrl) : null;
     if (!url.username && mediaBase?.username && url.host === mediaBase.host) {
       url.username = mediaBase.username;

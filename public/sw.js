@@ -26,6 +26,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  const requestUrl = new URL(request.url);
+  if (requestUrl.origin !== self.location.origin) {
+    return;
+  }
+
   if (request.mode === 'navigate') {
     event.respondWith(networkFirst(request, APP_CACHE));
     return;

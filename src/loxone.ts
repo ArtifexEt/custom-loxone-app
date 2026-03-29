@@ -510,7 +510,7 @@ export function buildIntercomViewModel(
   structure: LoxoneStructure | null,
   stateValues: Record<string, LoxoneStateValue>,
   credentials: StoredCredentials | null,
-  cachedHistoryByUuidAction: Record<string, string[]> = {},
+  _cachedHistoryByUuidAction: Record<string, string[]> = {},
   cachedPreviewByUuidAction: Record<string, string> = {},
 ): IntercomViewModel | null {
   if (!structure) {
@@ -543,39 +543,8 @@ export function buildIntercomViewModel(
       } satisfies IntercomTransportProfile;
 
   const streamUrl = transport.streamUrl;
-  const snapshotUrl =
-    transport.snapshotUrl ??
-    (credentials && transport.runtimeOrigin
-      ? signUrl(
-          transport.runtimeOrigin,
-          `camimage/${encodeURIComponent(summary.uuidAction)}`,
-          credentials,
-          'server',
-        )
-      : null);
-
-  const nativeHistoryTokens = parseLastBellEvents(mediaControl, stateValues);
-  const historyTokens = mergeHistoryTokens(nativeHistoryTokens, cachedHistoryByUuidAction[summary.uuidAction] ?? []);
-  const history = credentials
-    ? historyTokens.slice(0, config.historyLimit).map((timestamp) => ({
-        timestamp,
-        label: formatBellLabel(timestamp),
-        imageUrl:
-          nativeHistoryTokens.length > 0
-            ? signUrl(
-                transport.runtimeOrigin!,
-                `camimage/${encodeURIComponent(summary.uuidAction)}/${encodeURIComponent(timestamp)}`,
-                credentials,
-                'server',
-              )
-            : signUrl(
-                transport.runtimeOrigin!,
-                `camimage/${encodeURIComponent(summary.uuidAction)}?event=${encodeURIComponent(timestamp)}`,
-                credentials,
-                'server',
-              ),
-      }))
-    : [];
+  const snapshotUrl = transport.snapshotUrl;
+  const history: IntercomViewModel['history'] = [];
 
   const activityLogControl = config.activityLogControlUuidAction
     ? structure.controlsByAction[config.activityLogControlUuidAction] ?? null
@@ -731,26 +700,6 @@ function hasAnyState(control: LoxoneControl, candidates: string[]): boolean {
   });
 }
 
-function parseLastBellEvents(
-  control: LoxoneControl,
-  stateValues: Record<string, LoxoneStateValue>,
-): string[] {
-  for (const stateName of Object.keys(control.states)) {
-    if (normalizeText(stateName) !== 'lastbellevents') {
-      continue;
-    }
-    return coerceLastBellEvents(stateValues[control.states[stateName]]);
-  }
-  for (const detailPath of HISTORY_DETAIL_PATHS) {
-    const value = getNestedValue(control.details, detailPath);
-    const parsed = coerceLastBellEvents(value);
-    if (parsed.length > 0) {
-      return parsed;
-    }
-  }
-  return [];
-}
-
 function hasIntercomMediaSignals(control: LoxoneControl): boolean {
   if (hasAnyState(control, ['lastBellEvents', ...ADDRESS_STATE_CANDIDATES])) {
     return true;
@@ -816,56 +765,11 @@ function resolveIntercomTransportProfile(
     mediaBaseUrl: null,
     historyBaseUrl: null,
     mediaRootPath: null,
-    snapshotUrl: resolveConfiguredMediaUrl(mediaControl, stateValues, SNAPSHOT_DETAIL_PATHS, credentials),
-    streamUrl: resolveConfiguredMediaUrl(mediaControl, stateValues, STREAM_DETAIL_PATHS, credentials),
+    snapshotUrl: null,
+    streamUrl: null,
     runtimeOrigin,
     addressHost,
   };
-}
-
-function mergeHistoryTokens(...sources: string[][]): string[] {
-  const seen = new Set<string>();
-  const tokens = sources
-    .flat()
-    .map((item) => item.trim())
-    .filter(Boolean);
-  tokens.sort((left, right) => historyTokenScore(right) - historyTokenScore(left));
-  return tokens.filter((item) => {
-    if (seen.has(item)) {
-      return false;
-    }
-    seen.add(item);
-    return true;
-  });
-}
-
-function historyTokenScore(value: string): number {
-  if (/^\d{14}$/.test(value)) {
-    const iso = `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}T${value.slice(8, 10)}:${value.slice(10, 12)}:${value.slice(12, 14)}`;
-    const parsed = Date.parse(iso);
-    if (!Number.isNaN(parsed)) {
-      return parsed;
-    }
-  }
-  const parsed = Date.parse(value);
-  return Number.isNaN(parsed) ? 0 : parsed;
-}
-
-function coerceLastBellEvents(value: unknown): string[] {
-  if (typeof value === 'string') {
-    const parts = value
-      .split('|')
-      .map((part) => part.trim())
-      .filter(Boolean);
-    return parts.reverse();
-  }
-  if (Array.isArray(value)) {
-    return value.map((part) => String(part)).filter(Boolean);
-  }
-  if (value && typeof value === 'object') {
-    return coerceLastBellEvents((value as Record<string, unknown>).value);
-  }
-  return [];
 }
 
 function extractActivityLogEntries(
@@ -955,101 +859,6 @@ function splitEventLogText(value: string): string[] {
     .split(/[\r\n|]+/)
     .map((item) => item.trim())
     .filter(Boolean);
-}
-
-function resolveConfiguredMediaUrl(
-  control: LoxoneControl,
-  stateValues: Record<string, LoxoneStateValue>,
-  detailPaths: string[],
-  credentials: StoredCredentials,
-): string | null {
-  for (const stateName of Object.keys(control.states)) {
-    const tail = normalizeText(stateName);
-    if (!detailPaths.some((path) => normalizeText(path.split('.').at(-1) ?? '') === tail)) {
-      continue;
-    }
-    const value = stateValues[control.states[stateName]];
-    const resolved = resolveIntercomHttpUrl(control, value, stateValues, credentials);
-    if (resolved) {
-      return resolved;
-    }
-  }
-  for (const detailPath of detailPaths) {
-    const value = getNestedValue(control.details, detailPath);
-    const resolved = resolveIntercomHttpUrl(control, value, stateValues, credentials);
-    if (resolved) {
-      return resolved;
-    }
-  }
-  return null;
-}
-
-function resolveIntercomHttpUrl(
-  control: LoxoneControl,
-  value: unknown,
-  stateValues: Record<string, LoxoneStateValue>,
-  credentials: StoredCredentials,
-): string | null {
-  if (typeof value === 'string') {
-    const rawValue = value.trim();
-    if (!rawValue) {
-      return null;
-    }
-    if (rawValue.startsWith('{') || rawValue.startsWith('[')) {
-      try {
-        return resolveIntercomHttpUrl(control, JSON.parse(rawValue), stateValues, credentials);
-      } catch {
-        return null;
-      }
-    }
-  }
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      const resolved = resolveIntercomHttpUrl(control, item, stateValues, credentials);
-      if (resolved) {
-        return resolved;
-      }
-    }
-    return null;
-  }
-  if (value && typeof value === 'object') {
-    const record = value as Record<string, unknown>;
-    for (const key of ['streamUrl', 'url', 'href', 'path', 'liveImageUrl', 'liveImage', 'alertImage', 'imageUrl', 'value']) {
-      if (!(key in record)) {
-        continue;
-      }
-      const resolved = resolveIntercomHttpUrl(control, record[key], stateValues, credentials);
-      if (resolved) {
-        return resolved;
-      }
-    }
-    return null;
-  }
-  if (typeof value !== 'string' || !value.trim()) {
-    return null;
-  }
-  const raw = value.trim();
-  const intercomAuth = resolveIntercomAuth(control, credentials);
-  if (raw.startsWith('http://') || raw.startsWith('https://')) {
-    const mode = pickAuthMode(raw, effectiveOrigin(credentials));
-    return signAbsoluteUrl(raw, credentials, mode, mode === 'intercom' ? intercomAuth : undefined);
-  }
-  if (raw.startsWith('/camimage/') || raw.startsWith('camimage/')) {
-    return signUrl(effectiveOrigin(credentials), raw, credentials, 'server');
-  }
-  if (raw.startsWith('/')) {
-    return signUrl(effectiveOrigin(credentials), raw, credentials, 'server');
-  }
-
-  const addressBase = resolveAddressBase(control, stateValues);
-  if (addressBase) {
-    return signUrl(addressBase, raw, credentials, 'intercom', intercomAuth);
-  }
-
-  if (raw.includes('/')) {
-    return signUrl(effectiveOrigin(credentials), raw, credentials, 'server');
-  }
-  return signUrl(effectiveOrigin(credentials), raw, credentials, 'server');
 }
 
 function resolveAddressBase(
@@ -1169,11 +978,6 @@ function toWebSocketUrl(value: string): string {
   const url = new URL(value);
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
   return url.toString();
-}
-
-function pickAuthMode(url: string, origin: string): 'server' | 'intercom' {
-  const normalizedOrigin = new URL(origin).host;
-  return new URL(url).host === normalizedOrigin ? 'server' : 'intercom';
 }
 
 function signAbsoluteUrl(
@@ -1928,25 +1732,6 @@ function getNestedValue(object: Record<string, unknown>, path: string): unknown 
     current = (current as Record<string, unknown>)[segment];
   }
   return current;
-}
-
-function formatBellLabel(timestamp: string): string {
-  if (/^\d{14}$/.test(timestamp)) {
-    const year = timestamp.slice(0, 4);
-    const month = timestamp.slice(4, 6);
-    const day = timestamp.slice(6, 8);
-    const hours = timestamp.slice(8, 10);
-    const minutes = timestamp.slice(10, 12);
-    return `${day}.${month}.${year} ${hours}:${minutes}`;
-  }
-  const parsed = Date.parse(timestamp);
-  if (Number.isNaN(parsed)) {
-    return timestamp;
-  }
-  return new Intl.DateTimeFormat('pl-PL', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(parsed);
 }
 
 function toErrorMessage(error: unknown): string {
