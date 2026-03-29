@@ -18,7 +18,9 @@ import { localeForLanguage, rt } from './translations';
 const WS_PATH = 'ws/rfc6455';
 const TOKEN_PERMISSION_APP = '4';
 const JWT_SUPPORT_VERSION = '10.1.12.11';
-const AUTH_BOOTSTRAP_RETRIES = 2;
+const AUTH_BOOTSTRAP_RETRIES = 3;
+const AUTH_BOOTSTRAP_RETRY_DELAY_MS = 250;
+const AUTH_TOKEN_STEP_DELAY_MS = 100;
 const KEEPALIVE_RESPONSE = 6;
 const OUT_OF_SERVICE = 5;
 const TEXT_MESSAGE = 0;
@@ -1465,38 +1467,59 @@ async function requestJwtToken(
   for (const candidateOrigin of candidates) {
     for (let attempt = 0; attempt < AUTH_BOOTSTRAP_RETRIES; attempt += 1) {
       try {
-        const { publicKeyPem, resolvedOrigin, authOrigin } = await fetchPublicKey(candidateOrigin);
-        const tokenSalts = await requestEncryptedValue(
-          authOrigin,
-          `jdev/sys/getkey2/${encodeURIComponent(username)}`,
-          publicKeyPem,
-        );
-        const key = asString(tokenSalts.key);
-        const salt = asString(tokenSalts.salt);
-        const hashAlg = asString(tokenSalts.hashAlg ?? 'SHA1').toUpperCase();
-        const passwordHash = await hashPassword(password, salt, hashAlg);
-        const userHash = await hmacUserHash(username, passwordHash, key, hashAlg);
-        const tokenPath = supportsVersion(JWT_SUPPORT_VERSION, null) ? 'jdev/sys/getjwt/' : 'jdev/sys/gettoken/';
-        const payload = await requestEncryptedValue(
-          authOrigin,
-          `${tokenPath}${userHash}/${encodeURIComponent(username)}/${TOKEN_PERMISSION_APP}/${encodeURIComponent(clientUuid)}/${encodeURIComponent(clientInfo)}`,
-          publicKeyPem,
+        const tokenResult = await requestJwtTokenOnce(
+          candidateOrigin,
+          username,
+          password,
+          clientUuid,
+          clientInfo,
         );
         return {
           origin: candidateOrigin,
-          resolvedOrigin,
-          payload,
+          resolvedOrigin: tokenResult.resolvedOrigin,
+          payload: tokenResult.payload,
         };
       } catch (error) {
         lastError = error;
-        if (attempt >= AUTH_BOOTSTRAP_RETRIES - 1) {
-          break;
+        if (attempt < AUTH_BOOTSTRAP_RETRIES - 1) {
+          await delay(AUTH_BOOTSTRAP_RETRY_DELAY_MS * (attempt + 1));
         }
       }
     }
   }
 
   throw (lastError instanceof Error ? lastError : new Error(rt('loxone_unknown_error')));
+}
+
+async function requestJwtTokenOnce(
+  candidateOrigin: string,
+  username: string,
+  password: string,
+  clientUuid: string,
+  clientInfo: string,
+): Promise<{ resolvedOrigin: string; payload: Record<string, unknown> }> {
+  const { publicKeyPem, resolvedOrigin, authOrigin } = await fetchPublicKey(candidateOrigin);
+  const tokenSalts = await requestEncryptedValue(
+    authOrigin,
+    `jdev/sys/getkey2/${encodeURIComponent(username)}`,
+    publicKeyPem,
+  );
+  const key = asString(tokenSalts.key);
+  const salt = asString(tokenSalts.salt);
+  const hashAlg = asString(tokenSalts.hashAlg ?? 'SHA1').toUpperCase();
+  const passwordHash = await hashPassword(password, salt, hashAlg);
+  const userHash = await hmacUserHash(username, passwordHash, key, hashAlg);
+  const tokenPath = supportsVersion(JWT_SUPPORT_VERSION, null) ? 'jdev/sys/getjwt/' : 'jdev/sys/gettoken/';
+  await delay(AUTH_TOKEN_STEP_DELAY_MS);
+  const payload = await requestEncryptedValue(
+    authOrigin,
+    `${tokenPath}${userHash}/${encodeURIComponent(username)}/${TOKEN_PERMISSION_APP}/${encodeURIComponent(clientUuid)}/${encodeURIComponent(clientInfo)}`,
+    publicKeyPem,
+  );
+  return {
+    resolvedOrigin,
+    payload,
+  };
 }
 
 async function fetchPublicKey(origin: string): Promise<{ publicKeyPem: string; resolvedOrigin: string; authOrigin: string }> {
@@ -1534,28 +1557,42 @@ async function requestEncryptedValue(
   publicKeyPem: string,
 ): Promise<Record<string, unknown>> {
   const encrypted = await encryptCommand(command, publicKeyPem);
-  try {
-    const response = await fetch(buildEncryptedCommandUrl(origin, encrypted), {
-      method: 'GET',
-    });
-    const rawResponse = await response.text();
-    const decrypted = await tryDecryptEncryptedResponse(rawResponse, encrypted.aesKey, encrypted.aesIv);
-    const payload = parseCommandPayload(decrypted ?? rawResponse, command);
-    return coerceMaybeJsonRecord(payload.value);
-  } catch (error) {
-    throw mapAuthBootstrapError(error, origin, command);
+  const urls = buildEncryptedCommandUrls(origin, encrypted);
+  let lastError: unknown = null;
+
+  for (const url of urls) {
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+      });
+      const rawResponse = await response.text();
+      const decrypted = await tryDecryptEncryptedResponse(rawResponse, encrypted.aesKey, encrypted.aesIv);
+      const payload = parseCommandPayload(decrypted ?? rawResponse, command);
+      return coerceMaybeJsonRecord(payload.value);
+    } catch (error) {
+      lastError = error;
+    }
   }
+
+  throw mapAuthBootstrapError(lastError, origin, command);
 }
 
-function buildEncryptedCommandUrl(
+function buildEncryptedCommandUrls(
   origin: string,
   encrypted: {
     encryptedCommand: string;
     encryptedSessionKey: string;
   },
-): string {
+): string[] {
   const base = ensureTrailingSlash(origin);
-  return `${base}${encrypted.encryptedCommand}?sk=${encodeURIComponent(encrypted.encryptedSessionKey)}`;
+  const candidates = [
+    `${base}${encrypted.encryptedCommand}?sk=${encodeURIComponent(encrypted.encryptedSessionKey)}`,
+  ];
+  const simplifiedCommand = encrypted.encryptedCommand.replace(/^jdev\/sys\//, '');
+  if (simplifiedCommand !== encrypted.encryptedCommand) {
+    candidates.push(`${base}${simplifiedCommand}?sk=${encodeURIComponent(encrypted.encryptedSessionKey)}`);
+  }
+  return candidates;
 }
 
 
@@ -1663,6 +1700,12 @@ function sanitizeAuthSegment(value: string): string {
     throw new Error(rt('login_slash_forbidden'));
   }
   return value.trim();
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 function isExpired(value: string | null): boolean {
