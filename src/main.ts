@@ -1544,7 +1544,7 @@ function renderIntercomStage(): string {
       : intercom.doorbellActive
         ? tr('answer')
         : tr('connect');
-  const connectActionAvailable = conversationActive || intercom.doorbellActive || canStartBrowserConversation(intercom);
+  const connectActionAvailable = conversationActive || intercom.doorbellActive;
   const connectDisabled = !realtimeAvailable || !intercom.supportsAnswer || !connectActionAvailable ? 'disabled' : '';
 
   return `
@@ -2178,6 +2178,12 @@ async function handleConnect(viewId: string): Promise<void> {
     return;
   }
   if (!intercom) {
+    browserConversationState = 'idle';
+    browserConversationMessage = '';
+    render();
+    return;
+  }
+  if (!intercom.doorbellActive) {
     browserConversationState = 'idle';
     browserConversationMessage = '';
     render();
