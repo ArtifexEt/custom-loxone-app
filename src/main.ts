@@ -478,10 +478,10 @@ class IntercomRtcSession {
       });
     };
 
-    const audioTransceiver = this.peer.addTransceiver('audio', {
-      direction: localAudioTrack ? 'sendrecv' : 'recvonly',
-    });
     if (localAudioTrack) {
+      const audioTransceiver = this.peer.addTransceiver('audio', {
+        direction: 'sendrecv',
+      });
       await audioTransceiver.sender.replaceTrack(localAudioTrack);
     }
     this.peer.addTransceiver('video', { direction: 'recvonly' });
