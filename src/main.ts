@@ -2146,6 +2146,12 @@ async function handleConnect(viewId: string): Promise<void> {
     viewId,
     action: intercom?.doorbellActive ? 'answer' : 'connect',
   });
+  if (!intercom || !canUseBrowserConversation(intercom)) {
+    browserConversationState = 'idle';
+    browserConversationMessage = '';
+    render();
+    return;
+  }
   await startBrowserConversation(intercom);
 }
 
@@ -2201,9 +2207,20 @@ async function startBrowserConversation(intercom: CurrentIntercom | null): Promi
     if (attemptId !== browserConversationAttempt) {
       return;
     }
+    if (localMicrophoneStream) {
+      for (const track of localMicrophoneStream.getTracks()) {
+        track.stop();
+      }
+      localMicrophoneStream = null;
+    }
     browserConversationState = 'error';
     browserConversationMessage = tr('rtc_audio_failed', { message: toMessage(error) });
     render();
+    if (intercom) {
+      void intercomRtcSession.ensurePreview(intercom).catch(() => {
+        // Keep the current error message if passive preview recovery also fails.
+      });
+    }
   }
 }
 
@@ -2841,6 +2858,10 @@ function isVideoLikeUrl(value: string): boolean {
 
 function canUseRtcPreview(intercom: CurrentIntercom): boolean {
   return Boolean(intercom.deviceUuid && intercom.authToken && intercom.signalingUrl);
+}
+
+function canUseBrowserConversation(intercom: CurrentIntercom): boolean {
+  return canUseRtcPreview(intercom) && intercom.transportMode === 'lan-direct';
 }
 
 function resolveIntercomSignalingUrls(intercom: CurrentIntercom): string[] {
