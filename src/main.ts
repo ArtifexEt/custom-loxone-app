@@ -136,6 +136,10 @@ class IntercomRtcSession {
     return this.currentIntercomKey === uuidAction && this.hasRemoteVideoTrack();
   }
 
+  isConversationEnabledFor(uuidAction: string): boolean {
+    return this.currentIntercomKey === uuidAction && this.conversationEnabled;
+  }
+
   getRemoteStream(): MediaStream | null {
     return this.remoteStream;
   }
@@ -874,7 +878,8 @@ function handleUiAction(actionElement: HTMLElement): void {
       return;
     case 'connect-toggle':
       if (actionElement.dataset.viewId) {
-        if (browserConversationState === 'active' || browserConversationState === 'starting') {
+        const intercom = state.currentView?.intercom ?? null;
+        if (intercom && isIntercomConversationActive(intercom)) {
           stopBrowserConversation(true);
         } else {
           void handleConnect(actionElement.dataset.viewId);
@@ -1478,9 +1483,10 @@ function renderIntercomStage(): string {
   const realtimeAvailable = isRealtimeAvailable();
   const controlsDisabled = realtimeAvailable ? '' : 'disabled';
   const expandedPanels = shouldExpandIntercomPanels();
-  const hasVisualMedia = canUseRtcPreview(intercom)
-    ? intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction)
-    : Boolean(resolveFallbackMediaUrl(intercom));
+  const fallbackMediaUrl = resolveFallbackMediaUrl(intercom);
+  const hasVisualMedia =
+    intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction) || Boolean(fallbackMediaUrl);
+  const conversationActive = isIntercomConversationActive(intercom);
   const mediaFrameStateClass = !realtimeAvailable && !hasVisualMedia
     ? 'media-frame-offline'
     : hasVisualMedia
@@ -1492,7 +1498,7 @@ function renderIntercomStage(): string {
       ? ''
       : `<div class="media-frame-status-overlay"><span>${escapeHtml(tr('rtc_connecting'))}</span></div>`;
   const connectLabel =
-    browserConversationState === 'active' || browserConversationState === 'starting'
+    conversationActive
       ? tr('disconnect')
       : intercom.doorbellActive
         ? tr('answer')
@@ -1510,7 +1516,7 @@ function renderIntercomStage(): string {
             <button class="icon-button" data-action="show-view-settings" data-view-id="${escapeAttribute(viewId)}" aria-label="${escapeAttribute(tr('view_settings_aria'))}">⚙</button>
           </div>
         </div>
-        <div class="media-frame ${intercom.doorbellActive ? 'media-frame-bell-active' : ''} ${browserConversationState === 'active' ? 'media-frame-conversation-active' : ''} ${mediaFrameStateClass}">
+        <div class="media-frame ${intercom.doorbellActive ? 'media-frame-bell-active' : ''} ${conversationActive ? 'media-frame-conversation-active' : ''} ${mediaFrameStateClass}">
           ${mediaFrameOverlay}
           <div class="media-overlay-controls">
             <button
@@ -2220,12 +2226,19 @@ async function resetBrowserConversationSession(restartPreview: boolean, renderAf
 
 function renderMedia(intercom: CurrentIntercom): string {
   if (canUseRtcPreview(intercom) && intercomRtcSession.hasRemoteTrackFor(intercom.uuidAction)) {
-    return `<video id="intercom-live-media" class="intercom-media" autoplay ${browserConversationState === 'active' ? '' : 'muted'} playsinline></video>`;
+    return `<video id="intercom-live-media" class="intercom-media" autoplay ${isIntercomConversationActive(intercom) ? '' : 'muted'} playsinline></video>`;
   }
   const liveUrl = resolveFallbackMediaUrl(intercom);
   return liveUrl
     ? renderMediaUrl(liveUrl, intercom.snapshotUrl, intercom.name, false)
     : `<div class="media-empty"><p>${escapeHtml(tr('media_empty'))}</p></div>`;
+}
+
+function isIntercomConversationActive(intercom: CurrentIntercom): boolean {
+  if (browserConversationState === 'active' || browserConversationState === 'starting') {
+    return true;
+  }
+  return intercomRtcSession.isConversationEnabledFor(intercom.uuidAction);
 }
 
 function resolveFallbackMediaUrl(intercom: CurrentIntercom): string | null {
