@@ -109,6 +109,7 @@ class IntercomRtcSession {
   private peer: RTCPeerConnection | null = null;
   private remoteStream: MediaStream | null = null;
   private conversationEnabled = false;
+  private remoteAnswerIncludesAudio = false;
   private authReady: Promise<void> | null = null;
   private resolveAuthReady: (() => void) | null = null;
   private rejectAuthReady: ((reason?: unknown) => void) | null = null;
@@ -140,6 +141,10 @@ class IntercomRtcSession {
 
   isConversationEnabledFor(uuidAction: string): boolean {
     return this.currentIntercomKey === uuidAction && this.conversationEnabled;
+  }
+
+  supportsConversationUpgradeFor(uuidAction: string): boolean {
+    return this.currentIntercomKey === uuidAction && this.remoteAnswerIncludesAudio;
   }
 
   getRemoteStream(): MediaStream | null {
@@ -498,6 +503,7 @@ class IntercomRtcSession {
     if (!answer?.sdp) {
       throw new Error(tr('intercom_no_sdp'));
     }
+    this.remoteAnswerIncludesAudio = /\r?\nm=audio\s/i.test(answer.sdp);
     await this.peer.setRemoteDescription(answer);
     for (const candidate of this.pendingRemoteCandidates.splice(0)) {
       await this.peer.addIceCandidate(candidate);
@@ -587,6 +593,7 @@ class IntercomRtcSession {
     this.currentIntercomKey = null;
     this.currentSocketUrl = null;
     this.conversationEnabled = false;
+    this.remoteAnswerIncludesAudio = false;
     this.previewStartAt = null;
     this.authReady = null;
     this.resolveAuthReady = null;
@@ -1537,6 +1544,8 @@ function renderIntercomStage(): string {
       : intercom.doorbellActive
         ? tr('answer')
         : tr('connect');
+  const connectActionAvailable = conversationActive || intercom.doorbellActive || canStartBrowserConversation(intercom);
+  const connectDisabled = !realtimeAvailable || !intercom.supportsAnswer || !connectActionAvailable ? 'disabled' : '';
 
   return `
     <article class="intercom-layout ${expandedPanels ? 'intercom-layout-expanded' : 'intercom-layout-compact'}">
@@ -1557,7 +1566,7 @@ function renderIntercomStage(): string {
               class="ghost-button media-overlay-button"
               data-action="connect-toggle"
               data-view-id="${escapeAttribute(viewId)}"
-              ${intercom.supportsAnswer ? controlsDisabled : 'disabled'}
+              ${connectDisabled}
             >
               ${escapeHtml(connectLabel)}
             </button>
@@ -2158,18 +2167,31 @@ function isRealtimeAvailable(): boolean {
   return state.connection.status === 'online';
 }
 
+function canStartBrowserConversation(intercom: CurrentIntercom): boolean {
+  return canUseBrowserConversation(intercom) && intercomRtcSession.supportsConversationUpgradeFor(intercom.uuidAction);
+}
+
 async function handleConnect(viewId: string): Promise<void> {
   const intercom = state.currentView?.intercom ?? null;
   if (intercom && isIntercomConversationActive(intercom)) {
     stopBrowserConversation(true);
     return;
   }
-  post({
-    type: 'runBuiltInAction',
-    viewId,
-    action: intercom?.doorbellActive ? 'answer' : 'connect',
-  });
-  if (!intercom || !canUseBrowserConversation(intercom)) {
+  if (!intercom) {
+    browserConversationState = 'idle';
+    browserConversationMessage = '';
+    render();
+    return;
+  }
+  const canStartConversation = canStartBrowserConversation(intercom);
+  if (intercom.doorbellActive) {
+    post({
+      type: 'runBuiltInAction',
+      viewId,
+      action: 'answer',
+    });
+  }
+  if (!canStartConversation) {
     browserConversationState = 'idle';
     browserConversationMessage = '';
     render();
