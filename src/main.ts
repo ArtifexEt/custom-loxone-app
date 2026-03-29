@@ -572,7 +572,7 @@ class IntercomRtcSession {
       this.socket.onclose = null;
       this.socket.onerror = null;
       this.socket.onmessage = null;
-      if (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING) {
+      if (this.socket.readyState === WebSocket.OPEN) {
         this.socket.close();
       }
       this.socket = null;
@@ -797,6 +797,9 @@ function handleUiAction(actionElement: HTMLElement): void {
       void closeSettingsOverlay();
       return;
     case 'toggle-side-panel':
+      if (sidePanelOpen) {
+        prepareSidePanelCloseFocus();
+      }
       sidePanelOpen = !sidePanelOpen;
       render();
       return;
@@ -806,6 +809,7 @@ function handleUiAction(actionElement: HTMLElement): void {
       render();
       return;
     case 'close-side-panel':
+      prepareSidePanelCloseFocus();
       sidePanelOpen = false;
       render();
       return;
@@ -1233,6 +1237,15 @@ function flushPendingFocus(): void {
   }
   target.focus();
   pendingFocusSelector = null;
+}
+
+function prepareSidePanelCloseFocus(): void {
+  const drawer = document.querySelector<HTMLElement>('.insight-drawer');
+  const activeElement = document.activeElement;
+  if (!drawer || !(activeElement instanceof HTMLElement) || !drawer.contains(activeElement)) {
+    return;
+  }
+  pendingFocusSelector = `.rail-tab-button[data-tab="${sidePanelTab}"]`;
 }
 
 function syncHistoryDrawerMetrics(): void {
@@ -1691,7 +1704,7 @@ function renderInsightRail(intercom: NonNullable<AppViewModel['currentView']>['i
           `
           : ''}
       </div>
-      <aside class="insight-drawer panel" aria-hidden="${sidePanelOpen ? 'false' : 'true'}">
+      <aside class="insight-drawer panel" aria-hidden="${sidePanelOpen ? 'false' : 'true'}" ${sidePanelOpen ? '' : 'inert'}>
         <div class="insight-drawer-head">
           <p class="eyebrow">${historyActive ? escapeHtml(tr('photos')) : escapeHtml(tr('log'))}</p>
           <button class="icon-button" data-action="close-side-panel" aria-label="${escapeAttribute(tr('close_side_panel_aria'))}">×</button>
@@ -2257,7 +2270,7 @@ async function resetBrowserConversationSession(restartPreview: boolean, renderAf
 }
 
 function renderMedia(intercom: CurrentIntercom): string {
-  if (canUseRtcPreview(intercom) && intercomRtcSession.hasRemoteTrackFor(intercom.uuidAction)) {
+  if (canUseRtcPreview(intercom) && intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction)) {
     return `<video id="intercom-live-media" class="intercom-media" autoplay ${isIntercomConversationActive(intercom) ? '' : 'muted'} playsinline></video>`;
   }
   const liveUrl = resolveFallbackMediaUrl(intercom);
