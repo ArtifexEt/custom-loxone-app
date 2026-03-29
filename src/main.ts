@@ -120,7 +120,6 @@ class IntercomRtcSession {
   private connectPromise: Promise<void> | null = null;
   private retryTimer: number | null = null;
   private previewDeadlineTimer: number | null = null;
-  private infoInitialized = false;
   private previewStartAt: number | null = null;
   private firstRenderedVideoFrameAt: number | null = null;
   private historyLoadedForKey: string | null = null;
@@ -209,7 +208,6 @@ class IntercomRtcSession {
           this.currentSocketUrl = signalingUrl;
         }
         await this.ensureAuthorized(intercom, signalingUrl);
-        await this.ensureInfo();
         if (this.peer && this.hasIncomingVideo()) {
           this.clearRetry();
           this.clearPreviewDeadline();
@@ -229,7 +227,6 @@ class IntercomRtcSession {
           this.currentSocketUrl = signalingUrl;
           this.conversationEnabled = wantsConversation;
           await this.ensureAuthorized(intercom, signalingUrl);
-          await this.ensureInfo();
         }
         await this.startVideo(localAudioStream);
         this.clearRetry();
@@ -270,7 +267,6 @@ class IntercomRtcSession {
         this.rejectAuthReady = null;
         this.authReady = null;
         this.socket = null;
-        this.infoInitialized = false;
         const peerHealthy = this.hasIncomingVideo() || this.isPeerSessionPending();
         if (!peerHealthy) {
           this.peer = null;
@@ -527,18 +523,6 @@ class IntercomRtcSession {
     }
   }
 
-  private async ensureInfo(): Promise<void> {
-    if (this.infoInitialized || !this.socket || this.socket.readyState !== WebSocket.OPEN) {
-      return;
-    }
-    this.infoInitialized = true;
-    try {
-      await this.request('info');
-    } catch {
-      // Some intercoms do not need this extra handshake step.
-    }
-  }
-
   private request(method: string, params?: unknown[]): Promise<unknown> {
     const id = this.commandId++;
     this.sendRaw({
@@ -598,7 +582,6 @@ class IntercomRtcSession {
     this.currentIntercomKey = null;
     this.currentSocketUrl = null;
     this.conversationEnabled = false;
-    this.infoInitialized = false;
     this.previewStartAt = null;
     this.authReady = null;
     this.resolveAuthReady = null;
