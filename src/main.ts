@@ -82,6 +82,8 @@ let historyVirtualWindowKey = '';
 let pendingFocusSelector: string | null = null;
 let deferredRenderRequested = false;
 let rtcPlaybackRetryTimer: number | null = null;
+let lastRapidActionSignature = '';
+let lastRapidActionAt = 0;
 
 const HISTORY_DRAWER_GAP = 12;
 const HISTORY_DRAWER_OVERSCAN_ROWS = 2;
@@ -730,6 +732,26 @@ worker.onerror = () => {
   );
 };
 
+function rapidActionSignature(actionElement: HTMLElement): string {
+  return [
+    actionElement.dataset.action ?? '',
+    actionElement.dataset.viewId ?? '',
+    actionElement.dataset.panel ?? '',
+    actionElement.dataset.messageId ?? '',
+  ].join('|');
+}
+
+function shouldHandleRapidAction(actionElement: HTMLElement): boolean {
+  const signature = rapidActionSignature(actionElement);
+  const now = Date.now();
+  if (signature === lastRapidActionSignature && now - lastRapidActionAt < 450) {
+    return false;
+  }
+  lastRapidActionSignature = signature;
+  lastRapidActionAt = now;
+  return true;
+}
+
 root.addEventListener('pointerdown', (event) => {
   const target = event.target as HTMLElement;
   const actionElement = target.closest<HTMLElement>('[data-action]');
@@ -746,6 +768,9 @@ root.addEventListener('pointerdown', (event) => {
   ) {
     return;
   }
+  if (!shouldHandleRapidAction(actionElement)) {
+    return;
+  }
   event.preventDefault();
   handleUiAction(actionElement);
 });
@@ -758,12 +783,19 @@ root.addEventListener('click', (event) => {
   }
   const action = actionElement.dataset.action;
   if (
-    action === 'connect-toggle' ||
     action === 'open-saved-messages' ||
     action === 'close-saved-messages' ||
     action === 'select-saved-message' ||
     action === 'confirm-saved-message'
   ) {
+    return;
+  }
+
+  if (action === 'connect-toggle') {
+    if (!shouldHandleRapidAction(actionElement)) {
+      return;
+    }
+    handleUiAction(actionElement);
     return;
   }
 
