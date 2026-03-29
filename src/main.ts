@@ -484,13 +484,13 @@ class IntercomRtcSession {
       });
     };
 
-    this.peer.addTransceiver('video', { direction: 'recvonly' });
     if (localAudioTrack) {
       const audioTransceiver = this.peer.addTransceiver('audio', {
         direction: 'sendrecv',
       });
       await audioTransceiver.sender.replaceTrack(localAudioTrack);
     }
+    this.peer.addTransceiver('video', { direction: 'recvonly' });
     const offer = await this.peer.createOffer();
     await this.peer.setLocalDescription(offer);
     const rawAnswer = await this.request('call', [
@@ -2166,10 +2166,6 @@ function isRealtimeAvailable(): boolean {
   return state.connection.status === 'online';
 }
 
-function canStartBrowserConversation(intercom: CurrentIntercom): boolean {
-  return canUseBrowserConversation(intercom) && intercomRtcSession.supportsConversationUpgradeFor(intercom.uuidAction);
-}
-
 async function handleConnect(viewId: string): Promise<void> {
   const intercom = state.currentView?.intercom ?? null;
   if (intercom && isIntercomConversationActive(intercom)) {
@@ -2182,13 +2178,14 @@ async function handleConnect(viewId: string): Promise<void> {
     render();
     return;
   }
-  post({
-    type: 'runBuiltInAction',
-    viewId,
-    action: intercom.doorbellActive ? 'answer' : 'connect',
-  });
-  const canStartConversation = canStartBrowserConversation(intercom);
-  if (!canStartConversation) {
+  if (intercom.doorbellActive) {
+    post({
+      type: 'runBuiltInAction',
+      viewId,
+      action: 'answer',
+    });
+  }
+  if (!canUseBrowserConversation(intercom)) {
     browserConversationState = 'idle';
     browserConversationMessage = '';
     render();
