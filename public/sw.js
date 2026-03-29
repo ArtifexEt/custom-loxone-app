@@ -1,6 +1,12 @@
-const APP_CACHE = 'custom-loxone-app-shell-v2';
-const RUNTIME_CACHE = 'custom-loxone-app-runtime-v2';
+const APP_CACHE = 'custom-loxone-app-shell-v3';
+const RUNTIME_CACHE = 'custom-loxone-app-runtime-v3';
 const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(APP_CACHE).then((cache) => cache.addAll(APP_SHELL)));
@@ -31,6 +37,15 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  const isDynamicIntercomMedia =
+    requestUrl.pathname.includes('/proxy/') ||
+    requestUrl.pathname.includes('/camimage/') ||
+    requestUrl.pathname.includes('/images/');
+  const hasEphemeralAuth =
+    requestUrl.searchParams.has('autht') ||
+    requestUrl.searchParams.has('auth') ||
+    requestUrl.searchParams.has('cacheBuster');
+
   if (request.mode === 'navigate') {
     event.respondWith(networkFirst(request, APP_CACHE));
     return;
@@ -42,7 +57,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (destination === 'image' || destination === 'video') {
+  if ((destination === 'image' || destination === 'video') && !isDynamicIntercomMedia && !hasEphemeralAuth) {
     event.respondWith(staleWhileRevalidate(request, RUNTIME_CACHE));
   }
 });
