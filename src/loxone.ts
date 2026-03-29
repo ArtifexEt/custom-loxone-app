@@ -18,9 +18,9 @@ import { localeForLanguage, rt } from './translations';
 const WS_PATH = 'ws/rfc6455';
 const TOKEN_PERMISSION_APP = '4';
 const JWT_SUPPORT_VERSION = '10.1.12.11';
-const AUTH_BOOTSTRAP_RETRIES = 3;
-const AUTH_BOOTSTRAP_RETRY_DELAY_MS = 250;
-const AUTH_TOKEN_STEP_DELAY_MS = 100;
+const AUTH_BOOTSTRAP_RETRIES = 5;
+const AUTH_BOOTSTRAP_RETRY_DELAY_MS = 350;
+const AUTH_TOKEN_STEP_DELAY_MS = 150;
 const KEEPALIVE_RESPONSE = 6;
 const OUT_OF_SERVICE = 5;
 const TEXT_MESSAGE = 0;
@@ -1503,6 +1503,7 @@ async function requestJwtTokenOnce(
     authOrigin,
     `jdev/sys/getkey2/${encodeURIComponent(username)}`,
     publicKeyPem,
+    hasAuthKeyPayload,
   );
   const key = asString(tokenSalts.key);
   const salt = asString(tokenSalts.salt);
@@ -1515,6 +1516,7 @@ async function requestJwtTokenOnce(
     authOrigin,
     `${tokenPath}${userHash}/${encodeURIComponent(username)}/${TOKEN_PERMISSION_APP}/${encodeURIComponent(clientUuid)}/${encodeURIComponent(clientInfo)}`,
     publicKeyPem,
+    hasAuthTokenPayload,
   );
   return {
     resolvedOrigin,
@@ -1555,6 +1557,7 @@ async function requestEncryptedValue(
   origin: string,
   command: string,
   publicKeyPem: string,
+  validator?: (value: Record<string, unknown>) => boolean,
 ): Promise<Record<string, unknown>> {
   const encrypted = await encryptCommand(command, publicKeyPem);
   const urls = buildEncryptedCommandUrls(origin, encrypted);
@@ -1568,13 +1571,29 @@ async function requestEncryptedValue(
       const rawResponse = await response.text();
       const decrypted = await tryDecryptEncryptedResponse(rawResponse, encrypted.aesKey, encrypted.aesIv);
       const payload = parseCommandPayload(decrypted ?? rawResponse, command);
-      return coerceMaybeJsonRecord(payload.value);
+      const record = coerceMaybeJsonRecord(payload.value);
+      if (validator && !validator(record)) {
+        throw new Error(rt('loxone_missing_value'));
+      }
+      return record;
     } catch (error) {
       lastError = error;
     }
   }
 
   throw mapAuthBootstrapError(lastError, origin, command);
+}
+
+function hasAuthKeyPayload(value: Record<string, unknown>): boolean {
+  return hasNonEmptyString(value.key) && hasNonEmptyString(value.salt);
+}
+
+function hasAuthTokenPayload(value: Record<string, unknown>): boolean {
+  return hasNonEmptyString(value.token);
+}
+
+function hasNonEmptyString(value: unknown): boolean {
+  return typeof value === 'string' && value.trim().length > 0;
 }
 
 function buildEncryptedCommandUrls(
