@@ -2207,6 +2207,7 @@ async function handleConnect(viewId: string): Promise<void> {
 }
 
 async function startBrowserConversation(intercom: CurrentIntercom): Promise<void> {
+  const attemptId = ++browserConversationAttempt;
   if (browserConversationState === 'starting' || browserConversationState === 'active') {
     return;
   }
@@ -2221,6 +2222,12 @@ async function startBrowserConversation(intercom: CurrentIntercom): Promise<void
   render();
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    if (attemptId !== browserConversationAttempt) {
+      for (const track of stream.getTracks()) {
+        track.stop();
+      }
+      return;
+    }
     if (localMicrophoneStream) {
       for (const track of localMicrophoneStream.getTracks()) {
         track.stop();
@@ -2228,11 +2235,24 @@ async function startBrowserConversation(intercom: CurrentIntercom): Promise<void
     }
     localMicrophoneStream = stream;
     await intercomRtcSession.ensurePreview(intercom, stream);
+    if (attemptId !== browserConversationAttempt) {
+      return;
+    }
     browserConversationState = 'active';
     browserConversationMessage = '';
   } catch (error) {
+    if (attemptId !== browserConversationAttempt) {
+      return;
+    }
+    const message = toErrorMessage(error);
+    if (message.includes(tr('session_reset'))) {
+      browserConversationState = 'idle';
+      browserConversationMessage = '';
+      render();
+      return;
+    }
     browserConversationState = 'error';
-    browserConversationMessage = tr('rtc_audio_failed', { message: toErrorMessage(error) });
+    browserConversationMessage = tr('rtc_audio_failed', { message });
   }
   render();
 }
