@@ -100,6 +100,7 @@ const HISTORY_DRAWER_OVERSCAN_ROWS = 2;
 const HISTORY_CARD_HEIGHT_DESKTOP = 196;
 const HISTORY_CARD_HEIGHT_MOBILE = 236;
 const RTC_PREVIEW_STALL_MS = 8000;
+const INTERCOM_AUDIO_UNSUPPORTED_ERROR = '__INTERCOM_AUDIO_UNSUPPORTED__';
 const INTERCOM_ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.loxonecloud.com:3478' },
   { urls: 'stun:stun.l.google.com:19302' },
@@ -498,12 +499,27 @@ class IntercomRtcSession {
     }
     const offer = await this.peer.createOffer();
     await this.peer.setLocalDescription(offer);
-    const rawAnswer = await this.request('call', [
-      this.peer.localDescription,
-      'new',
-      wantsConversation,
-      0,
-    ]);
+    let rawAnswer: unknown;
+    try {
+      rawAnswer = await this.request('call', [
+        this.peer.localDescription,
+        'new',
+        wantsConversation,
+        0,
+      ]);
+    } catch (error) {
+      const message = toErrorMessage(error);
+      const shouldFallback =
+        wantsConversation &&
+        allowAudioFallback &&
+        message.includes(tr('signaling_timeout', { method: 'call' }));
+      if (!shouldFallback) {
+        throw error;
+      }
+      await this.teardown();
+      await this.startVideo(null, false);
+      throw new Error(INTERCOM_AUDIO_UNSUPPORTED_ERROR);
+    }
     const answer = normalizeRtcAnswer(rawAnswer);
     if (!answer?.sdp) {
       throw new Error(tr('intercom_no_sdp'));
@@ -516,9 +532,9 @@ class IntercomRtcSession {
       if (!shouldFallback) {
         throw error;
       }
-      browserConversationMessage = tr('intercom_audio_not_supported');
       await this.teardown();
-      return this.startVideo(null, false);
+      await this.startVideo(null, false);
+      throw new Error(INTERCOM_AUDIO_UNSUPPORTED_ERROR);
     }
     for (const candidate of this.pendingRemoteCandidates.splice(0)) {
       await this.peer.addIceCandidate(candidate);
@@ -2249,6 +2265,18 @@ async function startBrowserConversation(intercom: CurrentIntercom): Promise<void
       return;
     }
     const message = toErrorMessage(error);
+    if (message === INTERCOM_AUDIO_UNSUPPORTED_ERROR || message.includes(tr('signaling_timeout', { method: 'call' }))) {
+      if (localMicrophoneStream) {
+        for (const track of localMicrophoneStream.getTracks()) {
+          track.stop();
+        }
+        localMicrophoneStream = null;
+      }
+      browserConversationState = 'idle';
+      browserConversationMessage = '';
+      render();
+      return;
+    }
     if (message.includes(tr('session_reset'))) {
       browserConversationState = 'idle';
       browserConversationMessage = '';
