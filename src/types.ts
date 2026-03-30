@@ -147,6 +147,8 @@ export interface IntercomViewModel {
   mediaRootPath: string | null;
   doorbellActive: boolean;
   microphoneMuted: boolean;
+  activeAnswers: string[];
+  deviceState: number | null;
   supportsAnswer: boolean;
   supportsMute: boolean;
   snapshotUrl: string | null;

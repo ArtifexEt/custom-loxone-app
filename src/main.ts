@@ -2203,7 +2203,15 @@ function isRealtimeAvailable(): boolean {
 async function handleConnect(viewId: string): Promise<void> {
   const intercom = state.currentView?.intercom ?? null;
   if (intercom && isIntercomConversationActive(intercom)) {
-    stopBrowserConversation(true);
+    if (browserConversationState === 'active' || browserConversationState === 'starting') {
+      stopBrowserConversation(true);
+      return;
+    }
+    post({
+      type: 'runBuiltInAction',
+      viewId,
+      action: 'connect',
+    });
     return;
   }
   if (!intercom) {
@@ -2223,69 +2231,13 @@ async function handleConnect(viewId: string): Promise<void> {
     render();
     return;
   }
-  await startBrowserConversation(intercom);
-}
-
-async function startBrowserConversation(intercom: CurrentIntercom): Promise<void> {
-  const attemptId = ++browserConversationAttempt;
-  if (browserConversationState === 'starting' || browserConversationState === 'active') {
-    return;
-  }
-  if (!navigator.mediaDevices?.getUserMedia) {
-    browserConversationState = 'error';
-    browserConversationMessage = tr('rtc_browser_unsupported');
-    render();
-    return;
-  }
-  browserConversationState = 'starting';
+  browserConversationState = 'idle';
   browserConversationMessage = '';
-  render();
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    if (attemptId !== browserConversationAttempt) {
-      for (const track of stream.getTracks()) {
-        track.stop();
-      }
-      return;
-    }
-    if (localMicrophoneStream) {
-      for (const track of localMicrophoneStream.getTracks()) {
-        track.stop();
-      }
-    }
-    localMicrophoneStream = stream;
-    await intercomRtcSession.ensurePreview(intercom, stream);
-    if (attemptId !== browserConversationAttempt) {
-      return;
-    }
-    browserConversationState = 'active';
-    browserConversationMessage = '';
-  } catch (error) {
-    if (attemptId !== browserConversationAttempt) {
-      return;
-    }
-    const message = toErrorMessage(error);
-    if (message === INTERCOM_AUDIO_UNSUPPORTED_ERROR || message.includes(tr('signaling_timeout', { method: 'call' }))) {
-      if (localMicrophoneStream) {
-        for (const track of localMicrophoneStream.getTracks()) {
-          track.stop();
-        }
-        localMicrophoneStream = null;
-      }
-      browserConversationState = 'idle';
-      browserConversationMessage = '';
-      render();
-      return;
-    }
-    if (message.includes(tr('session_reset'))) {
-      browserConversationState = 'idle';
-      browserConversationMessage = '';
-      render();
-      return;
-    }
-    browserConversationState = 'error';
-    browserConversationMessage = tr('rtc_audio_failed', { message });
-  }
+  post({
+    type: 'runBuiltInAction',
+    viewId,
+    action: 'connect',
+  });
   render();
 }
 
@@ -2339,6 +2291,9 @@ function renderMedia(intercom: CurrentIntercom): string {
 }
 
 function isIntercomConversationActive(intercom: CurrentIntercom): boolean {
+  if (intercom.activeAnswers.length > 0) {
+    return true;
+  }
   if (browserConversationState === 'active' || browserConversationState === 'starting') {
     return true;
   }

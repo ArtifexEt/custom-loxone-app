@@ -526,6 +526,8 @@ export function buildIntercomViewModel(
 
   const doorbellActive = lookupBooleanState(summary, stateValues, DOORBELL_STATE_CANDIDATES);
   const microphoneMuted = lookupBooleanState(summary, stateValues, MUTE_STATE_CANDIDATES);
+  const activeAnswers = extractIntercomAnswers(summary, stateValues);
+  const deviceState = lookupNumericState(summary, stateValues, ['deviceState']);
   const supportsAnswer = supportsIntercomAnswer(summary);
   const supportsMute = supportsIntercomMute(summary);
   const transport = credentials
@@ -574,6 +576,8 @@ export function buildIntercomViewModel(
     mediaRootPath: transport.mediaRootPath,
     doorbellActive,
     microphoneMuted,
+    activeAnswers,
+    deviceState,
     supportsAnswer,
     supportsMute,
     snapshotUrl,
@@ -665,6 +669,38 @@ function lookupBooleanState(
     return toBoolean(stateValue);
   }
   return false;
+}
+
+function lookupNumericState(
+  control: LoxoneControl,
+  stateValues: Record<string, LoxoneStateValue>,
+  candidates: string[],
+): number | null {
+  for (const stateName of Object.keys(control.states)) {
+    const normalized = normalizeText(stateName);
+    if (!candidates.some((candidate) => normalized.includes(normalizeText(candidate)))) {
+      continue;
+    }
+    const stateValue = stateValues[control.states[stateName]];
+    const resolved = toNumberLike(stateValue);
+    if (resolved !== null) {
+      return resolved;
+    }
+  }
+  return null;
+}
+
+function extractIntercomAnswers(
+  control: LoxoneControl,
+  stateValues: Record<string, LoxoneStateValue>,
+): string[] {
+  for (const [stateName, stateUuid] of Object.entries(control.states)) {
+    if (!normalizeText(stateName).includes('answers')) {
+      continue;
+    }
+    return collectStringArray(stateValues[stateUuid]);
+  }
+  return [];
 }
 
 function supportsIntercomAnswer(control: LoxoneControl): boolean {
@@ -1782,6 +1818,70 @@ function toBoolean(value: unknown): boolean {
     return normalized === 'true' || normalized === '1' || normalized === 'on';
   }
   return false;
+}
+
+function toNumberLike(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    for (const key of ['value', 'text', 'number']) {
+      if (key in record) {
+        const nested = toNumberLike(record[key]);
+        if (nested !== null) {
+          return nested;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function collectStringArray(value: unknown): string[] {
+  if (value == null) {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value
+      .flatMap((item) => collectStringArray(item))
+      .filter((item, index, items) => items.indexOf(item) === index);
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return [];
+    }
+    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+      try {
+        return collectStringArray(JSON.parse(trimmed));
+      } catch {
+        return [trimmed];
+      }
+    }
+    return [trimmed];
+  }
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    for (const key of ['text', 'value', 'answers', 'items', 'result']) {
+      if (!(key in record)) {
+        continue;
+      }
+      const parsed = collectStringArray(record[key]);
+      if (parsed.length > 0) {
+        return parsed;
+      }
+    }
+  }
+  return [];
 }
 
 function getNestedValue(object: Record<string, unknown>, path: string): unknown {
