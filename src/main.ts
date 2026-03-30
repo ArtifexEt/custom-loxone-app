@@ -1538,9 +1538,13 @@ function renderIntercomStage(): string {
   const realtimeAvailable = isRealtimeAvailable();
   const controlsDisabled = realtimeAvailable ? '' : 'disabled';
   const expandedPanels = shouldExpandIntercomPanels();
+  const hasRtcMedia =
+    intercomRtcSession.hasRemoteTrackFor(intercom.uuidAction) ||
+    intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction);
+  const rtcConnectPending =
+    canUseRtcPreview(intercom) && browserConversationState === 'starting' && !hasRtcMedia;
   const fallbackMediaUrl = resolveFallbackMediaUrl(intercom);
-  const hasVisualMedia =
-    intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction) || Boolean(fallbackMediaUrl);
+  const hasVisualMedia = hasRtcMedia || (!rtcConnectPending && Boolean(fallbackMediaUrl));
   const conversationActive = isIntercomConversationActive(intercom);
   const mediaFrameStateClass = !realtimeAvailable && !hasVisualMedia
     ? 'media-frame-offline'
@@ -2292,8 +2296,11 @@ async function resetBrowserConversationSession(restartPreview: boolean, renderAf
 function renderMedia(intercom: CurrentIntercom): string {
   if (
     canUseRtcPreview(intercom) &&
-    (intercomRtcSession.hasRemoteTrackFor(intercom.uuidAction) ||
-      intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction))
+    (
+      intercomRtcSession.hasRemoteTrackFor(intercom.uuidAction) ||
+      intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction) ||
+      browserConversationState === 'starting'
+    )
   ) {
     return `<video id="intercom-live-media" class="intercom-media" autoplay ${isIntercomConversationActive(intercom) ? '' : 'muted'} playsinline></video>`;
   }
