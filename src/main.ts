@@ -109,7 +109,6 @@ class IntercomRtcSession {
   private peer: RTCPeerConnection | null = null;
   private remoteStream: MediaStream | null = null;
   private conversationEnabled = false;
-  private remoteAnswerIncludesAudio = false;
   private authReady: Promise<void> | null = null;
   private resolveAuthReady: (() => void) | null = null;
   private rejectAuthReady: ((reason?: unknown) => void) | null = null;
@@ -141,10 +140,6 @@ class IntercomRtcSession {
 
   isConversationEnabledFor(uuidAction: string): boolean {
     return this.currentIntercomKey === uuidAction && this.conversationEnabled;
-  }
-
-  supportsConversationUpgradeFor(uuidAction: string): boolean {
-    return this.currentIntercomKey === uuidAction && this.remoteAnswerIncludesAudio;
   }
 
   getRemoteStream(): MediaStream | null {
@@ -503,7 +498,6 @@ class IntercomRtcSession {
     if (!answer?.sdp) {
       throw new Error(tr('intercom_no_sdp'));
     }
-    this.remoteAnswerIncludesAudio = /\r?\nm=audio\s/i.test(answer.sdp);
     await this.peer.setRemoteDescription(answer);
     for (const candidate of this.pendingRemoteCandidates.splice(0)) {
       await this.peer.addIceCandidate(candidate);
@@ -593,7 +587,6 @@ class IntercomRtcSession {
     this.currentIntercomKey = null;
     this.currentSocketUrl = null;
     this.conversationEnabled = false;
-    this.remoteAnswerIncludesAudio = false;
     this.previewStartAt = null;
     this.authReady = null;
     this.resolveAuthReady = null;
@@ -2178,99 +2171,14 @@ async function handleConnect(viewId: string): Promise<void> {
     render();
     return;
   }
-  if (intercom.doorbellActive) {
-    post({
-      type: 'runBuiltInAction',
-      viewId,
-      action: 'answer',
-    });
-  }
-  if (!canUseBrowserConversation(intercom)) {
-    if (!intercom.doorbellActive) {
-      browserConversationState = 'error';
-      browserConversationMessage = tr('rtc_manual_connect_unavailable');
-    } else {
-      browserConversationState = 'idle';
-      browserConversationMessage = '';
-    }
-    render();
-    return;
-  }
-  await startBrowserConversation(intercom);
-}
-
-async function startBrowserConversation(intercom: CurrentIntercom | null): Promise<void> {
-  if (!navigator.mediaDevices?.getUserMedia) {
-    browserConversationState = 'error';
-    browserConversationMessage = tr('rtc_browser_unsupported');
-    render();
-    return;
-  }
-
-  const attemptId = ++browserConversationAttempt;
-  try {
-    await resetBrowserConversationSession(false);
-    browserConversationState = 'starting';
-    browserConversationMessage = tr('rtc_connecting');
-    render();
-    localMicrophoneStream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-      },
-      video: false,
-    });
-    if (attemptId !== browserConversationAttempt) {
-      for (const track of localMicrophoneStream.getTracks()) {
-        track.stop();
-      }
-      localMicrophoneStream = null;
-      return;
-    }
-    if (intercom) {
-      await intercomRtcSession.ensurePreview(intercom, localMicrophoneStream);
-      if (!intercomRtcSession.supportsConversationUpgradeFor(intercom.uuidAction)) {
-        throw new Error(tr('rtc_manual_connect_unavailable'));
-      }
-    }
-    if (attemptId !== browserConversationAttempt) {
-      return;
-    }
-    browserConversationState = 'active';
-    browserConversationMessage = '';
-    const liveMedia = document.querySelector('#intercom-live-media');
-    if (liveMedia instanceof HTMLVideoElement) {
-      liveMedia.muted = false;
-      liveMedia.volume = 1;
-      try {
-        await liveMedia.play();
-      } catch {
-        // Autoplay may still be blocked for some streams.
-      }
-    }
-    render();
-  } catch (error) {
-    if (attemptId !== browserConversationAttempt) {
-      return;
-    }
-    if (localMicrophoneStream) {
-      for (const track of localMicrophoneStream.getTracks()) {
-        track.stop();
-      }
-      localMicrophoneStream = null;
-    }
-    browserConversationState = 'error';
-    browserConversationMessage = tr('rtc_audio_failed', {
-      message: error instanceof Error ? error.message : String(error ?? ''),
-    });
-    render();
-    if (intercom) {
-      void intercomRtcSession.ensurePreview(intercom).catch(() => {
-        // Keep the current error message if passive preview recovery also fails.
-      });
-    }
-  }
+  browserConversationState = 'idle';
+  browserConversationMessage = '';
+  post({
+    type: 'runBuiltInAction',
+    viewId,
+    action: intercom.doorbellActive ? 'answer' : 'connect',
+  });
+  render();
 }
 
 function stopBrowserConversation(renderAfter = true, cancelPending = true): void {
@@ -2911,10 +2819,6 @@ function isVideoLikeUrl(value: string): boolean {
 
 function canUseRtcPreview(intercom: CurrentIntercom): boolean {
   return Boolean(intercom.deviceUuid && intercom.authToken && intercom.signalingUrl);
-}
-
-function canUseBrowserConversation(intercom: CurrentIntercom): boolean {
-  return canUseRtcPreview(intercom);
 }
 
 function resolveIntercomSignalingUrls(intercom: CurrentIntercom): string[] {
