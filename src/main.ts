@@ -2291,9 +2291,6 @@ function renderMedia(intercom: CurrentIntercom): string {
 }
 
 function isIntercomConversationActive(intercom: CurrentIntercom): boolean {
-  if (intercom.activeAnswers.length > 0) {
-    return true;
-  }
   if (browserConversationState === 'active' || browserConversationState === 'starting') {
     return true;
   }
