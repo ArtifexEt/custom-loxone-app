@@ -85,6 +85,16 @@ let rtcPlaybackRetryTimer: number | null = null;
 let lastRapidActionSignature = '';
 let lastRapidActionAt = 0;
 
+function toErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return 'Unknown error';
+}
+
 const HISTORY_DRAWER_GAP = 12;
 const HISTORY_DRAWER_OVERSCAN_ROWS = 2;
 const HISTORY_CARD_HEIGHT_DESKTOP = 196;
@@ -479,13 +489,13 @@ class IntercomRtcSession {
       });
     };
 
+    this.peer.addTransceiver('video', { direction: 'recvonly' });
     if (localAudioTrack) {
       const audioTransceiver = this.peer.addTransceiver('audio', {
         direction: 'sendrecv',
       });
       await audioTransceiver.sender.replaceTrack(localAudioTrack);
     }
-    this.peer.addTransceiver('video', { direction: 'recvonly' });
     const offer = await this.peer.createOffer();
     await this.peer.setLocalDescription(offer);
     const rawAnswer = await this.request('call', [
@@ -2171,13 +2181,48 @@ async function handleConnect(viewId: string): Promise<void> {
     render();
     return;
   }
-  browserConversationState = 'idle';
+  if (intercom.doorbellActive) {
+    browserConversationState = 'idle';
+    browserConversationMessage = '';
+    post({
+      type: 'runBuiltInAction',
+      viewId,
+      action: 'answer',
+    });
+    render();
+    return;
+  }
+  await startBrowserConversation(intercom);
+}
+
+async function startBrowserConversation(intercom: CurrentIntercom): Promise<void> {
+  if (browserConversationState === 'starting' || browserConversationState === 'active') {
+    return;
+  }
+  if (!navigator.mediaDevices?.getUserMedia) {
+    browserConversationState = 'error';
+    browserConversationMessage = tr('rtc_browser_unsupported');
+    render();
+    return;
+  }
+  browserConversationState = 'starting';
   browserConversationMessage = '';
-  post({
-    type: 'runBuiltInAction',
-    viewId,
-    action: intercom.doorbellActive ? 'answer' : 'connect',
-  });
+  render();
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    if (localMicrophoneStream) {
+      for (const track of localMicrophoneStream.getTracks()) {
+        track.stop();
+      }
+    }
+    localMicrophoneStream = stream;
+    await intercomRtcSession.ensurePreview(intercom, stream);
+    browserConversationState = 'active';
+    browserConversationMessage = '';
+  } catch (error) {
+    browserConversationState = 'error';
+    browserConversationMessage = tr('rtc_audio_failed', { message: toErrorMessage(error) });
+  }
   render();
 }
 
