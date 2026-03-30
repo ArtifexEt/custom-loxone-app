@@ -309,20 +309,20 @@ async function runBuiltInAction(
   }
 
   const command =
-    action === 'connect' || action === 'answer'
-      ? 'answer'
+    action === 'connect'
+      ? 'connect'
+      : action === 'answer'
+        ? 'answer'
       : action === 'mute'
         ? 'mute/1'
         : 'mute/0';
   try {
     await client.sendAction(control.uuidAction, command);
-    setSuccessNotice(
-      action === 'connect' || action === 'answer'
-        ? t(resolveLanguage(), 'intercom_connection_started')
-        : action === 'mute'
-          ? t(resolveLanguage(), 'intercom_muted')
-          : t(resolveLanguage(), 'intercom_unmuted'),
-    );
+    if (action === 'mute') {
+      setSuccessNotice(t(resolveLanguage(), 'intercom_muted'));
+    } else if (action === 'unmute') {
+      setSuccessNotice(t(resolveLanguage(), 'intercom_unmuted'));
+    }
   } catch (error) {
     setErrorNotice(toErrorMessage(error));
   }
