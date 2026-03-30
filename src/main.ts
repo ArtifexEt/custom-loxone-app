@@ -419,7 +419,7 @@ class IntercomRtcSession {
     respondOk();
   }
 
-  private async startVideo(localAudioStream: MediaStream | null): Promise<void> {
+  private async startVideo(localAudioStream: MediaStream | null, allowAudioFallback = true): Promise<void> {
     const wantsConversation = Boolean(localAudioStream?.getAudioTracks().length);
     const localAudioTrack = localAudioStream?.getAudioTracks()[0] ?? null;
     this.remoteStream = new MediaStream();
@@ -508,7 +508,18 @@ class IntercomRtcSession {
     if (!answer?.sdp) {
       throw new Error(tr('intercom_no_sdp'));
     }
-    await this.peer.setRemoteDescription(answer);
+    try {
+      await this.peer.setRemoteDescription(answer);
+    } catch (error) {
+      const message = toErrorMessage(error);
+      const shouldFallback = wantsConversation && allowAudioFallback && /m-?lines?/i.test(message);
+      if (!shouldFallback) {
+        throw error;
+      }
+      browserConversationMessage = tr('intercom_audio_not_supported');
+      await this.teardown();
+      return this.startVideo(null, false);
+    }
     for (const candidate of this.pendingRemoteCandidates.splice(0)) {
       await this.peer.addIceCandidate(candidate);
     }
