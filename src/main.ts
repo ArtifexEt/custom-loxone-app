@@ -58,6 +58,8 @@ let intercomPanelMode: IntercomPanelMode = null;
 let browserConversationState: BrowserConversationState = 'idle';
 let browserConversationMessage = '';
 let browserConversationAttempt = 0;
+let builtInConversationState: 'idle' | 'starting' | 'active' = 'idle';
+let builtInConversationTimer: number | null = null;
 let selectedHistoryImage: IntercomHistoryItem | null = null;
 let savedMessagesDialogViewId: string | null = null;
 let selectedSavedMessageId: string | null = null;
@@ -743,11 +745,26 @@ worker.onmessage = (event: MessageEvent<WorkerToMainMessage>) => {
     historyVirtualWindowKey = '';
   }
   if (!state.currentView?.intercom) {
+    builtInConversationState = 'idle';
+    if (builtInConversationTimer !== null) {
+      window.clearTimeout(builtInConversationTimer);
+      builtInConversationTimer = null;
+    }
     sidePanelOpen = false;
     intercomPanelMode = null;
     selectedHistoryImage = null;
     stopBrowserConversation(false, false);
     void intercomRtcSession.disconnect();
+  }
+  const activeAnswers = state.currentView?.intercom?.activeAnswers ?? [];
+  if (builtInConversationState === 'starting' && activeAnswers.length > 0) {
+    builtInConversationState = 'active';
+    if (builtInConversationTimer !== null) {
+      window.clearTimeout(builtInConversationTimer);
+      builtInConversationTimer = null;
+    }
+  } else if (builtInConversationState === 'active' && activeAnswers.length === 0) {
+    builtInConversationState = 'idle';
   }
   render();
 };
@@ -2207,6 +2224,11 @@ async function handleConnect(viewId: string): Promise<void> {
       stopBrowserConversation(true);
       return;
     }
+    builtInConversationState = 'idle';
+    if (builtInConversationTimer !== null) {
+      window.clearTimeout(builtInConversationTimer);
+      builtInConversationTimer = null;
+    }
     post({
       type: 'runBuiltInAction',
       viewId,
@@ -2233,6 +2255,17 @@ async function handleConnect(viewId: string): Promise<void> {
   }
   browserConversationState = 'idle';
   browserConversationMessage = '';
+  builtInConversationState = 'starting';
+  if (builtInConversationTimer !== null) {
+    window.clearTimeout(builtInConversationTimer);
+  }
+  builtInConversationTimer = window.setTimeout(() => {
+    builtInConversationTimer = null;
+    if (builtInConversationState === 'starting') {
+      builtInConversationState = 'idle';
+      render();
+    }
+  }, 8000);
   post({
     type: 'runBuiltInAction',
     viewId,
@@ -2291,6 +2324,9 @@ function renderMedia(intercom: CurrentIntercom): string {
 }
 
 function isIntercomConversationActive(intercom: CurrentIntercom): boolean {
+  if (builtInConversationState === 'active' || builtInConversationState === 'starting') {
+    return true;
+  }
   if (browserConversationState === 'active' || browserConversationState === 'starting') {
     return true;
   }
