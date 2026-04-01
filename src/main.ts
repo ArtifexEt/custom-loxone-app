@@ -136,6 +136,9 @@ class IntercomRtcSession {
   private remoteVideoTrackSeen = false;
   private historyLoadedForKey: string | null = null;
   private historyLoadingForKey: string | null = null;
+  private bootstrapPromise: Promise<void> | null = null;
+  private comReady = false;
+  private callState: unknown = null;
 
   hasRemoteStreamFor(uuidAction: string): boolean {
     return this.currentIntercomKey === uuidAction && this.hasIncomingVideo();
@@ -207,8 +210,10 @@ class IntercomRtcSession {
       await this.teardown();
       this.currentIntercomKey = intercom.uuidAction;
       this.conversationEnabled = wantsConversation;
-      this.historyLoadedForKey = null;
-      this.historyLoadingForKey = null;
+      if (intercomChanged) {
+        this.historyLoadedForKey = null;
+        this.historyLoadingForKey = null;
+      }
     }
 
     let lastError: unknown = null;
@@ -259,6 +264,7 @@ class IntercomRtcSession {
   private async ensureAuthorized(intercom: CurrentIntercom, signalingUrl: string): Promise<void> {
     if (this.socket && this.socket.readyState === WebSocket.OPEN && this.authReady) {
       await this.authReady;
+      await this.ensureSessionBootstrap(intercom);
       return;
     }
     this.authReady = new Promise<void>((resolve, reject) => {
@@ -294,6 +300,37 @@ class IntercomRtcSession {
       };
     });
     await this.authReady;
+    await this.ensureSessionBootstrap(intercom);
+  }
+
+  private async ensureSessionBootstrap(intercom: CurrentIntercom): Promise<void> {
+    if (this.comReady && this.callState !== null && this.historyLoadedForKey === intercom.uuidAction) {
+      return;
+    }
+    if (this.bootstrapPromise) {
+      await this.bootstrapPromise;
+      return;
+    }
+    this.bootstrapPromise = (async () => {
+      if (!this.comReady || this.callState === null) {
+        try {
+          await this.request('info', undefined, 4000);
+          this.comReady = true;
+          if (this.callState === null) {
+            this.callState = 'AVAILABLE';
+          }
+        } catch {
+          // `info()` is best-effort, but when it succeeds it mirrors the
+          // official app's session bootstrap and unlocks state updates such as
+          // `callState`.
+        }
+      }
+      await this.refreshHistory(intercom, 4000);
+      render();
+    })().finally(() => {
+      this.bootstrapPromise = null;
+    });
+    await this.bootstrapPromise;
   }
 
   private async handleMessage(rawData: unknown, intercom: CurrentIntercom): Promise<void> {
@@ -409,7 +446,27 @@ class IntercomRtcSession {
       return;
     }
 
-    if (message.method === 'reachMode' || message.method === 'info' || message.method === 'callState') {
+    if (message.method === 'reachMode') {
+      this.comReady = true;
+      render();
+      respondOk();
+      return;
+    }
+
+    if (message.method === 'info') {
+      this.comReady = true;
+      if (this.callState === null) {
+        this.callState = 'AVAILABLE';
+      }
+      render();
+      respondOk();
+      return;
+    }
+
+    if (message.method === 'callState') {
+      const params = Array.isArray(message.params) ? message.params : [];
+      this.callState = params[0] ?? null;
+      render();
       respondOk();
       return;
     }
@@ -543,13 +600,13 @@ class IntercomRtcSession {
     render();
   }
 
-  private async refreshHistory(intercom: CurrentIntercom): Promise<void> {
+  private async refreshHistory(intercom: CurrentIntercom, timeoutMs = 10000): Promise<void> {
     if (this.historyLoadedForKey === intercom.uuidAction || this.historyLoadingForKey === intercom.uuidAction) {
       return;
     }
     this.historyLoadingForKey = intercom.uuidAction;
     try {
-      const response = await this.request('getLastActivities', [0, 100, 2]);
+      const response = await this.request('getLastActivities', [0, 100, 2], timeoutMs);
       const items = mapIntercomActivitiesToHistory(response, intercom);
       if (items.length > 0) {
         browserHistoryByIntercomUuidAction.set(intercom.uuidAction, items);
@@ -565,7 +622,7 @@ class IntercomRtcSession {
     }
   }
 
-  private request(method: string, params?: unknown[]): Promise<unknown> {
+  private request(method: string, params?: unknown[], timeoutMs = 10000): Promise<unknown> {
     const id = this.commandId++;
     this.sendRaw({
       jsonrpc: '2.0',
@@ -582,7 +639,7 @@ class IntercomRtcSession {
         }
         this.pendingCommands.delete(id);
         reject(new Error(tr('signaling_timeout', { method })));
-      }, 10000);
+      }, timeoutMs);
     });
   }
 
@@ -630,6 +687,9 @@ class IntercomRtcSession {
     this.rejectAuthReady = null;
     this.firstRenderedVideoFrameAt = null;
     this.remoteVideoTrackSeen = false;
+    this.bootstrapPromise = null;
+    this.comReady = false;
+    this.callState = null;
     this.historyLoadingForKey = null;
   }
 
@@ -746,7 +806,7 @@ worker.onmessage = (event: MessageEvent<WorkerToMainMessage>) => {
     sidePanelOpen = false;
     intercomPanelMode = null;
     selectedHistoryImage = null;
-    stopBrowserConversation(false, false);
+    stopBrowserConversation(false);
     void intercomRtcSession.disconnect();
   }
   render();
@@ -2226,8 +2286,81 @@ async function handleConnect(viewId: string): Promise<void> {
     render();
     return;
   }
-  browserConversationState = 'idle';
-  browserConversationMessage = tr('rtc_manual_connect_unavailable');
+  await startBrowserConversation(intercom);
+}
+
+async function startBrowserConversation(intercom: CurrentIntercom): Promise<void> {
+  if (browserConversationState === 'starting' || browserConversationState === 'active') {
+    return;
+  }
+  if (!navigator.mediaDevices?.getUserMedia) {
+    browserConversationState = 'error';
+    browserConversationMessage = tr('rtc_browser_unsupported');
+    render();
+    return;
+  }
+
+  const attempt = browserConversationAttempt + 1;
+  browserConversationAttempt = attempt;
+  browserConversationState = 'starting';
+  browserConversationMessage = '';
+  render();
+
+  let stream: MediaStream | null = null;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    if (
+      attempt !== browserConversationAttempt ||
+      state.currentView?.intercom?.uuidAction !== intercom.uuidAction
+    ) {
+      for (const track of stream.getTracks()) {
+        track.stop();
+      }
+      return;
+    }
+
+    if (localMicrophoneStream) {
+      for (const track of localMicrophoneStream.getTracks()) {
+        track.stop();
+      }
+    }
+    localMicrophoneStream = stream;
+    await intercomRtcSession.ensurePreview(intercom, stream);
+
+    if (
+      attempt !== browserConversationAttempt ||
+      state.currentView?.intercom?.uuidAction !== intercom.uuidAction
+    ) {
+      for (const track of stream.getTracks()) {
+        track.stop();
+      }
+      if (localMicrophoneStream === stream) {
+        localMicrophoneStream = null;
+      }
+      return;
+    }
+
+    browserConversationState = 'active';
+    browserConversationMessage = '';
+  } catch (error) {
+    if (stream) {
+      for (const track of stream.getTracks()) {
+        track.stop();
+      }
+      if (localMicrophoneStream === stream) {
+        localMicrophoneStream = null;
+      }
+    }
+    if (attempt !== browserConversationAttempt) {
+      return;
+    }
+    browserConversationState = 'error';
+    const message = toErrorMessage(error);
+    browserConversationMessage =
+      message === INTERCOM_AUDIO_UNSUPPORTED_ERROR
+        ? tr('intercom_audio_not_supported')
+        : tr('rtc_audio_failed', { message });
+  }
   render();
 }
 
