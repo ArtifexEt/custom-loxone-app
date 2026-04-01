@@ -1,0 +1,2080 @@
+{
+  "summary": {
+    "bodyText": "CUSTOM LOXONE APP\n\nSlowackiego\nMar 28, 2026, 12:48 PM\n⚙\n\nSCHODY\n\nDzwonek\n\n⚙\nConnect\nMute\n\nACTIONS\n\nClose\nOpen\nOpen and Pull\n\nTTS\n\n⚙\nSaved messages\nRead message\nPHOTOS\n\nPHOTOS\n\n×\n27.03.2026, 20:24\n26.03.2026, 19:34\n26.03.2026, 16:58\n21.03.2026, 15:03\n18.03.2026, 20:00\n17.03.2026, 18:27\n10.03.2026, 19:32\n9.03.2026, 16:52\n5.03.2026, 20:26\n3.03.2026, 10:43\n27.02.2026, 08:36\n27.02.2026, 08:34\n26.02.2026, 09:27\n26.02.2026, 09:14",
+    "mediaTag": "IMG",
+    "mediaSrc": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/jpg/image.jpg?autht=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NzQ2OTg1MTYsImV4cCI6MTc4MjY0NzMxNiwidG9rZW5SaWdodHMiOjE2NjgsInV1aWQiOiIyMDZiYWE4NC0wMDk5LTQwODEtZmZmZjUwNGY5NGExNzNhNyIsInVzZXIiOiJhZG1pbiIsInVzZXJEb21haW4iOiI1MDRGOTRBMTczQTciLCJtc1NlcmlhbCI6IjUwNEY5NEExNzNBNyJ9.MESQjO0i6GEdA_auPBIlIJ62pRaqS9WKr7h-cH4el6iFwYb1cJXLYJ-5Qyjnhf4lAZJEtdkTPld7A1zX1w46yDXE93o8Tc1fCuk2v9pRy8Iuwpsdyy-gzxoVa5GinGTN1eYlltQE7S93i60oUYLRKgNhV38iqfeH61FtxbHi_mAKamC75xcUKjiJ_aFRs4-U1ybVGiA0FzR523r7wC-op028eBeoJ-3JmbPDq1NNs_zliSN1DJ_Xi2zoxvC5AkeCtGp-rFXwoKIUNe296h4ze7iEk3FQKAqvs2TDbYkEPgPaXF75VWU9-ZA0eFgc17NaoY8BsWNcbtZfBNeBkmvJIBWoQfQKrFRFq8XsJRqUsH6XcE6HAJR0XUUw7owx4j2gNSNxefztotl4DrPxf2DR7907TUqTYHDcx4t8MU3dLOCwrDZzYwnB_26N8utqWb6LHRwxCrvfhgHbFBnrV3EloWS29Wi907C4XSfvQ3RO7EFng3BTVvJFVy6DAhIwSrRtr2Y7y58zmsV_Nl-tKPzRjmGjGeFPdxgWpnIyvVvTJZWsgf5tTeC3zIoWOEK3O6anmWOqatNZczs-JjD3DzZ_P4mMB8czhHgcIo7YtEPYeiH2O_MhEttGCP2RkTm_hvhfa-WzWbotnZjoFlpsCvtPspjnmGpL28Aza37mUnpC4lI",
+    "videoSrcObject": false,
+    "connectLabel": "Connect",
+    "hasHistoryTab": true,
+    "mediaFrameText": "Connect\n            \n            \n                \n                  Mute"
+  },
+  "proxyProbe": {
+    "streamUrl": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/mjpg/video.mjpg?autht=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NzQ2OTg1MTYsImV4cCI6MTc4MjY0NzMxNiwidG9rZW5SaWdodHMiOjE2NjgsInV1aWQiOiIyMDZiYWE4NC0wMDk5LTQwODEtZmZmZjUwNGY5NGExNzNhNyIsInVzZXIiOiJhZG1pbiIsInVzZXJEb21haW4iOiI1MDRGOTRBMTczQTciLCJtc1NlcmlhbCI6IjUwNEY5NEExNzNBNyJ9.MESQjO0i6GEdA_auPBIlIJ62pRaqS9WKr7h-cH4el6iFwYb1cJXLYJ-5Qyjnhf4lAZJEtdkTPld7A1zX1w46yDXE93o8Tc1fCuk2v9pRy8Iuwpsdyy-gzxoVa5GinGTN1eYlltQE7S93i60oUYLRKgNhV38iqfeH61FtxbHi_mAKamC75xcUKjiJ_aFRs4-U1ybVGiA0FzR523r7wC-op028eBeoJ-3JmbPDq1NNs_zliSN1DJ_Xi2zoxvC5AkeCtGp-rFXwoKIUNe296h4ze7iEk3FQKAqvs2TDbYkEPgPaXF75VWU9-ZA0eFgc17NaoY8BsWNcbtZfBNeBkmvJIBWoQfQKrFRFq8XsJRqUsH6XcE6HAJR0XUUw7owx4j2gNSNxefztotl4DrPxf2DR7907TUqTYHDcx4t8MU3dLOCwrDZzYwnB_26N8utqWb6LHRwxCrvfhgHbFBnrV3EloWS29Wi907C4XSfvQ3RO7EFng3BTVvJFVy6DAhIwSrRtr2Y7y58zmsV_Nl-tKPzRjmGjGeFPdxgWpnIyvVvTJZWsgf5tTeC3zIoWOEK3O6anmWOqatNZczs-JjD3DzZ_P4mMB8czhHgcIo7YtEPYeiH2O_MhEttGCP2RkTm_hvhfa-WzWbotnZjoFlpsCvtPspjnmGpL28Aza37mUnpC4lI",
+    "status": 401,
+    "contentType": "application/json",
+    "textSample": "{\"error\":0}"
+  },
+  "failedRequests": [
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/jpg/image.jpg?autht=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NzQ2OTg1MTYsImV4cCI6MTc4MjY0NzMxNiwidG9rZW5SaWdodHMiOjE2NjgsInV1aWQiOiIyMDZiYWE4NC0wMDk5LTQwODEtZmZmZjUwNGY5NGExNzNhNyIsInVzZXIiOiJhZG1pbiIsInVzZXJEb21haW4iOiI1MDRGOTRBMTczQTciLCJtc1NlcmlhbCI6IjUwNEY5NEExNzNBNyJ9.MESQjO0i6GEdA_auPBIlIJ62pRaqS9WKr7h-cH4el6iFwYb1cJXLYJ-5Qyjnhf4lAZJEtdkTPld7A1zX1w46yDXE93o8Tc1fCuk2v9pRy8Iuwpsdyy-gzxoVa5GinGTN1eYlltQE7S93i60oUYLRKgNhV38iqfeH61FtxbHi_mAKamC75xcUKjiJ_aFRs4-U1ybVGiA0FzR523r7wC-op028eBeoJ-3JmbPDq1NNs_zliSN1DJ_Xi2zoxvC5AkeCtGp-rFXwoKIUNe296h4ze7iEk3FQKAqvs2TDbYkEPgPaXF75VWU9-ZA0eFgc17NaoY8BsWNcbtZfBNeBkmvJIBWoQfQKrFRFq8XsJRqUsH6XcE6HAJR0XUUw7owx4j2gNSNxefztotl4DrPxf2DR7907TUqTYHDcx4t8MU3dLOCwrDZzYwnB_26N8utqWb6LHRwxCrvfhgHbFBnrV3EloWS29Wi907C4XSfvQ3RO7EFng3BTVvJFVy6DAhIwSrRtr2Y7y58zmsV_Nl-tKPzRjmGjGeFPdxgWpnIyvVvTJZWsgf5tTeC3zIoWOEK3O6anmWOqatNZczs-JjD3DzZ_P4mMB8czhHgcIo7YtEPYeiH2O_MhEttGCP2RkTm_hvhfa-WzWbotnZjoFlpsCvtPspjnmGpL28Aza37mUnpC4lI&cacheBuster=1774698533186",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    }
+  ],
+  "responseHits": [
+    {
+      "url": "https://dns.loxonecloud.com/504F94A173A7/jdev/sys/getPublicKey",
+      "status": 307
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/jdev/sys/getPublicKey",
+      "status": 200
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/jdev/sys/fenc/vyS%2BNo280kAxF9lVVPk9eiwFhsPg4%2Fcpt9YG0igBcAM%3D?sk=nCFYDVmLlIWCsgh484I%2BMhPW7Ps4rGjR3Hqz3hoiKnSVDDTpSgED6pkHGWLW8HOqdyThXz2FRGJdR5J4UNsN1qyUfl0mYjh%2F2eqat4DV0C%2F2mKu2VDsSTR3sCfIv19rkIflPjybVNwjGNuxG0r8qOkstucXKzUBRPY7%2BXbxrWPdPLp3Wa1wtzSgzq4gbsxNCU7EHyUwrnBPf0aPcthAFYVmGP0fxjWKr7649TnXzfUBVO%2BKyEGiXO4q0W%2F%2FmsoHWDon8mOLlgzaMFU55KFE664S3rPuE3DMxanGFvTHm7XE92pynFmKqfDQxcV27RfTCTcMb7pz5YdzO1wzWdWKLn5mETx6HAb9tu9tP%2BbQWvPpNtQspbgrtj6lFnSnOnfoqqAUKXabPDJGtr8by1uW6Uyz1KM6wO5sEuKk8FpZ9h6wH8y0K%2BZzJC75tBJfenND4%2BkflJtdi9J1%2F3xB8%2BKQQe5oz4WuzpgnfTnBPkvZz9Xz%2BdBKEpvCo2eGCLJyLCorq6ree206merMjgRh9sutnsESrB0VenGz6s79lu0vRn4sFCXm3LDmh0EJugarsbYDpS8nKJ0Irhztr%2Fr8Z5N0EbnjzfWD6qcCNZ7FL%2Bl9594Eoxi7MGDCkZN4iUq2FZYT9WXe1rg9cT4gfu6INT1%2FtVvtRHDfIkIGgZEYq0HiKmtU%3D",
+      "status": 200
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/jdev/sys/fenc/NVI7lHhhQDcw3Pevgp8cpq4mxeUDs%2FQCdwnsG38Ja9tS64e8ibPn4n9BwBDSv1J%2Fzlh9rzqZpOl8d5g8Kiw3L0NFE0HBbr7NiW1vcsALToar1AaPzLd%2BjqQoVnU7AmQQnOBcaoVhdT676AtwSL1BMtG36g5TVFnFUkTSxNBNpJ0%3D?sk=OvoG4KkSI6gNFBlDmE0GJYMlDA0v77wHTSIjWY37vN1pngaIlMQOx8QiinXXdF3lHxg4%2FCMHJVURQmXQcc3m%2FEeWTohwswz0k7Aw6O2znBMvAuGDwmLDDUESSF9KSrdtmTMuJgRBkFw9kpFknVX0ncJXJejub29qLD6dl42pfwqrfUyftGtPf6By0cdvr6tyHAMiJA9zzOKdMT5DGZ3vgvkDqtrSefzXIftv87Bh6jqkITWzoEhQTHlTGMIcqPTyQgjnBGi9ljXdhx2tSj%2BVocxSrgsuGwhTueiVfbX0kCUFhIo%2FyEQw%2FE8t3U4QHPMQ0xKKyuGXzC5CjEHm8GhK5JEDb%2FgQuT%2F10RNnBhMMovc%2FRJR%2B8UzXvps5FX4isbQbPyoG1zFp551aif2MdKfoAY1B9qCTzI493WUPaGZj6uI%2B1%2FGTLzboUvIl8ms%2BsBZOaAAOOsjww1m1NQt8Ym7b1vqtFlNIYefJxFVszMzZd2kqR0J8FFGW%2Bguk6B3GNAnWAzCPauOSvRcQ2wZPh36dIuOUpaiqBq%2BmaeCOPxhVb8Kaa5WkFlTE19wslU0UfLOIQPw10YVOeQmOFEyFj2XC9Scdd5G3Ub%2BLseAyWTS6sijNWxrJNm%2B1F0yoAQtv88Xq9KKfzuL9u%2Fxejjju0DA5L7LmOJy2N5SW8%2BeqwbDHeUg%3D",
+      "status": 200
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/jpg/image.jpg?autht=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NzQ2OTg1MTYsImV4cCI6MTc4MjY0NzMxNiwidG9rZW5SaWdodHMiOjE2NjgsInV1aWQiOiIyMDZiYWE4NC0wMDk5LTQwODEtZmZmZjUwNGY5NGExNzNhNyIsInVzZXIiOiJhZG1pbiIsInVzZXJEb21haW4iOiI1MDRGOTRBMTczQTciLCJtc1NlcmlhbCI6IjUwNEY5NEExNzNBNyJ9.MESQjO0i6GEdA_auPBIlIJ62pRaqS9WKr7h-cH4el6iFwYb1cJXLYJ-5Qyjnhf4lAZJEtdkTPld7A1zX1w46yDXE93o8Tc1fCuk2v9pRy8Iuwpsdyy-gzxoVa5GinGTN1eYlltQE7S93i60oUYLRKgNhV38iqfeH61FtxbHi_mAKamC75xcUKjiJ_aFRs4-U1ybVGiA0FzR523r7wC-op028eBeoJ-3JmbPDq1NNs_zliSN1DJ_Xi2zoxvC5AkeCtGp-rFXwoKIUNe296h4ze7iEk3FQKAqvs2TDbYkEPgPaXF75VWU9-ZA0eFgc17NaoY8BsWNcbtZfBNeBkmvJIBWoQfQKrFRFq8XsJRqUsH6XcE6HAJR0XUUw7owx4j2gNSNxefztotl4DrPxf2DR7907TUqTYHDcx4t8MU3dLOCwrDZzYwnB_26N8utqWb6LHRwxCrvfhgHbFBnrV3EloWS29Wi907C4XSfvQ3RO7EFng3BTVvJFVy6DAhIwSrRtr2Y7y58zmsV_Nl-tKPzRjmGjGeFPdxgWpnIyvVvTJZWsgf5tTeC3zIoWOEK3O6anmWOqatNZczs-JjD3DzZ_P4mMB8czhHgcIo7YtEPYeiH2O_MhEttGCP2RkTm_hvhfa-WzWbotnZjoFlpsCvtPspjnmGpL28Aza37mUnpC4lI",
+      "status": 200
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/images/504F94A173A7/1774639455_thumb.jpg?autht=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NzQ2OTg1MTYsImV4cCI6MTc4MjY0NzMxNiwidG9rZW5SaWdodHMiOjE2NjgsInV1aWQiOiIyMDZiYWE4NC0wMDk5LTQwODEtZmZmZjUwNGY5NGExNzNhNyIsInVzZXIiOiJhZG1pbiIsInVzZXJEb21haW4iOiI1MDRGOTRBMTczQTciLCJtc1NlcmlhbCI6IjUwNEY5NEExNzNBNyJ9.MESQjO0i6GEdA_auPBIlIJ62pRaqS9WKr7h-cH4el6iFwYb1cJXLYJ-5Qyjnhf4lAZJEtdkTPld7A1zX1w46yDXE93o8Tc1fCuk2v9pRy8Iuwpsdyy-gzxoVa5GinGTN1eYlltQE7S93i60oUYLRKgNhV38iqfeH61FtxbHi_mAKamC75xcUKjiJ_aFRs4-U1ybVGiA0FzR523r7wC-op028eBeoJ-3JmbPDq1NNs_zliSN1DJ_Xi2zoxvC5AkeCtGp-rFXwoKIUNe296h4ze7iEk3FQKAqvs2TDbYkEPgPaXF75VWU9-ZA0eFgc17NaoY8BsWNcbtZfBNeBkmvJIBWoQfQKrFRFq8XsJRqUsH6XcE6HAJR0XUUw7owx4j2gNSNxefztotl4DrPxf2DR7907TUqTYHDcx4t8MU3dLOCwrDZzYwnB_26N8utqWb6LHRwxCrvfhgHbFBnrV3EloWS29Wi907C4XSfvQ3RO7EFng3BTVvJFVy6DAhIwSrRtr2Y7y58zmsV_Nl-tKPzRjmGjGeFPdxgWpnIyvVvTJZWsgf5tTeC3zIoWOEK3O6anmWOqatNZczs-JjD3DzZ_P4mMB8czhHgcIo7YtEPYeiH2O_MhEttGCP2RkTm_hvhfa-WzWbotnZjoFlpsCvtPspjnmGpL28Aza37mUnpC4lI",
+      "status": 200
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/images/504F94A173A7/1774550069_thumb.jpg?autht=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NzQ2OTg1MTYsImV4cCI6MTc4MjY0NzMxNiwidG9rZW5SaWdodHMiOjE2NjgsInV1aWQiOiIyMDZiYWE4NC0wMDk5LTQwODEtZmZmZjUwNGY5NGExNzNhNyIsInVzZXIiOiJhZG1pbiIsInVzZXJEb21haW4iOiI1MDRGOTRBMTczQTciLCJtc1NlcmlhbCI6IjUwNEY5NEExNzNBNyJ9.MESQjO0i6GEdA_auPBIlIJ62pRaqS9WKr7h-cH4el6iFwYb1cJXLYJ-5Qyjnhf4lAZJEtdkTPld7A1zX1w46yDXE93o8Tc1fCuk2v9pRy8Iuwpsdyy-gzxoVa5GinGTN1eYlltQE7S93i60oUYLRKgNhV38iqfeH61FtxbHi_mAKamC75xcUKjiJ_aFRs4-U1ybVGiA0FzR523r7wC-op028eBeoJ-3JmbPDq1NNs_zliSN1DJ_Xi2zoxvC5AkeCtGp-rFXwoKIUNe296h4ze7iEk3FQKAqvs2TDbYkEPgPaXF75VWU9-ZA0eFgc17NaoY8BsWNcbtZfBNeBkmvJIBWoQfQKrFRFq8XsJRqUsH6XcE6HAJR0XUUw7owx4j2gNSNxefztotl4DrPxf2DR7907TUqTYHDcx4t8MU3dLOCwrDZzYwnB_26N8utqWb6LHRwxCrvfhgHbFBnrV3EloWS29Wi907C4XSfvQ3RO7EFng3BTVvJFVy6DAhIwSrRtr2Y7y58zmsV_Nl-tKPzRjmGjGeFPdxgWpnIyvVvTJZWsgf5tTeC3zIoWOEK3O6anmWOqatNZczs-JjD3DzZ_P4mMB8czhHgcIo7YtEPYeiH2O_MhEttGCP2RkTm_hvhfa-WzWbotnZjoFlpsCvtPspjnmGpL28Aza37mUnpC4lI",
+      "status": 200
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/images/504F94A173A7/1773071563_thumb.jpg?autht=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NzQ2OTg1MTYsImV4cCI6MTc4MjY0NzMxNiwidG9rZW5SaWdodHMiOjE2NjgsInV1aWQiOiIyMDZiYWE4NC0wMDk5LTQwODEtZmZmZjUwNGY5NGExNzNhNyIsInVzZXIiOiJhZG1pbiIsInVzZXJEb21haW4iOiI1MDRGOTRBMTczQTciLCJtc1NlcmlhbCI6IjUwNEY5NEExNzNBNyJ9.MESQjO0i6GEdA_auPBIlIJ62pRaqS9WKr7h-cH4el6iFwYb1cJXLYJ-5Qyjnhf4lAZJEtdkTPld7A1zX1w46yDXE93o8Tc1fCuk2v9pRy8Iuwpsdyy-gzxoVa5GinGTN1eYlltQE7S93i60oUYLRKgNhV38iqfeH61FtxbHi_mAKamC75xcUKjiJ_aFRs4-U1ybVGiA0FzR523r7wC-op028eBeoJ-3JmbPDq1NNs_zliSN1DJ_Xi2zoxvC5AkeCtGp-rFXwoKIUNe296h4ze7iEk3FQKAqvs2TDbYkEPgPaXF75VWU9-ZA0eFgc17NaoY8BsWNcbtZfBNeBkmvJIBWoQfQKrFRFq8XsJRqUsH6XcE6HAJR0XUUw7owx4j2gNSNxefztotl4DrPxf2DR7907TUqTYHDcx4t8MU3dLOCwrDZzYwnB_26N8utqWb6LHRwxCrvfhgHbFBnrV3EloWS29Wi907C4XSfvQ3RO7EFng3BTVvJFVy6DAhIwSrRtr2Y7y58zmsV_Nl-tKPzRjmGjGeFPdxgWpnIyvVvTJZWsgf5tTeC3zIoWOEK3O6anmWOqatNZczs-JjD3DzZ_P4mMB8czhHgcIo7YtEPYeiH2O_MhEttGCP2RkTm_hvhfa-WzWbotnZjoFlpsCvtPspjnmGpL28Aza37mUnpC4lI",
+      "status": 200
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/images/504F94A173A7/1774101781_thumb.jpg?autht=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NzQ2OTg1MTYsImV4cCI6MTc4MjY0NzMxNiwidG9rZW5SaWdodHMiOjE2NjgsInV1aWQiOiIyMDZiYWE4NC0wMDk5LTQwODEtZmZmZjUwNGY5NGExNzNhNyIsInVzZXIiOiJhZG1pbiIsInVzZXJEb21haW4iOiI1MDRGOTRBMTczQTciLCJtc1NlcmlhbCI6IjUwNEY5NEExNzNBNyJ9.MESQjO0i6GEdA_auPBIlIJ62pRaqS9WKr7h-cH4el6iFwYb1cJXLYJ-5Qyjnhf4lAZJEtdkTPld7A1zX1w46yDXE93o8Tc1fCuk2v9pRy8Iuwpsdyy-gzxoVa5GinGTN1eYlltQE7S93i60oUYLRKgNhV38iqfeH61FtxbHi_mAKamC75xcUKjiJ_aFRs4-U1ybVGiA0FzR523r7wC-op028eBeoJ-3JmbPDq1NNs_zliSN1DJ_Xi2zoxvC5AkeCtGp-rFXwoKIUNe296h4ze7iEk3FQKAqvs2TDbYkEPgPaXF75VWU9-ZA0eFgc17NaoY8BsWNcbtZfBNeBkmvJIBWoQfQKrFRFq8XsJRqUsH6XcE6HAJR0XUUw7owx4j2gNSNxefztotl4DrPxf2DR7907TUqTYHDcx4t8MU3dLOCwrDZzYwnB_26N8utqWb6LHRwxCrvfhgHbFBnrV3EloWS29Wi907C4XSfvQ3RO7EFng3BTVvJFVy6DAhIwSrRtr2Y7y58zmsV_Nl-tKPzRjmGjGeFPdxgWpnIyvVvTJZWsgf5tTeC3zIoWOEK3O6anmWOqatNZczs-JjD3DzZ_P4mMB8czhHgcIo7YtEPYeiH2O_MhEttGCP2RkTm_hvhfa-WzWbotnZjoFlpsCvtPspjnmGpL28Aza37mUnpC4lI",
+      "status": 200
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/images/504F94A173A7/1774540724_thumb.jpg?autht=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NzQ2OTg1MTYsImV4cCI6MTc4MjY0NzMxNiwidG9rZW5SaWdodHMiOjE2NjgsInV1aWQiOiIyMDZiYWE4NC0wMDk5LTQwODEtZmZmZjUwNGY5NGExNzNhNyIsInVzZXIiOiJhZG1pbiIsInVzZXJEb21haW4iOiI1MDRGOTRBMTczQTciLCJtc1NlcmlhbCI6IjUwNEY5NEExNzNBNyJ9.MESQjO0i6GEdA_auPBIlIJ62pRaqS9WKr7h-cH4el6iFwYb1cJXLYJ-5Qyjnhf4lAZJEtdkTPld7A1zX1w46yDXE93o8Tc1fCuk2v9pRy8Iuwpsdyy-gzxoVa5GinGTN1eYlltQE7S93i60oUYLRKgNhV38iqfeH61FtxbHi_mAKamC75xcUKjiJ_aFRs4-U1ybVGiA0FzR523r7wC-op028eBeoJ-3JmbPDq1NNs_zliSN1DJ_Xi2zoxvC5AkeCtGp-rFXwoKIUNe296h4ze7iEk3FQKAqvs2TDbYkEPgPaXF75VWU9-ZA0eFgc17NaoY8BsWNcbtZfBNeBkmvJIBWoQfQKrFRFq8XsJRqUsH6XcE6HAJR0XUUw7owx4j2gNSNxefztotl4DrPxf2DR7907TUqTYHDcx4t8MU3dLOCwrDZzYwnB_26N8utqWb6LHRwxCrvfhgHbFBnrV3EloWS29Wi907C4XSfvQ3RO7EFng3BTVvJFVy6DAhIwSrRtr2Y7y58zmsV_Nl-tKPzRjmGjGeFPdxgWpnIyvVvTJZWsgf5tTeC3zIoWOEK3O6anmWOqatNZczs-JjD3DzZ_P4mMB8czhHgcIo7YtEPYeiH2O_MhEttGCP2RkTm_hvhfa-WzWbotnZjoFlpsCvtPspjnmGpL28Aza37mUnpC4lI",
+      "status": 200
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/images/504F94A173A7/1773768465_thumb.jpg?autht=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NzQ2OTg1MTYsImV4cCI6MTc4MjY0NzMxNiwidG9rZW5SaWdodHMiOjE2NjgsInV1aWQiOiIyMDZiYWE4NC0wMDk5LTQwODEtZmZmZjUwNGY5NGExNzNhNyIsInVzZXIiOiJhZG1pbiIsInVzZXJEb21haW4iOiI1MDRGOTRBMTczQTciLCJtc1NlcmlhbCI6IjUwNEY5NEExNzNBNyJ9.MESQjO0i6GEdA_auPBIlIJ62pRaqS9WKr7h-cH4el6iFwYb1cJXLYJ-5Qyjnhf4lAZJEtdkTPld7A1zX1w46yDXE93o8Tc1fCuk2v9pRy8Iuwpsdyy-gzxoVa5GinGTN1eYlltQE7S93i60oUYLRKgNhV38iqfeH61FtxbHi_mAKamC75xcUKjiJ_aFRs4-U1ybVGiA0FzR523r7wC-op028eBeoJ-3JmbPDq1NNs_zliSN1DJ_Xi2zoxvC5AkeCtGp-rFXwoKIUNe296h4ze7iEk3FQKAqvs2TDbYkEPgPaXF75VWU9-ZA0eFgc17NaoY8BsWNcbtZfBNeBkmvJIBWoQfQKrFRFq8XsJRqUsH6XcE6HAJR0XUUw7owx4j2gNSNxefztotl4DrPxf2DR7907TUqTYHDcx4t8MU3dLOCwrDZzYwnB_26N8utqWb6LHRwxCrvfhgHbFBnrV3EloWS29Wi907C4XSfvQ3RO7EFng3BTVvJFVy6DAhIwSrRtr2Y7y58zmsV_Nl-tKPzRjmGjGeFPdxgWpnIyvVvTJZWsgf5tTeC3zIoWOEK3O6anmWOqatNZczs-JjD3DzZ_P4mMB8czhHgcIo7YtEPYeiH2O_MhEttGCP2RkTm_hvhfa-WzWbotnZjoFlpsCvtPspjnmGpL28Aza37mUnpC4lI",
+      "status": 200
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/images/504F94A173A7/1773167536_thumb.jpg?autht=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NzQ2OTg1MTYsImV4cCI6MTc4MjY0NzMxNiwidG9rZW5SaWdodHMiOjE2NjgsInV1aWQiOiIyMDZiYWE4NC0wMDk5LTQwODEtZmZmZjUwNGY5NGExNzNhNyIsInVzZXIiOiJhZG1pbiIsInVzZXJEb21haW4iOiI1MDRGOTRBMTczQTciLCJtc1NlcmlhbCI6IjUwNEY5NEExNzNBNyJ9.MESQjO0i6GEdA_auPBIlIJ62pRaqS9WKr7h-cH4el6iFwYb1cJXLYJ-5Qyjnhf4lAZJEtdkTPld7A1zX1w46yDXE93o8Tc1fCuk2v9pRy8Iuwpsdyy-gzxoVa5GinGTN1eYlltQE7S93i60oUYLRKgNhV38iqfeH61FtxbHi_mAKamC75xcUKjiJ_aFRs4-U1ybVGiA0FzR523r7wC-op028eBeoJ-3JmbPDq1NNs_zliSN1DJ_Xi2zoxvC5AkeCtGp-rFXwoKIUNe296h4ze7iEk3FQKAqvs2TDbYkEPgPaXF75VWU9-ZA0eFgc17NaoY8BsWNcbtZfBNeBkmvJIBWoQfQKrFRFq8XsJRqUsH6XcE6HAJR0XUUw7owx4j2gNSNxefztotl4DrPxf2DR7907TUqTYHDcx4t8MU3dLOCwrDZzYwnB_26N8utqWb6LHRwxCrvfhgHbFBnrV3EloWS29Wi907C4XSfvQ3RO7EFng3BTVvJFVy6DAhIwSrRtr2Y7y58zmsV_Nl-tKPzRjmGjGeFPdxgWpnIyvVvTJZWsgf5tTeC3zIoWOEK3O6anmWOqatNZczs-JjD3DzZ_P4mMB8czhHgcIo7YtEPYeiH2O_MhEttGCP2RkTm_hvhfa-WzWbotnZjoFlpsCvtPspjnmGpL28Aza37mUnpC4lI",
+      "status": 200
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/images/504F94A173A7/1773860441_thumb.jpg?autht=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NzQ2OTg1MTYsImV4cCI6MTc4MjY0NzMxNiwidG9rZW5SaWdodHMiOjE2NjgsInV1aWQiOiIyMDZiYWE4NC0wMDk5LTQwODEtZmZmZjUwNGY5NGExNzNhNyIsInVzZXIiOiJhZG1pbiIsInVzZXJEb21haW4iOiI1MDRGOTRBMTczQTciLCJtc1NlcmlhbCI6IjUwNEY5NEExNzNBNyJ9.MESQjO0i6GEdA_auPBIlIJ62pRaqS9WKr7h-cH4el6iFwYb1cJXLYJ-5Qyjnhf4lAZJEtdkTPld7A1zX1w46yDXE93o8Tc1fCuk2v9pRy8Iuwpsdyy-gzxoVa5GinGTN1eYlltQE7S93i60oUYLRKgNhV38iqfeH61FtxbHi_mAKamC75xcUKjiJ_aFRs4-U1ybVGiA0FzR523r7wC-op028eBeoJ-3JmbPDq1NNs_zliSN1DJ_Xi2zoxvC5AkeCtGp-rFXwoKIUNe296h4ze7iEk3FQKAqvs2TDbYkEPgPaXF75VWU9-ZA0eFgc17NaoY8BsWNcbtZfBNeBkmvJIBWoQfQKrFRFq8XsJRqUsH6XcE6HAJR0XUUw7owx4j2gNSNxefztotl4DrPxf2DR7907TUqTYHDcx4t8MU3dLOCwrDZzYwnB_26N8utqWb6LHRwxCrvfhgHbFBnrV3EloWS29Wi907C4XSfvQ3RO7EFng3BTVvJFVy6DAhIwSrRtr2Y7y58zmsV_Nl-tKPzRjmGjGeFPdxgWpnIyvVvTJZWsgf5tTeC3zIoWOEK3O6anmWOqatNZczs-JjD3DzZ_P4mMB8czhHgcIo7YtEPYeiH2O_MhEttGCP2RkTm_hvhfa-WzWbotnZjoFlpsCvtPspjnmGpL28Aza37mUnpC4lI",
+      "status": 200
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/images/504F94A173A7/1772738815_thumb.jpg?autht=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NzQ2OTg1MTYsImV4cCI6MTc4MjY0NzMxNiwidG9rZW5SaWdodHMiOjE2NjgsInV1aWQiOiIyMDZiYWE4NC0wMDk5LTQwODEtZmZmZjUwNGY5NGExNzNhNyIsInVzZXIiOiJhZG1pbiIsInVzZXJEb21haW4iOiI1MDRGOTRBMTczQTciLCJtc1NlcmlhbCI6IjUwNEY5NEExNzNBNyJ9.MESQjO0i6GEdA_auPBIlIJ62pRaqS9WKr7h-cH4el6iFwYb1cJXLYJ-5Qyjnhf4lAZJEtdkTPld7A1zX1w46yDXE93o8Tc1fCuk2v9pRy8Iuwpsdyy-gzxoVa5GinGTN1eYlltQE7S93i60oUYLRKgNhV38iqfeH61FtxbHi_mAKamC75xcUKjiJ_aFRs4-U1ybVGiA0FzR523r7wC-op028eBeoJ-3JmbPDq1NNs_zliSN1DJ_Xi2zoxvC5AkeCtGp-rFXwoKIUNe296h4ze7iEk3FQKAqvs2TDbYkEPgPaXF75VWU9-ZA0eFgc17NaoY8BsWNcbtZfBNeBkmvJIBWoQfQKrFRFq8XsJRqUsH6XcE6HAJR0XUUw7owx4j2gNSNxefztotl4DrPxf2DR7907TUqTYHDcx4t8MU3dLOCwrDZzYwnB_26N8utqWb6LHRwxCrvfhgHbFBnrV3EloWS29Wi907C4XSfvQ3RO7EFng3BTVvJFVy6DAhIwSrRtr2Y7y58zmsV_Nl-tKPzRjmGjGeFPdxgWpnIyvVvTJZWsgf5tTeC3zIoWOEK3O6anmWOqatNZczs-JjD3DzZ_P4mMB8czhHgcIo7YtEPYeiH2O_MhEttGCP2RkTm_hvhfa-WzWbotnZjoFlpsCvtPspjnmGpL28Aza37mUnpC4lI",
+      "status": 200
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/images/504F94A173A7/1772531035_thumb.jpg?autht=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NzQ2OTg1MTYsImV4cCI6MTc4MjY0NzMxNiwidG9rZW5SaWdodHMiOjE2NjgsInV1aWQiOiIyMDZiYWE4NC0wMDk5LTQwODEtZmZmZjUwNGY5NGExNzNhNyIsInVzZXIiOiJhZG1pbiIsInVzZXJEb21haW4iOiI1MDRGOTRBMTczQTciLCJtc1NlcmlhbCI6IjUwNEY5NEExNzNBNyJ9.MESQjO0i6GEdA_auPBIlIJ62pRaqS9WKr7h-cH4el6iFwYb1cJXLYJ-5Qyjnhf4lAZJEtdkTPld7A1zX1w46yDXE93o8Tc1fCuk2v9pRy8Iuwpsdyy-gzxoVa5GinGTN1eYlltQE7S93i60oUYLRKgNhV38iqfeH61FtxbHi_mAKamC75xcUKjiJ_aFRs4-U1ybVGiA0FzR523r7wC-op028eBeoJ-3JmbPDq1NNs_zliSN1DJ_Xi2zoxvC5AkeCtGp-rFXwoKIUNe296h4ze7iEk3FQKAqvs2TDbYkEPgPaXF75VWU9-ZA0eFgc17NaoY8BsWNcbtZfBNeBkmvJIBWoQfQKrFRFq8XsJRqUsH6XcE6HAJR0XUUw7owx4j2gNSNxefztotl4DrPxf2DR7907TUqTYHDcx4t8MU3dLOCwrDZzYwnB_26N8utqWb6LHRwxCrvfhgHbFBnrV3EloWS29Wi907C4XSfvQ3RO7EFng3BTVvJFVy6DAhIwSrRtr2Y7y58zmsV_Nl-tKPzRjmGjGeFPdxgWpnIyvVvTJZWsgf5tTeC3zIoWOEK3O6anmWOqatNZczs-JjD3DzZ_P4mMB8czhHgcIo7YtEPYeiH2O_MhEttGCP2RkTm_hvhfa-WzWbotnZjoFlpsCvtPspjnmGpL28Aza37mUnpC4lI",
+      "status": 200
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/images/504F94A173A7/1772177773_thumb.jpg?autht=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NzQ2OTg1MTYsImV4cCI6MTc4MjY0NzMxNiwidG9rZW5SaWdodHMiOjE2NjgsInV1aWQiOiIyMDZiYWE4NC0wMDk5LTQwODEtZmZmZjUwNGY5NGExNzNhNyIsInVzZXIiOiJhZG1pbiIsInVzZXJEb21haW4iOiI1MDRGOTRBMTczQTciLCJtc1NlcmlhbCI6IjUwNEY5NEExNzNBNyJ9.MESQjO0i6GEdA_auPBIlIJ62pRaqS9WKr7h-cH4el6iFwYb1cJXLYJ-5Qyjnhf4lAZJEtdkTPld7A1zX1w46yDXE93o8Tc1fCuk2v9pRy8Iuwpsdyy-gzxoVa5GinGTN1eYlltQE7S93i60oUYLRKgNhV38iqfeH61FtxbHi_mAKamC75xcUKjiJ_aFRs4-U1ybVGiA0FzR523r7wC-op028eBeoJ-3JmbPDq1NNs_zliSN1DJ_Xi2zoxvC5AkeCtGp-rFXwoKIUNe296h4ze7iEk3FQKAqvs2TDbYkEPgPaXF75VWU9-ZA0eFgc17NaoY8BsWNcbtZfBNeBkmvJIBWoQfQKrFRFq8XsJRqUsH6XcE6HAJR0XUUw7owx4j2gNSNxefztotl4DrPxf2DR7907TUqTYHDcx4t8MU3dLOCwrDZzYwnB_26N8utqWb6LHRwxCrvfhgHbFBnrV3EloWS29Wi907C4XSfvQ3RO7EFng3BTVvJFVy6DAhIwSrRtr2Y7y58zmsV_Nl-tKPzRjmGjGeFPdxgWpnIyvVvTJZWsgf5tTeC3zIoWOEK3O6anmWOqatNZczs-JjD3DzZ_P4mMB8czhHgcIo7YtEPYeiH2O_MhEttGCP2RkTm_hvhfa-WzWbotnZjoFlpsCvtPspjnmGpL28Aza37mUnpC4lI",
+      "status": 200
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/images/504F94A173A7/1772094452_thumb.jpg?autht=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NzQ2OTg1MTYsImV4cCI6MTc4MjY0NzMxNiwidG9rZW5SaWdodHMiOjE2NjgsInV1aWQiOiIyMDZiYWE4NC0wMDk5LTQwODEtZmZmZjUwNGY5NGExNzNhNyIsInVzZXIiOiJhZG1pbiIsInVzZXJEb21haW4iOiI1MDRGOTRBMTczQTciLCJtc1NlcmlhbCI6IjUwNEY5NEExNzNBNyJ9.MESQjO0i6GEdA_auPBIlIJ62pRaqS9WKr7h-cH4el6iFwYb1cJXLYJ-5Qyjnhf4lAZJEtdkTPld7A1zX1w46yDXE93o8Tc1fCuk2v9pRy8Iuwpsdyy-gzxoVa5GinGTN1eYlltQE7S93i60oUYLRKgNhV38iqfeH61FtxbHi_mAKamC75xcUKjiJ_aFRs4-U1ybVGiA0FzR523r7wC-op028eBeoJ-3JmbPDq1NNs_zliSN1DJ_Xi2zoxvC5AkeCtGp-rFXwoKIUNe296h4ze7iEk3FQKAqvs2TDbYkEPgPaXF75VWU9-ZA0eFgc17NaoY8BsWNcbtZfBNeBkmvJIBWoQfQKrFRFq8XsJRqUsH6XcE6HAJR0XUUw7owx4j2gNSNxefztotl4DrPxf2DR7907TUqTYHDcx4t8MU3dLOCwrDZzYwnB_26N8utqWb6LHRwxCrvfhgHbFBnrV3EloWS29Wi907C4XSfvQ3RO7EFng3BTVvJFVy6DAhIwSrRtr2Y7y58zmsV_Nl-tKPzRjmGjGeFPdxgWpnIyvVvTJZWsgf5tTeC3zIoWOEK3O6anmWOqatNZczs-JjD3DzZ_P4mMB8czhHgcIo7YtEPYeiH2O_MhEttGCP2RkTm_hvhfa-WzWbotnZjoFlpsCvtPspjnmGpL28Aza37mUnpC4lI",
+      "status": 200
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/images/504F94A173A7/1772177649_thumb.jpg?autht=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NzQ2OTg1MTYsImV4cCI6MTc4MjY0NzMxNiwidG9rZW5SaWdodHMiOjE2NjgsInV1aWQiOiIyMDZiYWE4NC0wMDk5LTQwODEtZmZmZjUwNGY5NGExNzNhNyIsInVzZXIiOiJhZG1pbiIsInVzZXJEb21haW4iOiI1MDRGOTRBMTczQTciLCJtc1NlcmlhbCI6IjUwNEY5NEExNzNBNyJ9.MESQjO0i6GEdA_auPBIlIJ62pRaqS9WKr7h-cH4el6iFwYb1cJXLYJ-5Qyjnhf4lAZJEtdkTPld7A1zX1w46yDXE93o8Tc1fCuk2v9pRy8Iuwpsdyy-gzxoVa5GinGTN1eYlltQE7S93i60oUYLRKgNhV38iqfeH61FtxbHi_mAKamC75xcUKjiJ_aFRs4-U1ybVGiA0FzR523r7wC-op028eBeoJ-3JmbPDq1NNs_zliSN1DJ_Xi2zoxvC5AkeCtGp-rFXwoKIUNe296h4ze7iEk3FQKAqvs2TDbYkEPgPaXF75VWU9-ZA0eFgc17NaoY8BsWNcbtZfBNeBkmvJIBWoQfQKrFRFq8XsJRqUsH6XcE6HAJR0XUUw7owx4j2gNSNxefztotl4DrPxf2DR7907TUqTYHDcx4t8MU3dLOCwrDZzYwnB_26N8utqWb6LHRwxCrvfhgHbFBnrV3EloWS29Wi907C4XSfvQ3RO7EFng3BTVvJFVy6DAhIwSrRtr2Y7y58zmsV_Nl-tKPzRjmGjGeFPdxgWpnIyvVvTJZWsgf5tTeC3zIoWOEK3O6anmWOqatNZczs-JjD3DzZ_P4mMB8czhHgcIo7YtEPYeiH2O_MhEttGCP2RkTm_hvhfa-WzWbotnZjoFlpsCvtPspjnmGpL28Aza37mUnpC4lI",
+      "status": 200
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/images/504F94A173A7/1772093645_thumb.jpg?autht=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NzQ2OTg1MTYsImV4cCI6MTc4MjY0NzMxNiwidG9rZW5SaWdodHMiOjE2NjgsInV1aWQiOiIyMDZiYWE4NC0wMDk5LTQwODEtZmZmZjUwNGY5NGExNzNhNyIsInVzZXIiOiJhZG1pbiIsInVzZXJEb21haW4iOiI1MDRGOTRBMTczQTciLCJtc1NlcmlhbCI6IjUwNEY5NEExNzNBNyJ9.MESQjO0i6GEdA_auPBIlIJ62pRaqS9WKr7h-cH4el6iFwYb1cJXLYJ-5Qyjnhf4lAZJEtdkTPld7A1zX1w46yDXE93o8Tc1fCuk2v9pRy8Iuwpsdyy-gzxoVa5GinGTN1eYlltQE7S93i60oUYLRKgNhV38iqfeH61FtxbHi_mAKamC75xcUKjiJ_aFRs4-U1ybVGiA0FzR523r7wC-op028eBeoJ-3JmbPDq1NNs_zliSN1DJ_Xi2zoxvC5AkeCtGp-rFXwoKIUNe296h4ze7iEk3FQKAqvs2TDbYkEPgPaXF75VWU9-ZA0eFgc17NaoY8BsWNcbtZfBNeBkmvJIBWoQfQKrFRFq8XsJRqUsH6XcE6HAJR0XUUw7owx4j2gNSNxefztotl4DrPxf2DR7907TUqTYHDcx4t8MU3dLOCwrDZzYwnB_26N8utqWb6LHRwxCrvfhgHbFBnrV3EloWS29Wi907C4XSfvQ3RO7EFng3BTVvJFVy6DAhIwSrRtr2Y7y58zmsV_Nl-tKPzRjmGjGeFPdxgWpnIyvVvTJZWsgf5tTeC3zIoWOEK3O6anmWOqatNZczs-JjD3DzZ_P4mMB8czhHgcIo7YtEPYeiH2O_MhEttGCP2RkTm_hvhfa-WzWbotnZjoFlpsCvtPspjnmGpL28Aza37mUnpC4lI",
+      "status": 200
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/jpg/image.jpg?autht=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NzQ2OTg1MTYsImV4cCI6MTc4MjY0NzMxNiwidG9rZW5SaWdodHMiOjE2NjgsInV1aWQiOiIyMDZiYWE4NC0wMDk5LTQwODEtZmZmZjUwNGY5NGExNzNhNyIsInVzZXIiOiJhZG1pbiIsInVzZXJEb21haW4iOiI1MDRGOTRBMTczQTciLCJtc1NlcmlhbCI6IjUwNEY5NEExNzNBNyJ9.MESQjO0i6GEdA_auPBIlIJ62pRaqS9WKr7h-cH4el6iFwYb1cJXLYJ-5Qyjnhf4lAZJEtdkTPld7A1zX1w46yDXE93o8Tc1fCuk2v9pRy8Iuwpsdyy-gzxoVa5GinGTN1eYlltQE7S93i60oUYLRKgNhV38iqfeH61FtxbHi_mAKamC75xcUKjiJ_aFRs4-U1ybVGiA0FzR523r7wC-op028eBeoJ-3JmbPDq1NNs_zliSN1DJ_Xi2zoxvC5AkeCtGp-rFXwoKIUNe296h4ze7iEk3FQKAqvs2TDbYkEPgPaXF75VWU9-ZA0eFgc17NaoY8BsWNcbtZfBNeBkmvJIBWoQfQKrFRFq8XsJRqUsH6XcE6HAJR0XUUw7owx4j2gNSNxefztotl4DrPxf2DR7907TUqTYHDcx4t8MU3dLOCwrDZzYwnB_26N8utqWb6LHRwxCrvfhgHbFBnrV3EloWS29Wi907C4XSfvQ3RO7EFng3BTVvJFVy6DAhIwSrRtr2Y7y58zmsV_Nl-tKPzRjmGjGeFPdxgWpnIyvVvTJZWsgf5tTeC3zIoWOEK3O6anmWOqatNZczs-JjD3DzZ_P4mMB8czhHgcIo7YtEPYeiH2O_MhEttGCP2RkTm_hvhfa-WzWbotnZjoFlpsCvtPspjnmGpL28Aza37mUnpC4lI&cacheBuster=1774698527190",
+      "status": 200
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/mjpg/video.mjpg?autht=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NzQ2OTg1MTYsImV4cCI6MTc4MjY0NzMxNiwidG9rZW5SaWdodHMiOjE2NjgsInV1aWQiOiIyMDZiYWE4NC0wMDk5LTQwODEtZmZmZjUwNGY5NGExNzNhNyIsInVzZXIiOiJhZG1pbiIsInVzZXJEb21haW4iOiI1MDRGOTRBMTczQTciLCJtc1NlcmlhbCI6IjUwNEY5NEExNzNBNyJ9.MESQjO0i6GEdA_auPBIlIJ62pRaqS9WKr7h-cH4el6iFwYb1cJXLYJ-5Qyjnhf4lAZJEtdkTPld7A1zX1w46yDXE93o8Tc1fCuk2v9pRy8Iuwpsdyy-gzxoVa5GinGTN1eYlltQE7S93i60oUYLRKgNhV38iqfeH61FtxbHi_mAKamC75xcUKjiJ_aFRs4-U1ybVGiA0FzR523r7wC-op028eBeoJ-3JmbPDq1NNs_zliSN1DJ_Xi2zoxvC5AkeCtGp-rFXwoKIUNe296h4ze7iEk3FQKAqvs2TDbYkEPgPaXF75VWU9-ZA0eFgc17NaoY8BsWNcbtZfBNeBkmvJIBWoQfQKrFRFq8XsJRqUsH6XcE6HAJR0XUUw7owx4j2gNSNxefztotl4DrPxf2DR7907TUqTYHDcx4t8MU3dLOCwrDZzYwnB_26N8utqWb6LHRwxCrvfhgHbFBnrV3EloWS29Wi907C4XSfvQ3RO7EFng3BTVvJFVy6DAhIwSrRtr2Y7y58zmsV_Nl-tKPzRjmGjGeFPdxgWpnIyvVvTJZWsgf5tTeC3zIoWOEK3O6anmWOqatNZczs-JjD3DzZ_P4mMB8czhHgcIo7YtEPYeiH2O_MhEttGCP2RkTm_hvhfa-WzWbotnZjoFlpsCvtPspjnmGpL28Aza37mUnpC4lI",
+      "status": 401
+    }
+  ],
+  "consoleMessages": [
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    }
+  ],
+  "webSocketEvents": [
+    {
+      "kind": "open",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "authwithtoken/eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NzQ2OTg1MTYsImV4cCI6MTc4MjY0NzMxNiwidG9rZW5SaWdodHMiOjE2NjgsInV1aWQiOiIyMDZiYWE4NC0wMDk5LTQwODEtZmZmZjUwNGY5NGExNzNhNyIsInVzZXIiOiJhZG1pbiIsInVzZXJEb21haW4iOiI1MDRGOTRBMTczQTciLCJtc1NlcmlhbCI6IjUwNEY5NEExNzNBNyJ9.MESQjO0i6GEdA_auPBIlIJ62pRaqS9WKr7h-cH4el6iFwYb1cJXLYJ-5Qyjnhf4lAZJEtdkTPld7A1zX1w46yDXE93o8Tc1fCuk2v9pRy8Iuwpsdyy-gzxoVa5GinGTN1eYlltQE7S93i60oUYLRKgNhV38iqfeH61FtxbHi_mAKamC75xcUKjiJ_aFRs4-U1ybVGiA0FzR523r7wC-op028eBeoJ-3J"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0000\u0000\u00000\u0004\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "{\"LL\":{\"control\":\"authwithtoken/eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NzQ2OTg1MTYsImV4cCI6MTc4MjY0NzMxNiwidG9rZW5SaWdodHMiOjE2NjgsInV1aWQiOiIyMDZiYWE4NC0wMDk5LTQwODEtZmZmZjUwNGY5NGExNzNhNyIsInVzZXIiOiJhZG1pbiIsInVzZXJEb21haW4iOiI1MDRGOTRBMTczQTciLCJtc1NlcmlhbCI6IjUwNEY5NEExNzNBNyJ9.MESQjO0i6GEdA_auPBIlIJ62pRaqS9WKr7h-cH4el6iFwYb1cJXLYJ-5Qyjnhf4lAZJEtdkTPld7A1zX1w46yDXE93o8Tc1fCuk2v9pRy8Iuwpsdyy-gzxoVa5GinGTN1eYlltQE7S93i60oUYLRKgNhV38iqfeH61FtxbHi_mAKamC75xcUKjiJ_aFRs4-U1ybVGiA0FzR523"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "data/LoxAPP3.json"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0001�\u0000�%\u0003\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0001\u0000\u0000�#\u0003\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "{\"lastModified\":\"2026-02-18 22:44:52\",\"msInfo\":{\"serialNr\":\"504F94A173A7\",\"msName\":\"Slowackiego\",\"projectName\":\"Slowackiego\",\"localUrl\":\"192.168.1.101\",\"remoteUrl\":\"connect.loxonecloud.com/504F94A173A7\",\"hostname\":\"\",\"tempUnit\":0,\"currency\":\"zł\",\"squareMeasure\":\"m²\",\"location\":\"xxx\",\"latitude\":54.370,\"longitude\":18.578,\"altitude\":80,\"languageCode\":\"PLK\",\"heatPeriodStart\":\"10-01\",\"heatPeriodEnd\":\"04-30\",\"coolPeriodStart\":\"05-01\",\"coolPeriodEnd\":\"09-30\",\"catTitle\":\"Kategorie\",\"roomTitle\":\"Pomieszc"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "jdev/sps/enablebinstatusupdate"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0000\u0000\u0000R\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "{\"LL\": { \"control\": \"dev/sps/enablebinstatusupdate\", \"value\": \"1\", \"Code\": \"200\"}}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000\u0018o\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "i&@\u001aW\u00000@��2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000 @i&@\u001a`\u0000B@��2o��\u000fk\u0000\u0000\u0000\u0000\u0000�t@i&@\u001aa\u0000E@��2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0004�@v�J\u001cN\u0003����2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000v�J\u001cN\u0003����2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000i&@\u001a�\u0000\u001aB����-z�\u0002\u0000\u0000\u0000\u0000\u0000\u0000�?\u0014\u001d\\\u001fN\u0000Q6��PO��s�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0002f\\\u001f�\u0002d6��PO��s�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u00001`�\u001cC\u0000�e��v\u001a��\u001e\u0000\u0000\u0000\u0000\u0000P�@�TV\u001d�\u00007���2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000\b@1`�\u001cC\u0000GfB�v\u001a��\u001e\u0000\u0000\u0000\u0000\u0000\u0000Y@1`�\u001cC\u00004f/�v\u001a��\u001e\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u00001`�\u001cC\u00005f0�v\u001a��\u001e\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000���\u001e�\u0001E�!��\u001a4\u0013^w\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000���\u001e�\u0001\u001b����\u001a4\u0013^w\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000���\u001e�\u0001\u001c����\u001a4\u0013^w\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000���\u001e�\u0001\u001d����\u001a4\u0013^w\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000���\u001e�\u0001\u001e����\u001a4\u0013^w\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000���\u001e�\u0001\"����\u001a4\u0013^w\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000���\u001e�\u0001#����\u001a4\u0013^w\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000���\u001e�\u0001N�*��\u001a4\u0013^w\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0003\u0000\u0000�q\u0001\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "k&@\u001a�\u0000GB����-z�\u0002\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0002\u0000\u0000\u0000[]\u0000\u0000k&@\u001a�\u0000FB����-z�\u0002\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0002\u0000\u0000\u0000[]\u0000\u0000i&@\u001a>\u0000\u0002@��2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0002\u0000\u0000\u0000[]\u0000\u0000i&@\u001a>\u0000\u0003@��2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u00002\u0000\u0000\u0000[\"hsv(25,96,50)\",\"hsv(24,95,80)\",\"hsv(337,94,50)\"]\u0000\u0000i&@\u001a>\u0000\u0001@��2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u001d\u0000\u0000\u00002026-03-28 12:48:37 +01:00:00\u0000\u0000\u0000v�J\u001cN\u0003|���2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000v�J\u001cN\u0003}���2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0002\u0000\u0000\u0000{}1bv�J\u001cN\u0003~���2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u000f\u0000\u0000\u0000{\"0\":503928212}\u0000v�J\u001cN\u0003���2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�\u0000\u0000\u0000{\"cloudstatus\":1,\"services\":[{\"name\":\"caller\",\"status\":0},{\""
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0004\u0000\u0000\u0004\n\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "�3@\u001a�\u00021������Q��\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0007\u0000\u0000\u0000����\u0000\u0000\u0000\u0000�\u0005\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000@����\u0000\u0000\u0000\u0000�\u0005\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000@\u0003\u0000\u0000\u0000�\u0001\u0000\u0000�\u0003\u0000\u0000\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�?\u0004\u0000\u0000\u0000�\u0001\u0000\u0000�\u0003\u0000\u0000\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�?\u0005\u0000\u0000\u0000�\u0001\u0000\u0000�\u0003\u0000\u0000\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�?\u0006\u0000\u0000\u0000�\u0001\u0000\u0000�\u0003\u0000\u0000\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�?\u0007\u0000\u0000\u0000�\u0001\u0000\u0000�\u0003\u0000\u0000\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�?\u0014��\u001d�\u0002\u0002���\rB�\u0010#�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0007\u0000\u0000\u0000����\u0000\u0000\u0000\u0000�\u0005\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000@����\u0000\u0000\u0000\u0000�\u0005\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000@\u0003\u0000\u0000\u0000X\u0002\u0000\u0000t\u0004\u0000\u0000\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�?\u0004\u0000\u0000\u0000X\u0002\u0000\u0000t\u0004\u0000\u0000\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�?\u0005\u0000\u0000\u0000X\u0002\u0000\u0000t\u0004\u0000\u0000\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�?\u0006\u0000\u0000\u0000X\u0002\u0000\u0000t\u0004\u0000\u0000\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�?\u0007\u0000\u0000\u0000X\u0002\u0000\u0000t\u0004\u0000\u0000\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�?�w�\u001d�\u0002����=\u001c��o\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\t\u0000\u0000\u0000����\u0000\u0000\u0000\u0000�\u0005\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000@����\u0000\u0000\u0000\u0000�\u0005\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000@\u0003\u0000\u0000\u0000�\u0001\u0000\u0000(\u0005\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�?\u0004\u0000\u0000\u0000�\u0001\u0000\u0000("
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0007\u0000\u00000\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "k&@\u001a�\u0001�C��2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000k&@\u001a�\u0001�C����-z�\u0002\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000\u0018\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "��\n\u001d�\u0001@���2o��\u000fk\u0000\u0000\u0000@�<�?"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000\b\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "��\n\u001d�\u0001D���2o��\u000fk\u0000\u0000\u0000����?;X8 c\u0001T���j�S��\u0003����(Py@;X8 c\u0001U���j�S��\u0003L�+\u001e�G\u0013@;X8 c\u0001W���j�S��\u0003R4ЁznI@;X8 c\u0001Y���j�S��\u0003��)���q@;X8 c\u0001[���j�S��\u0003����(Py@`W7 8\u0003G�\u0007�j�'v�򐍚�LOy@`W7 8\u0003H�\b�j�'v���L�G\u0013@`W7 8\u0003J�\n�j�'v���=1\u0013snI@`W7 8\u0003L�\f�j�'v����q@`W7 8\u0003N�\u000e�j�'v�򐍚�LOy@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "��\n\u001d�\u0001H���2o��\u000fk���V��?Y@8 U\u0003FH��\u0017�\r��9���V��?Y@8 U\u0003GH��\u0017�\r��9�}���`@Y@8 U\u0003HH��\u0017�\r��9%1�o�e�?Y@8 U\u0003JH��\u0017�\r��9��j�ȣ1@Y@8 U\u0003LH��\u0017�\r��9��m��X@Y@8 U\u0003NH��\u0017�\r��9�}���`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000P\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "��\n\u001d�\u0001L���2o��\u000fk3333�'�?O@8 �\u0001 �\u0004�9�A�ǔ3333�'�?O@8 �\u0001!�\u0005�9�A�ǔfpED��a@O@8 �\u0001\"�\u0006�9�A�ǔQ_&��p�?O@8 �\u0001$�\b�9�A�ǔ���BO3@O@8 �\u0001&�\n�9�A�ǔ`�U*�\u001bY@O@8 �\u0001(�\f�9�A�ǔfpED��a@��\n\u001d�\u0001P���2o��\u000fk\u0006��Ck��?[@8 x\u0000����{�G>\u0003\u0006��Ck��?[@8 x\u0000����{�G>\u0003x��;�%`@[@8 x\u0000����{�G>\u0003D&:��j�?[@8 x\u0000����{�G>\u0003��?S'�+@[@8 x\u0000����{�G>\u0003w�G{�IU@[@8 x\u0000����{�G>\u0003x��;�%`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000\u0018\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "��\n\u001d�\u0001d���2o��\u000fk\u0000\u0000\u0000\u0000@��@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000\u0018\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "��\n\u001d�\u0001h���2o��\u000fk\u0000\u0000\u0000 Z���"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "԰Z\u001ah\u0000qs���^8��v�;�?��i@԰Z\u001ah\u0000rs���^8��v�'��\u001bf�?԰Z\u001ah\u0000ss���^8��vm�p�\n\u0012�?԰Z\u001ah\u0000ts���^8��v*ږFI�\u0018@԰Z\u001ah\u0000us���^8��v$��S=�3@X��\u001a�\u0001!�\u0005�ߠN%��U�\u0000H\u000b=�@X��\u001a�\u0001\"�\u0006�ߠN%�Ը\n]\"���?X��\u001a�\u0001#�\u0007�ߠN%��&�{��\u000b\u0010@X��\u001a�\u0001$�\b�ߠN%�Ԁ�Z1q�3@X��\u001a�\u0001%�\t�ߠN%��K�c�=\"N@�M=\u001b~\u0002@�\u0005�����$�b�$̀�n@�M=\u001b~\u0002A�\u0006�����$�\u0016K賽E�?�M=\u001b~\u0002B�\u0007�����$�\u000f@��\u001a��?�M=\u001b~\u0002C�\b�����$�S����!@�M=\u001b~\u0002D�\t�����$�&�\b\u0003L�9@�M=\u001b~\u0002M�\u0005�����$��y\u0003�u�F@�M=\u001b~\u0002N�\u0006�����$���d_�<�?�M=\u001b~\u0002O�\u0007�����$��4�*�\u0015�?�M=\u001b~\u0002P�\b�����$��<���'�?�M=\u001b~\u0002Q�\t�����$�G�T���\u000f@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000h\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": ";X8 c\u0001T���j�S��\u0003\u00165�P)Py@;X8 c\u0001U���j�S��\u0003�ʒ#�G\u0013@;X8 c\u0001W���j�S��\u0003\u001f\u0017}\u0002~nI@;X8 c\u0001Y���j�S��\u0003Jw?6��q@;X8 c\u0001[���j�S��\u0003\u00165�P)Py@`W7 8\u0003G�\u0007�j�'v���)�#MOy@`W7 8\u0003H�\b�j�'v���۳��G\u0013@`W7 8\u0003J�\n�j�'v�� ޓvnI@`W7 8\u0003L�\f�j�'v��\u0016#\u0004\u0007�q@`W7 8\u0003N�\u000e�j�'v���)�#MOy@Y@8 U\u0003GH��\u0017�\r��9Ӆ\u0004\"��`@Y@8 U\u0003HH��\u0017�\r��9�)\u001a��e�?Y@8 U\u0003JH��\u0017�\r��9u-��ˣ1@Y@8 U\u0003LH��\u0017�\r��9��{��X@Y@8 U\u0003NH��\u0017�\r��9Ӆ\u0004\"��`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "O@8 �\u0001!�\u0005�9�A�ǔE\u0002%���a@O@8 �\u0001\"�\u0006�9�A�ǔ�N��\u0003q�?O@8 �\u0001$�\b�9�A�ǔ�w�`DO3@O@8 �\u0001&�\n�9�A�ǔ\u001e�\u0014��\u001bY@O@8 �\u0001(�\f�9�A�ǔE\u0002%���a@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "[@8 x\u0000����{�G>\u0003�-�z�%`@[@8 x\u0000����{�G>\u0003\u000e��3�j�?[@8 x\u0000����{�G>\u0003\u0003\u001cII+�+@[@8 x\u0000����{�G>\u0003��\b��IU@[@8 x\u0000����{�G>\u0003�-�z�%`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "԰Z\u001ah\u0000qs���^8��v���E��i@԰Z\u001ah\u0000rs���^8��v�U�R3f�?԰Z\u001ah\u0000ss���^8��v+hP�\r\u0012�?԰Z\u001ah\u0000ts���^8��v��N\u0002J�\u0018@԰Z\u001ah\u0000us���^8��v����=�3@X��\u001a�\u0001!�\u0005�ߠN%��\u0013��K\u000b=�@X��\u001a�\u0001\"�\u0006�ߠN%�Ԡ�r����?X��\u001a�\u0001#�\u0007�ߠN%��\u0014<���\u000b\u0010@X��\u001a�\u0001$�\b�ߠN%��<\u0011_�q�3@X��\u001a�\u0001%�\t�ߠN%��)�e�=\"N@�M=\u001b~\u0002@�\u0005�����$���ZԀ�n@�M=\u001b~\u0002A�\u0006�����$��$���E�?�M=\u001b~\u0002B�\u0007�����$�L[��\u001e��?�M=\u001b~\u0002C�\b�����$����r��!@�M=\u001b~\u0002D�\t�����$��e�DL�9@�M=\u001b~\u0002M�\u0005�����$�iߴ�u�F@�M=\u001b~\u0002N�\u0006�����$�ʯ��\u001e=�?�M=\u001b~\u0002O�\u0007�����$��\u001f���\u0015�?�M=\u001b~\u0002P�\b�����$���\u0000��'�?�M=\u001b~\u0002Q�\t�����$��=k���\u000f@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": ";X8 c\u0001T���j�S��\u0003�R��)Py@;X8 c\u0001U���j�S��\u0003�@�!�G\u0013@;X8 c\u0001W���j�S��\u0003�\u0005F��nI@;X8 c\u0001Y���j�S��\u0003#�8���q@;X8 c\u0001[���j�S��\u0003�R��)Py@`W7 8\u0003G�\u0007�j�'v���G��MOy@`W7 8\u0003H�\b�j�'v��5R���G\u0013@`W7 8\u0003J�\n�j�'v��o\u000f�\u0013znI@`W7 8\u0003L�\f�j�'v���@�v�q@`W7 8\u0003N�\u000e�j�'v���G��MOy@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "Y@8 U\u0003GH��\u0017�\r��9�q����`@Y@8 U\u0003HH��\u0017�\r��9%\"��\u0006f�?Y@8 U\u0003JH��\u0017�\r��9���\u000fϣ1@Y@8 U\u0003LH��\u0017�\r��9���u�X@Y@8 U\u0003NH��\u0017�\r��9�q����`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "O@8 �\u0001!�\u0005�9�A�ǔ��\u0013���a@O@8 �\u0001\"�\u0006�9�A�ǔexV�!q�?O@8 �\u0001$�\b�9�A�ǔv�`@FO3@O@8 �\u0001&�\n�9�A�ǔ�^�\u0019�\u001bY@O@8 �\u0001(�\f�9�A�ǔ��\u0013���a@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "[@8 x\u0000����{�G>\u0003x�h��%`@[@8 x\u0000����{�G>\u0003\u001b���\u001ck�?[@8 x\u0000����{�G>\u0003�yT@/�+@[@8 x\u0000����{�G>\u0003vY�x�IU@[@8 x\u0000����{�G>\u0003x�h��%`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "԰Z\u001ah\u0000qs���^8��vi<�K��i@԰Z\u001ah\u0000rs���^8��v�i��Jf�?԰Z\u001ah\u0000ss���^8��v�*q�\u0010\u0012�?԰Z\u001ah\u0000ts���^8��v=�ֽJ�\u0018@԰Z\u001ah\u0000us���^8��v����=�3@X��\u001a�\u0001!�\u0005�ߠN%�ԪٟO\u000b=�@X��\u001a�\u0001\"�\u0006�ߠN%��ӭ�\u001cǟ�?X��\u001a�\u0001#�\u0007�ߠN%��W�\"p�\u000b\u0010@X��\u001a�\u0001$�\b�ߠN%��\rdD%r�3@X��\u001a�\u0001%�\t�ߠN%�ԑ�X1>\"N@�M=\u001b~\u0002@�\u0005�����$�RY�܀�n@�M=\u001b~\u0002A�\u0006�����$�n\u000e _�E�?�M=\u001b~\u0002B�\u0007�����$�z8��\"��?�M=\u001b~\u0002C�\b�����$�a�9���!@�M=\u001b~\u0002D�\t�����$��C_�L�9@�M=\u001b~\u0002M�\u0005�����$��\u0013e�u�F@�M=\u001b~\u0002N�\u0006�����$��\u00037lD=�?�M=\u001b~\u0002O�\u0007�����$��T���\u0015�?�M=\u001b~\u0002P�\b�����$��\u0007+�'�?�M=\u001b~\u0002Q�\t�����$�O�n<��\u000f@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": ";X8 c\u0001T���j�S��\u0003�m\n1*Py@;X8 c\u0001U���j�S��\u0003z�`.\u0010H\u0013@;X8 c\u0001W���j�S��\u0003���\u0003�nI@;X8 c\u0001Y���j�S��\u0003��j\u0016��q@;X8 c\u0001[���j�S��\u0003�m\n1*Py@`W7 8\u0003G�\u0007�j�'v��b�\u0003NOy@`W7 8\u0003H�\b�j�'v���\b��\u000fH\u0013@`W7 8\u0003J�\n�j�'v��A�7�}nI@`W7 8\u0003L�\f�j�'v���[/��q@`W7 8\u0003N�\u000e�j�'v��b�\u0003NOy@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "Y@8 U\u0003GH��\u0017�\r��9�]\u0012��`@Y@8 U\u0003HH��\u0017�\r��9�\u001a\u0006:9f�?Y@8 U\u0003JH��\u0017�\r��9��\u00104ң1@Y@8 U\u0003LH��\u0017�\r��9�j�>�X@Y@8 U\u0003NH��\u0017�\r��9�]\u0012��`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "O@8 �\u0001!�\u0005�9�A�ǔ�\u0002���a@O@8 �\u0001\"�\u0006�9�A�ǔ\u0010���?q�?O@8 �\u0001$�\b�9�A�ǔ\u0011]�\u001fHO3@O@8 �\u0001&�\n�9�A�ǔl�ϑ�\u001bY@O@8 �\u0001(�\f�9�A�ǔ�\u0002���a@[@8 x\u0000����{�G>\u0003T����%`@[@8 x\u0000����{�G>\u0003(�:�<k�?[@8 x\u0000����{�G>\u0003��_73�+@[@8 x\u0000����{�G>\u0003.����IU@[@8 x\u0000����{�G>\u0003T����%`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000\u0018\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "��\n\u001d�\u00010���2o��\u000fk\u0000\u0000\u0000`�\u0019n@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000\u0018\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "��\n\u001d�\u00014���2o��\u000fk\u0000\u0000\u0000�q<n@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "԰Z\u001ah\u0000qs���^8��v���Q��i@԰Z\u001ah\u0000rs���^8��v㗟:bf�?԰Z\u001ah\u0000ss���^8��vx�P�\u0013\u0012�?԰Z\u001ah\u0000ts���^8��v�ݎyK�\u0018@԰Z\u001ah\u0000us���^8��v\u0005�n�=�3@X��\u001a�\u0001!�\u0005�ߠN%��h�oS\u000b=�@X��\u001a�\u0001\"�\u0006�ߠN%�Ի�ݝ��?X��\u001a�\u0001#�\u0007�ߠN%��E�3X�\u000b\u0010@X��\u001a�\u0001$�\b�ߠN%��ɻH�r�3@X��\u001a�\u0001%�\t�ߠN%��o�Zn>\"N@�M=\u001b~\u0002@�\u0005�����$����䀉n@�M=\u001b~\u0002A�\u0006�����$�T��8 F�?�M=\u001b~\u0002B�\u0007�����$��S)�&��?�M=\u001b~\u0002C�\b�����$�ɷ�y��!@�M=\u001b~\u0002D�\t�����$�a�\u0012�L�9@�M=\u001b~\u0002M�\u0005�����$��y\u0016�u�F@�M=\u001b~\u0002N�\u0006�����$���e�i=�?�M=\u001b~\u0002O�\u0007�����$��?v4�\u0015�?�M=\u001b~\u0002P�\b�����$��?4��'�?�M=\u001b~\u0002Q�\t�����$��ᄇ��\u000f@��\n\u001d�\u00018���2o��\u000fk\u0000\u0000\u0000\u0000�!n@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0003\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0014��\u001d�\u0002Ў��w��0�\u001e\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000N\u0000\u0000\u0000[{\"start\":543928413,\"end\":543932321,\"reason\":1,\"isTimer\":false,\"source\":null}]\u0000\u0000�w�\u001dv\u0002����`��\u0014�'\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000N\u0000\u0000\u0000[{\"start\":543928400,\"end\":543932321,\"reason\":1,\"isTimer\":false,\"source\":null}]\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000@\u0002\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "��\n\u001d�\u0001T���2o��\u000fk���SC��?#98 �\u0003�d��2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000�?#98 �\u0003�d\u0013���=>�G���SC��?#98 �\u0003�d#���=>�G���SC��?`W7 8\u0003G�\u0007�j�'v����btNOy@`W7 8\u0003H�\b�j�'v���g\u001a,H\u0013@`W7 8\u0003J�\n�j�'v��%�t\u0019�nI@`W7 8\u0003L�\f�j�'v��&�W��q@`W7 8\u0003N�\u000e�j�'v����btNOy@;X8 c\u0001S���j�S��\u0003���SC��?;X8 c\u0001T���j�S��\u0003��u�*Py@;X8 c\u0001U���j�S��\u0003j�&I,H\u0013@;X8 c\u0001W���j�S��\u0003��/��nI@;X8 c\u0001Y���j�S��\u0003��Ն��q@;X8 c\u0001[���j�S��\u0003��u�*Py@�Y8 �\u0002����2o��\u000fk���SC��?�Y8 �\u0002����2o��\u000fk���SC��?NW7 �\u0000`�\u0004�,�l^\u0019(���SC��?`W7 8\u0003F�\u0006�j�'v�����SC��?Y@8 U\u0003GH��\u0017�\r��9���N��`@Y@8 U\u0003HH��\u0017�\r��9O\u000b�0kf�"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "O@8 �\u0001!�\u0005�9�A�ǔ�>�3��a@O@8 �\u0001\"�\u0006�9�A�ǔq�\r�]q�?O@8 �\u0001$�\b�9�A�ǔw]��IO3@O@8 �\u0001&�\n�9�A�ǔ�;\u0015\t�\u001bY@O@8 �\u0001(�\f�9�A�ǔ�>�3��a@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "[@8 x\u0000����{�G>\u0003݊�8�%`@[@8 x\u0000����{�G>\u0003�X3,\\k�?[@8 x\u0000����{�G>\u0003\u0016�^(7�+@[@8 x\u0000����{�G>\u0003@��u�IU@[@8 x\u0000����{�G>\u0003݊�8�%`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "԰Z\u001ah\u0000qs���^8��vY�dW��i@԰Z\u001ah\u0000rs���^8��v\u0002-ҍyf�?԰Z\u001ah\u0000ss���^8��v\u001c#��\u0016\u0012�?԰Z\u001ah\u0000ts���^8��vUr(4L�\u0018@԰Z\u001ah\u0000us���^8��v/\u0001\u0015\u000f>�3@X��\u001a�\u0001!�\u0005�ߠN%��:N:W\u000b=�@X��\u001a�\u0001\"�\u0006�ߠN%��c+l�\u0003��?X��\u001a�\u0001#�\u0007�ߠN%��0�\\=�\u000b\u0010@X��\u001a�\u0001$�\b�ߠN%��\u0004��\u0018s�3@X��\u001a�\u0001%�\t�ߠN%�Ԍ���>\"N@�M=\u001b~\u0002@�\u0005�����$�ֶ�쀉n@�M=\u001b~\u0002A�\u0006�����$�\u001f��@F�?�M=\u001b~\u0002B�\u0007�����$���\u001e\r+��?�M=\u001b~\u0002C�\b�����$��l?���!@�M=\u001b~\u0002D�\t�����$��/b\tM�9@�M=\u001b~\u0002M�\u0005�����$�����u�F@�M=\u001b~\u0002N�\u0006�����$��;PI�=�?�M=\u001b~\u0002O�\u0007�����$�o蔉�\u0015�?�M=\u001b~\u0002P�\b�����$���{V�'�?�M=\u001b~\u0002Q�\t�����$���(���\u000f@"
+    },
+    {
+      "kind": "open",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": ";X8 c\u0001T���j�S��\u0003*n\n\u0013+Py@;X8 c\u0001U���j�S��\u0003�\u000fa�HH\u0013@;X8 c\u0001W���j�S��\u0003���\u0013�nI@;X8 c\u0001Y���j�S��\u0003^�j���q@;X8 c\u0001[���j�S��\u0003*n\n\u0013+Py@`W7 8\u0003G�\u0007�j�'v���\b��NOy@`W7 8\u0003H�\b�j�'v����kxHH\u0013@`W7 8\u0003J�\n�j�'v��h\u00185��nI@`W7 8\u0003L�\f�j�'v��\u000e\u0002/���q@`W7 8\u0003N�\u000e�j�'v���\b��NOy@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":0,\"jsonrpc\":\"2.0\",\"method\":\"authenticate\",\"params\":[\"TLGmTDqhysbYkPmhhswZT5CLlSHYqzDjnNdmlTeLNvolNJFEmowgBexa37ryA8u7\",\"B5BD38C86B7D557A79DFA3727FA58AF6DD3194CE62BA94BE74748C8358F81CA19EEBEF868223AF59C7FABA0CA45FE03B1F769D6427CEA908336D88C96A502BA6EF650230C3B3E70056E3057247E4D041A5951DCD1E9B98A129CB0E9ABD9E9670B084A687B78929C93213CA9938A483A2FEDF571D0AC5D3115091D7216EEBC53A47210AB4D98085A00F682F8900A896855016A4EBFB2DD86F6A65D679DDD15F0B47AB1107396D035010C1DA76FC9C0BF2A82D16D5B56B8150AF7250"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\",\"data\":[\"admin\",\"s508BEKLWKaF0qDKTQHT3uJp3hpm4o1p0eS/RZCO2hZT/nmuLPlj3Frmx7Vrw0XTz7K76SEneaKShSbDh4zsCyHuS3FBZHuU6xBgBpOGZqKOCorzrpNojPZBtBrLqz40O8IrCStNwuwMSWcx5RgqFcKYucLuDgs4SLpChlVxdtKkwM7r/HT1Gre+WGrfV4s2UgvSTpNkRyjKfMVw8RyBRuSTLUYa+NXuRRNAuWd0OFWnwpweYOtYi9yLy6YR2EXzxmxK5VASYw9MedRrPgDJKjba7WTJ0+iE4iNskHGxe1qWiRIL3QOMTRny3z/9WaGTZM+MYY3sd1uDTG9O2HEX019b/s1OcuHQxBY/HzDA7H9kh057VcUaKSxm1dFxh6D9OvwBRIhB1Z1BVlCeOj1luwBhbbubwelv85l1hOj6y94Urw"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "Y@8 U\u0003GH��\u0017�\r��9�m����`@Y@8 U\u0003HH��\u0017�\r��9�/\u000e��f�?Y@8 U\u0003JH��\u0017�\r��9�m�xأ1@Y@8 U\u0003LH��\u0017�\r��9֊����X@Y@8 U\u0003NH��\u0017�\r��9�m����`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "��\n\u001d�\u0001X���2o��\u000fk\u0000\u0000\u0000@i�H@O@8 �\u0001!�\u0005�9�A�ǔ�I�o��a@O@8 �\u0001\"�\u0006�9�A�ǔ^\f\u0013�{q�?O@8 �\u0001$�\b�9�A�ǔ����KO3@O@8 �\u0001&�\n�9�A�ǔ\u0016Q\u0011��\u001bY@O@8 �\u0001(�\f�9�A�ǔ�I�o��a@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "��\n\u001d�\u0001\\���2o��\u000fk\u0000\u0000\u0000��D�@#98 �\u0003�d��2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000�?[@8 x\u0000����{�G>\u0003rajx�%`@[@8 x\u0000����{�G>\u0003��{k�?[@8 x\u0000����{�G>\u0003`Yl ;�+@[@8 x\u0000����{�G>\u0003iU��IU@[@8 x\u0000����{�G>\u0003rajx�%`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"reachMode\",\"params\":[]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":1}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "԰Z\u001ah\u0000qs���^8��vk\u0005D]��i@԰Z\u001ah\u0000rs���^8��vgt�\n�f�?԰Z\u001ah\u0000ss���^8��v\t�Ux\u0019\u0012�?԰Z\u001ah\u0000ts���^8��v�\u0014\u0010�L�\u0018@԰Z\u001ah\u0000us���^8��v��\u000e>>�3@X��\u001a�\u0001!�\u0005�ߠN%��\u001fi\u000b[\u000b=�@X��\u001a�\u0001\"�\u0006�ߠN%��\u0000UCy\"��?X��\u001a�\u0001#�\u0007�ߠN%���A�%�\u000b\u0010@X��\u001a�\u0001$�\b�ߠN%�ԪR��s�3@X��\u001a�\u0001%�\t�ߠN%��߉\u0011�>\"N@�M=\u001b~\u0002@�\u0005�����$��?(���n@�M=\u001b~\u0002A�\u0006�����$����aF�?�M=\u001b~\u0002B�\u0007�����$��Sc)/��?�M=\u001b~\u0002C�\b�����$������!@�M=\u001b~\u0002D�\t�����$�du&KM�9@�M=\u001b~\u0002M�\u0005�����$�;Ns�u�F@�M=\u001b~\u0002N�\u0006�����$��G\n޴=�?�M=\u001b~\u0002O�\u0007�����$�,����\u0015�?�M=\u001b~\u0002P�\b�����$�����'�?�M=\u001b~\u0002Q�\t�����$��*R\u001d��\u000f@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": ";X8 c\u0001T���j�S��\u0003\u0012~��+Py@;X8 c\u0001U���j�S��\u0003�\te\feH\u0013@;X8 c\u0001W���j�S��\u0003\u0000_���nI@;X8 c\u0001Y���j�S��\u0003F��i��q@;X8 c\u0001[���j�S��\u0003\u0012~��+Py@`W7 8\u0003G�\u0007�j�'v���\u0018SWOOy@`W7 8\u0003H�\b�j�'v��\u000e�o�dH\u0013@`W7 8\u0003J�\n�j�'v���0�nI@`W7 8\u0003L�\f�j�'v���\u0011�:��q@`W7 8\u0003N�\u000e�j�'v���\u0018SWOOy@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "Y@8 U\u0003GH��\u0017�\r��9�Y'\u0018��`@Y@8 U\u0003HH��\u0017�\r��9H(���f�?Y@8 U\u0003JH��\u0017�\r��9`͸�ۣ1@Y@8 U\u0003LH��\u0017�\r��9�b����X@Y@8 U\u0003NH��\u0017�\r��9�Y'\u0018��`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "O@8 �\u0001!�\u0005�9�A�ǔ�ۂ���a@O@8 �\u0001\"�\u0006�9�A�ǔ���p�q�?O@8 �\u0001$�\b�9�A�ǔ�BٻMO3@O@8 �\u0001&�\n�9�A�ǔ�t���\u001bY@O@8 �\u0001(�\f�9�A�ǔ�ۂ���a@[@8 x\u0000����{�G>\u0003\u00078뷖%`@[@8 x\u0000����{�G>\u0003A�\t��k�?[@8 x\u0000����{�G>\u0003��y\u0018?�+@[@8 x\u0000����{�G>\u0003�\u0002�s�IU@[@8 x\u0000����{�G>\u0003\u00078뷖%`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"ready\"}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"getLastActivities\",\"params\":[0,100,2],\"id\":1}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000\u0018\u0000\u0000\u0000"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"call\",\"params\":[{\"type\":\"offer\",\"sdp\":\"v=0\\r\\no=- 1501803510600906532 2 IN IP4 127.0.0.1\\r\\ns=-\\r\\nt=0 0\\r\\na=group:BUNDLE 0 1\\r\\na=extmap-allow-mixed\\r\\na=msid-semantic: WMS\\r\\nm=video 9 UDP/TLS/RTP/SAVPF 96 97 98 99 100 101 35 36 37 38 103 104 107 108 109 114 115 116 117 118 39 40 41 42 43 44 45 46 47 48 119 120 121 49\\r\\nc=IN IP4 0.0.0.0\\r\\na=rtcp:9 IN IP4 0.0.0.0\\r\\na=ice-ufrag:BGff\\r\\na=ice-pwd:hLxMLEGguqZ2d8P9/ZxYyDXG\\r\\na=ice-options:trickle\\r\\na=fingerprint:sha"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "�\u0000�\u001eK\u0000I���2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000�?"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0003\u0000\u0000H\u0001\u0000\u0000"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:2357360494 1 udp 2113937151 a3fe2006-c3b5-4795-ab30-45f5db0fcc31.local 51621 typ host generation 0 ufrag BGff network-cost 999\",0,\"0\",\"BGff\"],\"id\":3}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:2357360494 1 udp 2113937151 a3fe2006-c3b5-4795-ab30-45f5db0fcc31.local 59391 typ host generation 0 ufrag BGff network-cost 999\",1,\"1\",\"BGff\"],\"id\":4}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "�\u0011�\u001e\"\u0000�\"��2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000#\u0001\u0000\u0000[{\"uuid\":\"1ea3ea0d-0147-ae8f-ffff326fbbc40f6b\",\"demand\":0},{\"uuid\":\"1ea3fc4f-03b4-9b27-ffff169212e6db5e\",\"demand\":0},{\"uuid\":\"1ea3fb53-00f1-9a57-ffff80f9b0576bc9\",\"demand\":0},{\"uuid\":\"1ea3f560-02cd-5f63-fffffb6c31cab96a\",\"demand\":0},{\"uuid\":\"1ea3fe80-000e-58d1-ffff58a96987be4f\",\"demand\":0}]\u0000"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:953961658 1 udp 1677729535 89.67.129.217 59391 typ srflx raddr 0.0.0.0 rport 0 generation 0 ufrag BGff network-cost 999\",1,\"1\",\"BGff\"],\"id\":5}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:953961658 1 udp 1677729535 89.67.129.217 51621 typ srflx raddr 0.0.0.0 rport 0 generation 0 ufrag BGff network-cost 999\",0,\"0\",\"BGff\"],\"id\":6}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "԰Z\u001ah\u0000qs���^8��v��!c��i@԰Z\u001ah\u0000rs���^8��vT�Á�f�?԰Z\u001ah\u0000ss���^8��v�Q5g\u001c\u0012�?԰Z\u001ah\u0000ts���^8��v��ǫM�\u0018@԰Z\u001ah\u0000us���^8��v\u001a��l>�3@X��\u001a�\u0001!�\u0005�ߠN%��݋�^\u000b=�@X��\u001a�\u0001\"�\u0006�ߠN%���CY�@��?X��\u001a�\u0001#�\u0007�ߠN%�Ը��\r�\u000b\u0010@X��\u001a�\u0001$�\b�ߠN%��f��\ft�3@X��\u001a�\u0001%�\t�ߠN%�Խ�\u0013%?\"N@�M=\u001b~\u0002@�\u0005�����$���^���n@�M=\u001b~\u0002A�\u0006�����$��Á��F�?�M=\u001b~\u0002B�\u0007�����$�$o�D3��?�M=\u001b~\u0002C�\b�����$�7\u001b/\u0003��!@�M=\u001b~\u0002D�\t�����$�\u0018\u0007ڌM�9@�M=\u001b~\u0002M�\u0005�����$�\u0011�$�u�F@�M=\u001b~\u0002N�\u0006�����$���8i�=�?�M=\u001b~\u0002O�\u0007�����$�*t�;�\u0015�?�M=\u001b~\u0002P�\b�����$������'�?�M=\u001b~\u0002Q�\t�����$�7�hh��\u000f@"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"iceGatheringFinished\"}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u00000\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "�\u0000�\u001eK\u0000I���2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000�?\u001d\u000b�\u001e\u0016\u0001\u0011\t��2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000�?"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0003\u0000\u0000�\u0004\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "�w�\u001dv\u0002����`��\u0014�'\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000N\u0000\u0000\u0000[{\"start\":543928400,\"end\":543932324,\"reason\":1,\"isTimer\":false,\"source\":null}]\u0000\u0000\u0014��\u001d�\u0002Ў��w��0�\u001e\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000N\u0000\u0000\u0000[{\"start\":543928413,\"end\":543932324,\"reason\":1,\"isTimer\":false,\"source\":null}]\u0000\u0000�\u0011�\u001e\"\u0000�\"��2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000#\u0001\u0000\u0000[{\"uuid\":\"1ea3ea0d-0147-ae8f-ffff326fbbc40f6b\",\"demand\":0},{\"uuid\":\"1ea3fc4f-03b4-9b27-ffff169212e6db5e\",\"demand\":0},{\"uuid\":\"1ea3fb53-00f1-9a57-ffff80f9b0576bc9\",\"demand\":0},{\"uuid\":\"1ea3f560-02cd-5f63-fffffb6c31cab96a\",\"demand\":0},"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":1,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"data\":[{\"date\":1774639455,\"imagePath\":\"\\/images\\/504F94A173A7\\/1774639455.jpg\",\"thumbPath\":\"\\/images\\/504F94A173A7\\/1774639455_thumb.jpg\"},{\"date\":1774550069,\"imagePath\":\"\\/images\\/504F94A173A7\\/1774550069.jpg\",\"thumbPath\":\"\\/images\\/504F94A173A7\\/1774550069_thumb.jpg\"},{\"date\":1774540724,\"imagePath\":\"\\/images\\/504F94A173A7\\/1774540724.jpg\",\"thumbPath\":\"\\/images\\/504F94A173A7\\/1774540724_thumb.jpg\"},{\"date\":1774101781,\"imagePath\":\"\\/images\\/504F94A17"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":2,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"data\":{\"sdp\":\"v=0\\r\\no=- 2398887755 1570559877 IN IP4 192.168.1.137\\r\\ns=-\\r\\nc=IN IP4 192.168.1.137\\r\\nt=0 0\\r\\na=ice-ufrag:mb9O2Vu\\r\\na=ice-pwd:73oN0seQNXKuhFZvERLFuLMH4lhVNPx\\r\\na=setup:active\\r\\na=fingerprint:SHA-256 4B:AD:92:EE:C6:C8:73:72:96:C9:C1:5E:5F:00:F8:02:EE:18:75:4A:E9:0B:17:57:3C:30:35:63:B0:40:93:84\\r\\nm=video 46412 UDP\\/TLS\\/RTP\\/SAVPF 39 41\\r\\na=rtpmap:39 H264\\/90000\\r\\na=fmtp:39 packetization-mode=0;profile-level-id=42e01f\\r\\na=rtp"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":3,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:c0a80189 1 UDP 2113929471 192.168.1.137 46412 typ host\",0,\"0\",\"mb9O2Vu\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":3}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":4,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:c192f484 1 UDP 2113929471 fd7c:93f6:7988::137 46412 typ host\",0,\"0\",\"mb9O2Vu\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":4}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":5,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:bcb6fcdf 1 UDP 2113929471 fd59:9a16:bbe7:fa:ba82:4dea:23c0:61ba 46412 typ host\",0,\"0\",\"mb9O2Vu\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":5}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":6,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:bc7f7efb 1 UDP 2113929471 fd7c:93f6:7988:0:e614:3987:999e:d5cd 46412 typ host\",0,\"0\",\"mb9O2Vu\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":6}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":3,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"}}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":4,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"}}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":5,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"}}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":6,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"}}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000h\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": ";X8 c\u0001T���j�S��\u0003�f\u0017�+Py@;X8 c\u0001U���j�S��\u0003�*�q�H\u0013@;X8 c\u0001W���j�S��\u0003'�>,�nI@;X8 c\u0001Y���j�S��\u0003˨w���q@;X8 c\u0001[���j�S��\u0003�f\u0017�+Py@`W7 8\u0003G�\u0007�j�'v��O\u0001��OOy@`W7 8\u0003H�\b�j�'v��G��;�H\u0013@`W7 8\u0003J�\n�j�'v���ۜ��nI@`W7 8\u0003L�\f�j�'v��{�;���q@`W7 8\u0003N�\u000e�j�'v��O\u0001��OOy@Y@8 U\u0003GH��\u0017�\r��9�E�|��`@Y@8 U\u0003HH��\u0017�\r��9� �\u0007\u0002g�?Y@8 U\u0003JH��\u0017�\r��9�,��ޣ1@Y@8 U\u0003LH��\u0017�\r��9�:�a��X@Y@8 U\u0003NH��\u0017�\r��9�E�|��`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "O@8 �\u0001!�\u0005�9�A�ǔg�禲a@O@8 �\u0001\"�\u0006�9�A�ǔ�_�o�q�?O@8 �\u0001$�\b�9�A�ǔ�ɛOO3@O@8 �\u0001&�\n�9�A�ǔd��p�\u001bY@O@8 �\u0001(�\f�9�A�ǔg�禲a@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "[@8 x\u0000����{�G>\u0003�\u000el��%`@[@8 x\u0000����{�G>\u0003�7um�k�?[@8 x\u0000����{�G>\u0003�+�\u0010C�+@[@8 x\u0000����{�G>\u0003����IU@[@8 x\u0000����{�G>\u0003�\u000el��%`@"
+    },
+    {
+      "kind": "open",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/"
+    },
+    {
+      "kind": "close",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":0,\"jsonrpc\":\"2.0\",\"method\":\"authenticate\",\"params\":[\"asx6c6PnoEURWGEfYMtyAC7FgCcyIJyoTrlLY0obiyTYUrxT2E5Et1Ye1PyQrdJR\",\"B5BD38C86B7D557A79DFA3727FA58AF6DD3194CE62BA94BE74748C8358F81CA19EEBEF868223AF59C7FABA0CA45FE03B1F769D6427CEA908336D88C96A502BA6EF650230C3B3E70056E3057247E4D041A5951DCD1E9B98A129CB0E9ABD9E9670B084A687B78929C93213CA9938A483A2FEDF571D0AC5D3115091D7216EEBC53A47210AB4D98085A00F682F8900A896855016A4EBFB2DD86F6A65D679DDD15F0B47AB1107396D035010C1DA76FC9C0BF2A82D16D5B56B8150AF7250"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\",\"data\":[\"admin\",\"BUvcj622RAzzgdel7U2XsrM+rlbajKhD1ZEktj6fPFLKPxD3QTI2T5k69vBofQ0AVQQvowwC8SgWSu/h5Fl3wrToSBj/fLe3tHb7OmC361vkh//1ykem6Af6Y0BBNRt4vHW4yJxySxG4PSeB7YVRez7O/1ArWJzqddj82JuxsjKO2QxK6An1nDoaqJePaHF8QV28i+d8JSvqkeCRSmvEHIz5EoTbl4CnifMC9vSCHaiS5oCRfJhzDcqu/6s712PeGeQGhmCizG9e9TjgnWh1YPpqLJHdIwQBixNko27WwMy2z3EVHi5PJfzYqVx+G5SoTvw7w0ai26wys6BdeMZ7XtC86XEOZKHTyoB4c24fdVTqIh/oU51RaNb7FOU//CPL7Zm8z7aU/ooKrSyBVK9HhYileYwl1mIAZMVGzXe6bK6Po4"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": ";X8 c\u0001T���j�S��\u0003\u001cO�g,Py@;X8 c\u0001U���j�S��\u0003)L�֝H\u0013@;X8 c\u0001W���j�S��\u0003N�帖nI@;X8 c\u0001Y���j�S��\u0003P�\fM��q@;X8 c\u0001[���j�S��\u0003\u001cO�g,Py@`W7 8\u0003G�\u0007�j�'v����|:POy@`W7 8\u0003H�\b�j�'v���㠝H\u0013@`W7 8\u0003J�\n�j�'v���\u001fDJ�nI@`W7 8\u0003L�\f�j�'v��\u0000��\u001d��q@`W7 8\u0003N�\u000e�j�'v����|:POy@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "Y@8 U\u0003GH��\u0017�\r��9\n�N��`@Y@8 U\u0003HH��\u0017�\r��9AE7X4g�?Y@8 U\u0003JH��\u0017�\r��90����1@Y@8 U\u0003LH��\u0017�\r��9,/\u0010+��X@Y@8 U\u0003NH��\u0017�\r��9\n�N��`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"reachMode\",\"params\":[]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":1}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "O@8 �\u0001!�\u0005�9�A�ǔ/�~#��a@O@8 �\u0001\"�\u0006�9�A�ǔ���n�q�?O@8 �\u0001$�\b�9�A�ǔ+�{QO3@O@8 �\u0001&�\n�9�A�ǔ����\u001bY@O@8 �\u0001(�\f�9�A�ǔ/�~#��a@ێ�\u001d1\u0003�m���:\u0002њ�\u0000\u0000\u0000\u0000\u0000�~@\u001d\u000b�\u001e\u0016\u0001\u0011\t��2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000�?"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0003\u0000\u0000�\u0002\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u001d\u000b�\u001e\u0016\u0001�\b���8�J8�\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0002\u0000\u0000[{\"uuid\":\"203a270d-01ad-2177-ffff326fbbc40f6b\",\"demand\":0},{\"uuid\":\"1da08c14-02aa-8e97-ffff77e7cc30bd1e\",\"demand\":0},{\"uuid\":\"1d0acb43-013c-6944-ffff326fbbc40f6b\",\"demand\":0},{\"uuid\":\"1da0904c-0267-51b4-ffff5d313e2c1572\",\"demand\":0},{\"uuid\":\"1ccec74e-00d3-3085-ffff326fbbc40f6b\",\"demand\":1},{\"uuid\":\"1da08c72-0212-bc83-ffff928c0f9d61bb\",\"demand\":0},{\"uuid\":\"1da077a7-0276-ae5a-ffff60d3c114f827\",\"demand\":1},{\"uuid\":\"1a4033d2-02da-e370-ffff326fbbc40f6b\",\"demand\":0}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "[@8 x\u0000����{�G>\u0003���6�%`@[@8 x\u0000����{�G>\u0003\\ɿ\u001d�k�?[@8 x\u0000����{�G>\u0003-~�\u0006G�+@[@8 x\u0000����{�G>\u0003\u0002ڱq�IU@[@8 x\u0000����{�G>\u0003���6�%`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "԰Z\u001ah\u0000qs���^8��v�Y�n��i@԰Z\u001ah\u0000rs���^8��v��\u00164�f�?԰Z\u001ah\u0000ss���^8��vm�=\"\u0012�?԰Z\u001ah\u0000ts���^8��v�Z!O�\u0018@԰Z\u001ah\u0000us���^8��vԊa�>�3@X��\u001a�\u0001!�\u0005�ߠN%���\u001frf\u000b=�@X��\u001a�\u0001\"�\u0006�ߠN%�ԣ���}��?X��\u001a�\u0001#�\u0007�ߠN%���Eٽ\u000b\u0010@X��\u001a�\u0001$�\b�ߠN%�Ա(��t�3@X��\u001a�\u0001%�\t�ߠN%����|�?\"N@�M=\u001b~\u0002@�\u0005�����$�S��\r��n@�M=\u001b~\u0002A�\u0006�����$��\u0012���F�?�M=\u001b~\u0002B�\u0007�����$�\f9�p;��?�M=\u001b~\u0002C�\b�����$�tT�\b��!@�M=\u001b~\u0002D�\t�����$��#�\u000fN�9@�M=\u001b~\u0002M�\u0005�����$���{\u0005v�F@�M=\u001b~\u0002N�\u0006�����$�Ϳ$ %>�?�M=\u001b~\u0002O�\u0007�����$��0\u0002��\u0015�?�M=\u001b~\u0002P�\b�����$��;׭�'�?�M=\u001b~\u0002Q�\t�����$��_����\u000f@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "��\n\u001d�\u0001T���2o��\u000fk>\nף0x�?;X8 c\u0001S���j�S��\u0003>\nף0x�?;X8 c\u0001T���j�S��\u0003z�\u0003�,Py@;X8 c\u0001U���j�S��\u0003���H\u0013@;X8 c\u0001W���j�S��\u0003;\u001a���nI@;X8 c\u0001Y���j�S��\u0003�\u0017d���q@;X8 c\u0001[���j�S��\u0003z�\u0003�,Py@#98 �\u0003�d��2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000�?#98 �\u0003�d\u0013���=>�G>\nף0x�?#98 �\u0003�d#���=>�G>\nף0x�?�Y8 �\u0002����2o��\u000fk>\nף0x�?�Y8 �\u0002����2o��\u000fk>\nף0x�?NW7 �\u0000`�\u0004�,�l^\u0019(>\nף0x�?`W7 8\u0003F�\u0006�j�'v��>\nף0x�?`W7 8\u0003G�\u0007�j�'v��2pԢPOy@`W7 8\u0003H�\b�j�'v���mŶ�H\u0013@`W7 8\u0003J�\n�j�'v���R\u0000��nI@`W7 8\u0003L�\f�j�'v��^i(���q@`W7 8\u0003N�\u000e�j�'v��2pԢPOy@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"ready\"}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"getLastActivities\",\"params\":[0,100,2],\"id\":7}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"call\",\"params\":[{\"type\":\"offer\",\"sdp\":\"v=0\\r\\no=- 3159437871562413464 2 IN IP4 127.0.0.1\\r\\ns=-\\r\\nt=0 0\\r\\na=group:BUNDLE 0 1\\r\\na=extmap-allow-mixed\\r\\na=msid-semantic: WMS\\r\\nm=video 9 UDP/TLS/RTP/SAVPF 96 97 98 99 100 101 35 36 37 38 103 104 107 108 109 114 115 116 117 118 39 40 41 42 43 44 45 46 47 48 119 120 121 49\\r\\nc=IN IP4 0.0.0.0\\r\\na=rtcp:9 IN IP4 0.0.0.0\\r\\na=ice-ufrag:+ka5\\r\\na=ice-pwd:SJrv2MtyGAwHm/n4RPcs0yg9\\r\\na=ice-options:trickle\\r\\na=fingerprint:sha"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:2659467963 1 udp 2113937152 a3fe2006-c3b5-4795-ab30-45f5db0fcc31.local 53426 typ host generation 0 ufrag +ka5 network-cost 999\",0,\"0\",\"+ka5\"],\"id\":9}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:2659467963 1 udp 2113937152 a3fe2006-c3b5-4795-ab30-45f5db0fcc31.local 49283 typ host generation 0 ufrag +ka5 network-cost 999\",1,\"1\",\"+ka5\"],\"id\":10}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:3405881671 1 udp 1677729535 89.67.129.217 53426 typ srflx raddr 0.0.0.0 rport 0 generation 0 ufrag +ka5 network-cost 999\",0,\"0\",\"+ka5\"],\"id\":11}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:3405881671 1 udp 1677729535 89.67.129.217 49283 typ srflx raddr 0.0.0.0 rport 0 generation 0 ufrag +ka5 network-cost 999\",1,\"1\",\"+ka5\"],\"id\":12}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "Y@8 U\u0003GH��\u0017�\r��9S:�E��`@Y@8 U\u0003HH��\u0017�\r��9�it�fg�?Y@8 U\u0003JH��\u0017�\r��9x��\n�1@Y@8 U\u0003LH��\u0017�\r��9�#Q���X@Y@8 U\u0003NH��\u0017�\r��9S:�E��`@"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"iceGatheringFinished\"}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "O@8 �\u0001!�\u0005�9�A�ǔ��m_��a@O@8 �\u0001\"�\u0006�9�A�ǔL�Mf�q�?O@8 �\u0001$�\b�9�A�ǔ�a0[SO3@O@8 �\u0001&�\n�9�A�ǔ�<�`�\u001bY@O@8 �\u0001(�\f�9�A�ǔ��m_��a@[@8 x\u0000����{�G>\u0003UzMv�%`@[@8 x\u0000����{�G>\u0003�\u0013+��k�?[@8 x\u0000����{�G>\u0003w��J�+@[@8 x\u0000����{�G>\u0003+����IU@[@8 x\u0000����{�G>\u0003UzMv�%`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0003\u0000\u0000,\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "�\u001a\u001e�\u0001G���\u0006\u000fևU~\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0005\u0000\u0000\u0000[778]\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "԰Z\u001ah\u0000qs���^8��v���t��i@԰Z\u001ah\u0000rs���^8��v�F\u000b��f�?԰Z\u001ah\u0000ss���^8��vZF\u001e-%\u0012�?԰Z\u001ah\u0000ts���^8��v#;B�O�\u0018@԰Z\u001ah\u0000us���^8��vcs[�>�3@X��\u001a�\u0001!�\u0005�ߠN%�Դ:Cj\u000b=�@X��\u001a�\u0001\"�\u0006�ߠN%��@\u0000�7���?X��\u001a�\u0001#�\u0007�ߠN%��~\f���\u000b\u0010@X��\u001a�\u0001$�\b�ߠN%��W��yu�3@X��\u001a�\u0001%�\t�ߠN%��5���?\"N@�M=\u001b~\u0002@�\u0005�����$�\u0006>�\u0015��n@�M=\u001b~\u0002A�\u0006�����$�Yݲ��F�?�M=\u001b~\u0002B�\u0007�����$�W��?��?�M=\u001b~\u0002C�\b�����$���7���!@�M=\u001b~\u0002D�\t�����$�Ki^QN�9@�M=\u001b~\u0002M�\u0005�����$��(.\nv�F@�M=\u001b~\u0002N�\u0006�����$���޴J>�?�M=\u001b~\u0002O�\u0007�����$�l�M@�\u0015�?�M=\u001b~\u0002P�\b�����$�\u0007$*D�'�?�M=\u001b~\u0002Q�\t�����$����H��\u000f@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":7,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"data\":[{\"date\":1774639455,\"imagePath\":\"\\/images\\/504F94A173A7\\/1774639455.jpg\",\"thumbPath\":\"\\/images\\/504F94A173A7\\/1774639455_thumb.jpg\"},{\"date\":1774550069,\"imagePath\":\"\\/images\\/504F94A173A7\\/1774550069.jpg\",\"thumbPath\":\"\\/images\\/504F94A173A7\\/1774550069_thumb.jpg\"},{\"date\":1774540724,\"imagePath\":\"\\/images\\/504F94A173A7\\/1774540724.jpg\",\"thumbPath\":\"\\/images\\/504F94A173A7\\/1774540724_thumb.jpg\"},{\"date\":1774101781,\"imagePath\":\"\\/images\\/504F94A17"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":8,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"data\":{\"sdp\":\"v=0\\r\\no=- 172809873 159030175 IN IP4 192.168.1.137\\r\\ns=-\\r\\nc=IN IP4 192.168.1.137\\r\\nt=0 0\\r\\na=ice-ufrag:5NTOeMu\\r\\na=ice-pwd:vvYljVbcHjMBORxvN0BUPcvhcPQclQb\\r\\na=setup:active\\r\\na=fingerprint:SHA-256 4B:AD:92:EE:C6:C8:73:72:96:C9:C1:5E:5F:00:F8:02:EE:18:75:4A:E9:0B:17:57:3C:30:35:63:B0:40:93:84\\r\\nm=video 13080 UDP\\/TLS\\/RTP\\/SAVPF 39 41\\r\\na=rtpmap:39 H264\\/90000\\r\\na=fmtp:39 packetization-mode=0;profile-level-id=42e01f\\r\\na=rtpma"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":3,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:c0a80189 1 UDP 2113929471 192.168.1.137 13080 typ host\",0,\"0\",\"5NTOeMu\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":3}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":4,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:c192f484 1 UDP 2113929471 fd7c:93f6:7988::137 13080 typ host\",0,\"0\",\"5NTOeMu\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":4}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":5,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:bcb6fcdf 1 UDP 2113929471 fd59:9a16:bbe7:fa:ba82:4dea:23c0:61ba 13080 typ host\",0,\"0\",\"5NTOeMu\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":5}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":6,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:bc7f7efb 1 UDP 2113929471 fd7c:93f6:7988:0:e614:3987:999e:d5cd 13080 typ host\",0,\"0\",\"5NTOeMu\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":6}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":9,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"}}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":10,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"}}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":11,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"}}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":12,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"}}"
+    },
+    {
+      "kind": "open",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":0,\"jsonrpc\":\"2.0\",\"method\":\"authenticate\",\"params\":[\"524lpXDsLvkgbCRSYmOtzuD4VqtH0fUjwxXIvb0yjQKhBtXjxUETyw5A8nQR9wxo\",\"B5BD38C86B7D557A79DFA3727FA58AF6DD3194CE62BA94BE74748C8358F81CA19EEBEF868223AF59C7FABA0CA45FE03B1F769D6427CEA908336D88C96A502BA6EF650230C3B3E70056E3057247E4D041A5951DCD1E9B98A129CB0E9ABD9E9670B084A687B78929C93213CA9938A483A2FEDF571D0AC5D3115091D7216EEBC53A47210AB4D98085A00F682F8900A896855016A4EBFB2DD86F6A65D679DDD15F0B47AB1107396D035010C1DA76FC9C0BF2A82D16D5B56B8150AF7250"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\",\"data\":[\"admin\",\"gB/r9jghZiMfKsZR002+ktkE7G75kcJgpP35q3vrX7muJoyp1+LpZABKQVGTCDobLjD/xoklYCxHaxwm0H4wFqbIvb8ST4xL57WM3OvRELg1rY5S7/+5c7g04cWbPdAxhgrTYAqjlr6U5dkjrV0nY6JCFX9n+2E74Uoxn8W9L8095kEEOzxUbF0fkMPDfIpAcoM3dORv0RmToQJ8x+gFFKItgtJ67BQ6lYr3fuV8Bnk8p6R847Ez9PdkIA5HEwSEkagouOypsogMqY8ioXYRufq9qEL8guNQ4vkhYbXv+GLje8cnZsg8AE+t341XgdnH6fa4/uEDhj96tlJLwu/dOx+rNelYUzvomSz8rYsbnquxGFFr4Yd1EZxC535ZO8v4Yevz8gqnpv6TmV5adOJFUvA/W9IpwTYn2lLbvcTmzlNYFg"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": ";X8 c\u0001T���j�S��\u0003�k(@-Py@;X8 c\u0001U���j�S��\u0003w����H\u0013@;X8 c\u0001W���j�S��\u00038��|�nI@;X8 c\u0001Y���j�S��\u0003.��%��q@;X8 c\u0001[���j�S��\u0003�k(@-Py@`W7 8\u0003G�\u0007�j�'v��\u0006�\u0012QOy@`W7 8\u0003H�\b�j�'v���\r��H\u0013@`W7 8\u0003J�\n�j�'v���\u0006%\u000e�nI@`W7 8\u0003L�\f�j�'v����L���q@`W7 8\u0003N�\u000e�j�'v��\u0006�\u0012QOy@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "Y@8 U\u0003GH��\u0017�\r��9������`@Y@8 U\u0003HH��\u0017�\r��93����g�?Y@8 U\u0003JH��\u0017�\r��9���/�1@Y@8 U\u0003LH��\u0017�\r��9P\u0018����X@Y@8 U\u0003NH��\u0017�\r��9������`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "O@8 �\u0001!�\u0005�9�A�ǔJ�k���a@O@8 �\u0001\"�\u0006�9�A�ǔ9QSe\u0011r�?O@8 �\u0001$�\b�9�A�ǔ\u0005� ;UO3@O@8 �\u0001&�\n�9�A�ǔ+R�ؔ\u001bY@O@8 �\u0001(�\f�9�A�ǔJ�k���a@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"reachMode\",\"params\":[]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":1}"
+    },
+    {
+      "kind": "close",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "`W7 8\u0003G�\u0007�j�'v��\u0005\rV�QOy@`W7 8\u0003H�\b�j�'v��,��H\u0013@`W7 8\u0003J�\n�j�'v��9\r��nI@`W7 8\u0003L�\f�j�'v��1\u0006�e��q@`W7 8\u0003N�\u000e�j�'v��\u0005\rV�QOy@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "Y@8 U\u0003GH��\u0017�\r��9�.0\u000f��`@Y@8 U\u0003HH��\u0017�\r��9���H�g�?Y@8 U\u0003JH��\u0017�\r��9\bv�T�1@Y@8 U\u0003LH��\u0017�\r��9�\fӆ��X@Y@8 U\u0003NH��\u0017�\r��9�.0\u000f��`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "O@8 �\u0001!�\u0005�9�A�ǔ�M�ק�a@O@8 �\u0001\"�\u0006�9�A�ǔ�)�s/r�?O@8 �\u0001$�\b�9�A�ǔ��\u0004\u001cWO3@O@8 �\u0001&�\n�9�A�ǔ�Y�P�\u001bY@O@8 �\u0001(�\f�9�A�ǔ�M�ק�a@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "[@8 x\u0000����{�G>\u0003\u0002\u0001���%`@[@8 x\u0000����{�G>\u0003�in\u0016:l�?[@8 x\u0000����{�G>\u0003?R��R�+@[@8 x\u0000����{�G>\u0003����IU@[@8 x\u0000����{�G>\u0003\u0002\u0001���%`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"ready\"}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"getLastActivities\",\"params\":[0,100,2],\"id\":13}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"call\",\"params\":[{\"type\":\"offer\",\"sdp\":\"v=0\\r\\no=- 4471909554600501138 2 IN IP4 127.0.0.1\\r\\ns=-\\r\\nt=0 0\\r\\na=group:BUNDLE 0 1\\r\\na=extmap-allow-mixed\\r\\na=msid-semantic: WMS\\r\\nm=video 9 UDP/TLS/RTP/SAVPF 96 97 98 99 100 101 35 36 37 38 103 104 107 108 109 114 115 116 117 118 39 40 41 42 43 44 45 46 47 48 119 120 121 49\\r\\nc=IN IP4 0.0.0.0\\r\\na=rtcp:9 IN IP4 0.0.0.0\\r\\na=ice-ufrag:lz5s\\r\\na=ice-pwd:DwXBzKCE5+SpXJ20RncwSvaj\\r\\na=ice-options:trickle\\r\\na=fingerprint:sha"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:2935756695 1 udp 2113937152 a3fe2006-c3b5-4795-ab30-45f5db0fcc31.local 62767 typ host generation 0 ufrag lz5s network-cost 999\",0,\"0\",\"lz5s\"],\"id\":15}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:2935756695 1 udp 2113937152 a3fe2006-c3b5-4795-ab30-45f5db0fcc31.local 56668 typ host generation 0 ufrag lz5s network-cost 999\",1,\"1\",\"lz5s\"],\"id\":16}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "԰Z\u001ah\u0000qs���^8��v�\"`���i@԰Z\u001ah\u0000rs���^8��v�\t;{\u001dg�?԰Z\u001ah\u0000ss���^8��v�>d\u0006+\u0012�?԰Z\u001ah\u0000ts���^8��v;��SQ�\u0018@԰Z\u001ah\u0000us���^8��v���V?�3@X��\u001a�\u0001!�\u0005�ߠN%��D��q\u000b=�@X��\u001a�\u0001\"�\u0006�ߠN%���}t\u000b٠�?X��\u001a�\u0001#�\u0007�ߠN%��WT\r��\u000b\u0010@X��\u001a�\u0001$�\b�ߠN%��M\u0017�lv�3@X��\u001a�\u0001%�\t�ߠN%��0�5U@\"N@�M=\u001b~\u0002@�\u0005�����$���O&��n@�M=\u001b~\u0002A�\u0006�����$�j�(`&G�?�M=\u001b~\u0002B�\u0007�����$�yT\u0011�G��?�M=\u001b~\u0002C�\b�����$��=���!@�M=\u001b~\u0002D�\t�����$�mUa�N�9@�M=\u001b~\u0002M�\u0005�����$��ˉ\u0013v�F@�M=\u001b~\u0002N�\u0006�����$��\u0003���>�?�M=\u001b~\u0002O�\u0007�����$��d\u001f��\u0015�?�M=\u001b~\u0002P�\b�����$�爞o�'�?�M=\u001b~\u0002Q�\t�����$�P\u0006����\u000f@"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:775537696 1 udp 1677729535 89.67.129.217 62767 typ srflx raddr 0.0.0.0 rport 0 generation 0 ufrag lz5s network-cost 999\",0,\"0\",\"lz5s\"],\"id\":17}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:775537696 1 udp 1677729535 89.67.129.217 56668 typ srflx raddr 0.0.0.0 rport 0 generation 0 ufrag lz5s network-cost 999\",1,\"1\",\"lz5s\"],\"id\":18}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"iceGatheringFinished\"}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":13,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"data\":[{\"date\":1774639455,\"imagePath\":\"\\/images\\/504F94A173A7\\/1774639455.jpg\",\"thumbPath\":\"\\/images\\/504F94A173A7\\/1774639455_thumb.jpg\"},{\"date\":1774550069,\"imagePath\":\"\\/images\\/504F94A173A7\\/1774550069.jpg\",\"thumbPath\":\"\\/images\\/504F94A173A7\\/1774550069_thumb.jpg\"},{\"date\":1774540724,\"imagePath\":\"\\/images\\/504F94A173A7\\/1774540724.jpg\",\"thumbPath\":\"\\/images\\/504F94A173A7\\/1774540724_thumb.jpg\"},{\"date\":1774101781,\"imagePath\":\"\\/images\\/504F94A1"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":14,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"data\":{\"sdp\":\"v=0\\r\\no=- 2880769825 678413350 IN IP4 192.168.1.137\\r\\ns=-\\r\\nc=IN IP4 192.168.1.137\\r\\nt=0 0\\r\\na=ice-ufrag:HxVA4gl\\r\\na=ice-pwd:9B7K77FRkx72MKtZymPxPUY5kFhhmFE\\r\\na=setup:active\\r\\na=fingerprint:SHA-256 4B:AD:92:EE:C6:C8:73:72:96:C9:C1:5E:5F:00:F8:02:EE:18:75:4A:E9:0B:17:57:3C:30:35:63:B0:40:93:84\\r\\nm=video 22642 UDP\\/TLS\\/RTP\\/SAVPF 39 41\\r\\na=rtpmap:39 H264\\/90000\\r\\na=fmtp:39 packetization-mode=0;profile-level-id=42e01f\\r\\na=rtp"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":3,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:c0a80189 1 UDP 2113929471 192.168.1.137 22642 typ host\",0,\"0\",\"HxVA4gl\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":3}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":4,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:c192f484 1 UDP 2113929471 fd7c:93f6:7988::137 22642 typ host\",0,\"0\",\"HxVA4gl\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":4}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":5,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:bcb6fcdf 1 UDP 2113929471 fd59:9a16:bbe7:fa:ba82:4dea:23c0:61ba 22642 typ host\",0,\"0\",\"HxVA4gl\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":5}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":6,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:bc7f7efb 1 UDP 2113929471 fd7c:93f6:7988:0:e614:3987:999e:d5cd 22642 typ host\",0,\"0\",\"HxVA4gl\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":6}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": ";X8 c\u0001T���j�S��\u0003\u001c��\u001f.Py@;X8 c\u0001U���j�S��\u0003\u0016Lh�\u000bI\u0013@;X8 c\u0001W���j�S��\u0003LǷy�nI@;X8 c\u0001Y���j�S��\u0003P�&\u0005��q@;X8 c\u0001[���j�S��\u0003\u001c��\u001f.Py@`W7 8\u0003G�\u0007�j�'v���%��QOy@`W7 8\u0003H�\b�j�'v��m�r�\u000bI\u0013@`W7 8\u0003J�\n�j�'v����\u0015\u000b�nI@`W7 8\u0003L�\f�j�'v��\u0000\u001f����q@`W7 8\u0003N�\u000e�j�'v���%��QOy@"
+    },
+    {
+      "kind": "open",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":0,\"jsonrpc\":\"2.0\",\"method\":\"authenticate\",\"params\":[\"HnerjlQA4JhHyEu9GxRc9aauOu3dt5h6fRmpHAs5OaCSBKmlmAEZca2M9csDxmsr\",\"B5BD38C86B7D557A79DFA3727FA58AF6DD3194CE62BA94BE74748C8358F81CA19EEBEF868223AF59C7FABA0CA45FE03B1F769D6427CEA908336D88C96A502BA6EF650230C3B3E70056E3057247E4D041A5951DCD1E9B98A129CB0E9ABD9E9670B084A687B78929C93213CA9938A483A2FEDF571D0AC5D3115091D7216EEBC53A47210AB4D98085A00F682F8900A896855016A4EBFB2DD86F6A65D679DDD15F0B47AB1107396D035010C1DA76FC9C0BF2A82D16D5B56B8150AF7250"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\",\"data\":[\"admin\",\"jG6LUcd01bXXP4LcFVLIwgimB9hy+BzV9KHIJIwOK9lj0XVfshVXCXTgqZ0G7pIpbFHG49/T76rI/4RyLY8C3/C+8QxzuRm/E4GE4OXdlCJtKdQqW0bxfJmbaO5mQ9I4Uinllq7WIRFm6oTqAgg/aLsJkuM7mlRAKKkdZ4HPfYpEJ7LkIAz94W+YwN3AC5UFVEyhlQte2Oafwpy8QqcdGEbAQ6uvh/WnEHUCmctKKL9dSPpJaPbOF/8tBfYkggeFLqPoI7QIxsliJf7QXMfdw9kwnpAVnD7MdSR4F3vj3LHUw9Sd2PezgDe1EtUEddW3vQaOssLeBYT9gb9Pp8CSImWOTx4DznuM8V57bDDMWe15L6gynANH/6WJkkoUXCOvlHqF6ogpJJfqINZCfW4sJiNMKR/ozV+FFWAH7fVfM8Qnez"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "O@8 �\u0001!�\u0005�9�A�ǔ�X�\u0013��a@O@8 �\u0001\"�\u0006�9�A�ǔ���rMr�?O@8 �\u0001$�\b�9�A�ǔ�+��XO3@O@8 �\u0001&�\n�9�A�ǔ\u001do�ȕ\u001bY@O@8 �\u0001(�\f�9�A�ǔ�X�\u0013��a@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "[@8 x\u0000����{�G>\u0003��>4�%`@[@8 x\u0000����{�G>\u0003?���Yl�?[@8 x\u0000����{�G>\u0003����V�+@[@8 x\u0000����{�G>\u0003�A�l�IU@[@8 x\u0000����{�G>\u0003��>4�%`@"
+    },
+    {
+      "kind": "close",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"reachMode\",\"params\":[]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":1}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": ";X8 c\u0001T���j�S��\u0003:&$�.Py@;X8 c\u0001U���j�S��\u0003�\u0013��'I\u0013@;X8 c\u0001W���j�S��\u0003@����nI@;X8 c\u0001Y���j�S��\u0003nh�u��q@;X8 c\u0001[���j�S��\u0003:&$�.Py@`W7 8\u0003G�\u0007�j�'v�����bROy@`W7 8\u0003H�\b�j�'v��\n�پ'I\u0013@`W7 8\u0003J�\n�j�'v����\u0002��nI@`W7 8\u0003L�\f�j�'v��\u001e�HF��q@`W7 8\u0003N�\u000e�j�'v�����bROy@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "Y@8 U\u0003GH��\u0017�\r��9\u0007�q״�`@Y@8 U\u0003HH��\u0017�\r��9�C�i/h�?Y@8 U\u0003JH��\u0017�\r��9\u001b�\n��1@Y@8 U\u0003LH��\u0017�\r��9'�U\u0017��X@Y@8 U\u0003NH��\u0017�\r��9\u0007�q״�`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "O@8 �\u0001!�\u0005�9�A�ǔ\u0016'uO��a@O@8 �\u0001\"�\u0006�9�A�ǔB�\u0001jkr�?O@8 �\u0001$�\b�9�A�ǔf�k�ZO3@O@8 �\u0001&�\n�9�A�ǔ�\u000b�@�\u001bY@O@8 �\u0001(�\f�9�A�ǔ\u0016'uO��a@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "[@8 x\u0000����{�G>\u0003,��s�%`@[@8 x\u0000����{�G>\u0003��D�yl�?[@8 x\u0000����{�G>\u0003�$��Z�+@[@8 x\u0000����{�G>\u0003���IU@[@8 x\u0000����{�G>\u0003,��s�%`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "԰Z\u001ah\u0000qs���^8��v.5\u000e���i@԰Z\u001ah\u0000rs���^8��v���3Lg�?԰Z\u001ah\u0000ss���^8��v��m�0\u0012�?԰Z\u001ah\u0000ts���^8��v�\fV�R�\u0018@԰Z\u001ah\u0000us���^8��v�g`�?�3@X��\u001a�\u0001!�\u0005�ߠN%��^;uy\u000b=�@X��\u001a�\u0001\"�\u0006�ߠN%��@K��\u0015��?X��\u001a�\u0001#�\u0007�ߠN%��.a�Z�\u000b\u0010@X��\u001a�\u0001$�\b�ߠN%�ԃ��_w�3@X��\u001a�\u0001%�\t�ߠN%��˭��@\"N@�M=\u001b~\u0002@�\u0005�����$����6��n@�M=\u001b~\u0002A�\u0006�����$�\u001e.��gG�?�M=\u001b~\u0002B�\u0007�����$�p\\\u001e�O��?�M=\u001b~\u0002C�\b�����$��Xߗ��!@�M=\u001b~\u0002D�\t�����$��%2WO�9@�M=\u001b~\u0002M�\u0005�����$����\u001cv�F@�M=\u001b~\u0002N�\u0006�����$��'oR�>�?�M=\u001b~\u0002O�\u0007�����$�1�&��\u0015�?�M=\u001b~\u0002P�\b�����$�xe���'�?�M=\u001b~\u0002Q�\t�����$���:t��\u000f@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"ready\"}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"getLastActivities\",\"params\":[0,100,2],\"id\":19}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"call\",\"params\":[{\"type\":\"offer\",\"sdp\":\"v=0\\r\\no=- 4552709685215081435 2 IN IP4 127.0.0.1\\r\\ns=-\\r\\nt=0 0\\r\\na=group:BUNDLE 0 1\\r\\na=extmap-allow-mixed\\r\\na=msid-semantic: WMS\\r\\nm=video 9 UDP/TLS/RTP/SAVPF 96 97 98 99 100 101 35 36 37 38 103 104 107 108 109 114 115 116 117 118 39 40 41 42 43 44 45 46 47 48 119 120 121 49\\r\\nc=IN IP4 0.0.0.0\\r\\na=rtcp:9 IN IP4 0.0.0.0\\r\\na=ice-ufrag:mV+m\\r\\na=ice-pwd:SwSmc26y/2EMOHw7oFeDF4IZ\\r\\na=ice-options:trickle\\r\\na=fingerprint:sha"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:2741695770 1 udp 2113937152 a3fe2006-c3b5-4795-ab30-45f5db0fcc31.local 50947 typ host generation 0 ufrag mV+m network-cost 999\",0,\"0\",\"mV+m\"],\"id\":21}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:2741695770 1 udp 2113937152 a3fe2006-c3b5-4795-ab30-45f5db0fcc31.local 64860 typ host generation 0 ufrag mV+m network-cost 999\",1,\"1\",\"mV+m\"],\"id\":22}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:598681261 1 udp 1677729535 89.67.129.217 50947 typ srflx raddr 0.0.0.0 rport 0 generation 0 ufrag mV+m network-cost 999\",0,\"0\",\"mV+m\"],\"id\":23}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:598681261 1 udp 1677729535 89.67.129.217 64860 typ srflx raddr 0.0.0.0 rport 0 generation 0 ufrag mV+m network-cost 999\",1,\"1\",\"mV+m\"],\"id\":24}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0003\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "�w�\u001dv\u0002����`��\u0014�'\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000N\u0000\u0000\u0000[{\"start\":543928400,\"end\":543932331,\"reason\":1,\"isTimer\":false,\"source\":null}]\u0000\u0000\u0014��\u001d�\u0002Ў��w��0�\u001e\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000N\u0000\u0000\u0000[{\"start\":543928413,\"end\":543932331,\"reason\":1,\"isTimer\":false,\"source\":null}]\u0000\u0000"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"iceGatheringFinished\"}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "��\n\u001d�\u0001T���2o��\u000fk5^�I�b�?;X8 c\u0001S���j�S��\u00035^�I�b�?;X8 c\u0001T���j�S��\u00035\f��.Py@;X8 c\u0001U���j�S��\u0003��HhCI\u0013@;X8 c\u0001W���j�S��\u0003\u001a�\u0013k�nI@;X8 c\u0001Y���j�S��\u0003iNR���q@;X8 c\u0001[���j�S��\u00035\f��.Py@#98 �\u0003�d��2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000�?#98 �\u0003�d\u0013���=>�G5^�I�b�?#98 �\u0003�d#���=>�G5^�I�b�?�Y8 �\u0002����2o��\u000fk5^�I�b�?�Y8 �\u0002����2o��\u000fk5^�I�b�?NW7 �\u0000`�\u0004�,�l^\u0019(5^�I�b�?`W7 8\u0003F�\u0006�j�'v��5^�I�b�?`W7 8\u0003G�\u0007�j�'v������ROy@`W7 8\u0003H�\b�j�'v���\u001cS2CI\u0013@`W7 8\u0003J�\n�j�'v���\br��nI@`W7 8\u0003L�\f�j�'v��\u0019�\u0016���q@`W7 8\u0003N�\u000e�j�'v������ROy@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "Y@8 U\u0003GH��\u0017�\r��9��;��`@Y@8 U\u0003HH��\u0017�\r��9c<\u0017�ah�?Y@8 U\u0003JH��\u0017�\r��9��A���1@Y@8 U\u0003LH��\u0017�\r��9\t�c���X@Y@8 U\u0003NH��\u0017�\r��9��;��`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":19,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"data\":[{\"date\":1774639455,\"imagePath\":\"\\/images\\/504F94A173A7\\/1774639455.jpg\",\"thumbPath\":\"\\/images\\/504F94A173A7\\/1774639455_thumb.jpg\"},{\"date\":1774550069,\"imagePath\":\"\\/images\\/504F94A173A7\\/1774550069.jpg\",\"thumbPath\":\"\\/images\\/504F94A173A7\\/1774550069_thumb.jpg\"},{\"date\":1774540724,\"imagePath\":\"\\/images\\/504F94A173A7\\/1774540724.jpg\",\"thumbPath\":\"\\/images\\/504F94A173A7\\/1774540724_thumb.jpg\"},{\"date\":1774101781,\"imagePath\":\"\\/images\\/504F94A1"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":20,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"data\":{\"sdp\":\"v=0\\r\\no=- 103174050 1536669038 IN IP4 192.168.1.137\\r\\ns=-\\r\\nc=IN IP4 192.168.1.137\\r\\nt=0 0\\r\\na=ice-ufrag:QBDfj5M\\r\\na=ice-pwd:dX3vTz3DSm5OT2nuTcfA0CLeWKKji7t\\r\\na=setup:active\\r\\na=fingerprint:SHA-256 4B:AD:92:EE:C6:C8:73:72:96:C9:C1:5E:5F:00:F8:02:EE:18:75:4A:E9:0B:17:57:3C:30:35:63:B0:40:93:84\\r\\nm=video 39368 UDP\\/TLS\\/RTP\\/SAVPF 39 41\\r\\na=rtpmap:39 H264\\/90000\\r\\na=fmtp:39 packetization-mode=0;profile-level-id=42e01f\\r\\na=rtp"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":3,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:c0a80189 1 UDP 2113929471 192.168.1.137 39368 typ host\",0,\"0\",\"QBDfj5M\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":3}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":4,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:c192f484 1 UDP 2113929471 fd7c:93f6:7988::137 39368 typ host\",0,\"0\",\"QBDfj5M\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":4}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":5,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:bcb6fcdf 1 UDP 2113929471 fd59:9a16:bbe7:fa:ba82:4dea:23c0:61ba 39368 typ host\",0,\"0\",\"QBDfj5M\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":5}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":6,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:bc7f7efb 1 UDP 2113929471 fd7c:93f6:7988:0:e614:3987:999e:d5cd 39368 typ host\",0,\"0\",\"QBDfj5M\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":6}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":21,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"}}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":22,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"}}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":23,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"}}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":24,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"}}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":7,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:594381d8 1 UDP 1677721855 89.67.129.217 39368 typ srflx raddr 192.168.1.137 rport 39368\",0,\"0\",\"QBDfj5M\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":7}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "O@8 �\u0001!�\u0005�9�A�ǔ��T���a@O@8 �\u0001\"�\u0006�9�A�ǔ���Y�r�?O@8 �\u0001$�\b�9�A�ǔ]-h�\\O3@O@8 �\u0001&�\n�9�A�ǔ�/t��\u001bY@O@8 �\u0001(�\f�9�A�ǔ��T���a@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "[@8 x\u0000����{�G>\u0003PC ��%`@[@8 x\u0000����{�G>\u0003Z��G�l�?[@8 x\u0000����{�G>\u0003\fw��^�+@[@8 x\u0000����{�G>\u0003\u001d\u0019Yj�IU@[@8 x\u0000����{�G>\u0003PC ��%`@"
+    },
+    {
+      "kind": "open",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "԰Z\u001ah\u0000qs���^8��vy�둋�i@԰Z\u001ah\u0000rs���^8��v����cg�?԰Z\u001ah\u0000ss���^8��vO3M�3\u0012�?԰Z\u001ah\u0000ts���^8��v_�\r�S�\u0018@԰Z\u001ah\u0000us���^8��v2bN�?�3@X��\u001a�\u0001!�\u0005�ߠN%��\u001c^E}\u000b=�@X��\u001a�\u0001\"�\u0006�ߠN%��(:�H4��?X��\u001a�\u0001#�\u0007�ߠN%��\u001c��B�\u000b\u0010@X��\u001a�\u0001$�\b�ߠN%��?���w�3@X��\u001a�\u0001%�\t�ߠN%�ԩٰ\u000bA\"N@�M=\u001b~\u0002@�\u0005�����$��'�>��n@�M=\u001b~\u0002A�\u0006�����$�\u0004\bZ��G�?�M=\u001b~\u0002B�\u0007�����$��wW\u0005T��?�M=\u001b~\u0002C�\b�����$�H|F\u001b��!@�M=\u001b~\u0002D�\t�����$����O�9@�M=\u001b~\u0002M�\u0005�����$��@�!v�F@�M=\u001b~\u0002N�\u0006�����$��ם�\u0005?�?�M=\u001b~\u0002O�\u0007�����$�/����\u0015�?�M=\u001b~\u0002P�\b�����$�8 �0�'�?�M=\u001b~\u0002Q�\t�����$��QQ���\u000f@"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "keepalive"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":0,\"jsonrpc\":\"2.0\",\"method\":\"authenticate\",\"params\":[\"SPW9R9SNJdYCeRc0FQOaT4p5We5c9BUzipS3oXkAQYpfCa46EIbMvGM1eoJs4zlL\",\"B5BD38C86B7D557A79DFA3727FA58AF6DD3194CE62BA94BE74748C8358F81CA19EEBEF868223AF59C7FABA0CA45FE03B1F769D6427CEA908336D88C96A502BA6EF650230C3B3E70056E3057247E4D041A5951DCD1E9B98A129CB0E9ABD9E9670B084A687B78929C93213CA9938A483A2FEDF571D0AC5D3115091D7216EEBC53A47210AB4D98085A00F682F8900A896855016A4EBFB2DD86F6A65D679DDD15F0B47AB1107396D035010C1DA76FC9C0BF2A82D16D5B56B8150AF7250"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\",\"data\":[\"admin\",\"N1ISYRex9356P4JzO3IIzI0NLika02VdFxB9LY4UvU8l0CYG8/46oII3NUTX1ty0K9mPqsSPYgb9PMpkfbQ5j7VY6nWytYVB5TTSKVQAFgnlvnDJsbdqwPIj/p7toQ3m2rG1zC++FAQegwmyaf0VFOM3Au8mdsxZEmEmv05m9M83AaHtM1TENkyHAKD+p01CNK7Rh/rbyHxpSwimy7xfoWscRKZ6N3p5e0q7BRON/WSPZU8s4H9Ctzs7MwVLWXuFJd70nHIh3RJtsSl3ls+0FIHitWcMtENcgSx0o3bjKAitg+bmblmLlTQQfHDymzetwXzmXBAcQ3ip10ewuj0cRbiK8PCZkM0sxsqxu11ebQcsHKMKrPkiOXipTHmbwjNkCfVxo3ReGavYEznjdtjbRkHtKo7L2IaHLhc3DyxnXT9OJn"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0006\u0000\u0000\u0000\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u00000\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "��\n\u001d�\u0001<���2o��\u000fk\u0000\u0000\u0000����?��\n\u001d�\u0001@���2o��\u000fk\u0000\u0000\u0000 �y�?"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000\b\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "��\n\u001d�\u0001D���2o��\u000fk\u0000\u0000\u0000\u0000���?;X8 c\u0001T���j�S��\u0003�K�m/Py@;X8 c\u0001U���j�S��\u0003�g\u0018`_I\u0013@;X8 c\u0001W���j�S��\u0003��\r�nI@;X8 c\u0001Y���j�S��\u0003��1S\u0000�q@;X8 c\u0001[���j�S��\u0003�K�m/Py@`W7 8\u0003G�\u0007�j�'v��C�@SOy@`W7 8\u0003H�\b�j�'v��F�\"*_I\u0013@`W7 8\u0003J�\n�j�'v��r\u0003l{�nI@`W7 8\u0003L�\f�j�'v��o��#��q@`W7 8\u0003N�\u000e�j�'v��C�@SOy@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "��\n\u001d�\u0001H���2o��\u000fk/�$\u0006a��?Y@8 U\u0003FH��\u0017�\r��9/�$\u0006a��?Y@8 U\u0003GH��\u0017�\r��9�у���`@Y@8 U\u0003HH��\u0017�\r��9�\u0007��h�?Y@8 U\u0003JH��\u0017�\r��9W�����1@Y@8 U\u0003LH��\u0017�\r��96Rz���X@Y@8 U\u0003NH��\u0017�\r��9�у���`@"
+    },
+    {
+      "kind": "close",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "��\n\u001d�\u0001L���2o��\u000fkw��\u001a�\t�?O@8 �\u0001 �\u0004�9�A�ǔw��\u001a�\t�?O@8 �\u0001!�\u0005�9�A�ǔ8�����a@O@8 �\u0001\"�\u0006�9�A�ǔ��4\u000b�r�?O@8 �\u0001$�\b�9�A�ǔr�~e^O3@O@8 �\u0001&�\n�9�A�ǔ\u0007�9#�\u001bY@O@8 �\u0001(�\f�9�A�ǔ8�����a@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"reachMode\",\"params\":[]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":1}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "��\n\u001d�\u0001P���2o��\u000fk�S�ۺ�?[@8 x\u0000����{�G>\u0003�S�ۺ�?[@8 x\u0000����{�G>\u0003\u00171D�%`@[@8 x\u0000����{�G>\u0003�s�ٵl�?[@8 x\u0000����{�G>\u0003�S\t^b�+@[@8 x\u0000����{�G>\u0003���܇IU@[@8 x\u0000����{�G>\u0003\u00171D�%`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000\u0018\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "��\n\u001d�\u0001d���2o��\u000fk\u0000\u0000\u0000����@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000\u0018\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "��\n\u001d�\u0001h���2o��\u000fk\u0000\u0000\u0000�8���"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "԰Z\u001ah\u0000qs���^8��v�1˗��i@԰Z\u001ah\u0000rs���^8��v��v'{g�?԰Z\u001ah\u0000ss���^8��v<��6\u0012�?԰Z\u001ah\u0000ts���^8��v���@T�\u0018@԰Z\u001ah\u0000us���^8��v�JH\u0012@�3@X��\u001a�\u0001!�\u0005�ߠN%��\u0001y\u0016�\u000b=�@X��\u001a�\u0001\"�\u0006�ߠN%���c��R��?X��\u001a�\u0001#�\u0007�ߠN%�Զ2r+�\u000b\u0010@X��\u001a�\u0001$�\b�ߠN%���N\u0018Tx�3@X��\u001a�\u0001%�\t�ߠN%�����HA\"N@�M=\u001b~\u0002@�\u0005�����$���\u0018G��n@�M=\u001b~\u0002A�\u0006�����$�^�|��G�?�M=\u001b~\u0002B�\u0007�����$��Л!X��?�M=\u001b~\u0002C�\b�����$�q\u0007Ϟ��!@�M=\u001b~\u0002D�\t�����$�5���O�9@�M=\u001b~\u0002M�\u0005�����$���E&v�F@�M=\u001b~\u0002N�\u0006�����$���Wr+?�?�M=\u001b~\u0002O�\u0007�����$��b%L�\u0015�?�M=\u001b~\u0002P�\b�����$�g\b Ǚ'�?�M=\u001b~\u0002Q�\t�����$�\u0010�z\n��\u000f@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": ";X8 c\u0001T���j�S��\u0003k!��/Py@;X8 c\u0001U���j�S��\u0003���P{I\u0013@;X8 c\u0001W���j�S��\u0003�y$h�nI@;X8 c\u0001Y���j�S��\u0003�c��\u0000�q@;X8 c\u0001[���j�S��\u0003k!��/Py@`W7 8\u0003G�\u0007�j�'v��#�d�SOy@`W7 8\u0003H�\b�j�'v��Fj�\u001a{I\u0013@`W7 8\u0003J�\n�j�'v��r����nI@`W7 8\u0003L�\f�j�'v��O�����q@`W7 8\u0003N�\u000e�j�'v��#�d�SOy@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "Y@8 U\u0003GH��\u0017�\r��9��3���`@Y@8 U\u0003HH��\u0017�\r��9#����h�?Y@8 U\u0003JH��\u0017�\r��9�4\u001a���1@Y@8 U\u0003LH��\u0017�\r��9���\\��X@Y@8 U\u0003NH��\u0017�\r��9��3���`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "O@8 �\u0001!�\u0005�9�A�ǔ��p���a@O@8 �\u0001\"�\u0006�9�A�ǔzo���r�?O@8 �\u0001$�\b�9�A�ǔ�YHC`O3@O@8 �\u0001&�\n�9�A�ǔ�:���\u001bY@O@8 �\u0001(�\f�9�A�ǔ��p���a@[@8 x\u0000����{�G>\u0003L\u001d�+�%`@[@8 x\u0000����{�G>\u0003`����l�?[@8 x\u0000����{�G>\u0003�\u0016�Vf�+@[@8 x\u0000����{�G>\u0003\u0016Ͷ[�IU@[@8 x\u0000����{�G>\u0003L\u001d�+�%`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"ready\"}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"getLastActivities\",\"params\":[0,100,2],\"id\":25}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"call\",\"params\":[{\"type\":\"offer\",\"sdp\":\"v=0\\r\\no=- 2709126386343389217 2 IN IP4 127.0.0.1\\r\\ns=-\\r\\nt=0 0\\r\\na=group:BUNDLE 0 1\\r\\na=extmap-allow-mixed\\r\\na=msid-semantic: WMS\\r\\nm=video 9 UDP/TLS/RTP/SAVPF 96 97 98 99 100 101 35 36 37 38 103 104 107 108 109 114 115 116 117 118 39 40 41 42 43 44 45 46 47 48 119 120 121 49\\r\\nc=IN IP4 0.0.0.0\\r\\na=rtcp:9 IN IP4 0.0.0.0\\r\\na=ice-ufrag:JVBp\\r\\na=ice-pwd:VkdXjVa3xNF3ERd4nuFNiX2L\\r\\na=ice-options:trickle\\r\\na=fingerprint:sha"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:2116397623 1 udp 2113937152 a3fe2006-c3b5-4795-ab30-45f5db0fcc31.local 54207 typ host generation 0 ufrag JVBp network-cost 999\",0,\"0\",\"JVBp\"],\"id\":27}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:2116397623 1 udp 2113937152 a3fe2006-c3b5-4795-ab30-45f5db0fcc31.local 50849 typ host generation 0 ufrag JVBp network-cost 999\",1,\"1\",\"JVBp\"],\"id\":28}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:3397095907 1 udp 1677729535 89.67.129.217 54207 typ srflx raddr 0.0.0.0 rport 0 generation 0 ufrag JVBp network-cost 999\",0,\"0\",\"JVBp\"],\"id\":29}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:3397095907 1 udp 1677729535 89.67.129.217 50849 typ srflx raddr 0.0.0.0 rport 0 generation 0 ufrag JVBp network-cost 999\",1,\"1\",\"JVBp\"],\"id\":30}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000\u0018\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "�\u0000�\u001eK\u0000I���2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000�?"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0003\u0000\u0000H\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "�\u0011�\u001e\"\u0000�\"��2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000#\u0001\u0000\u0000[{\"uuid\":\"1ea3ea0d-0147-ae8f-ffff326fbbc40f6b\",\"demand\":0},{\"uuid\":\"1ea3fc4f-03b4-9b27-ffff169212e6db5e\",\"demand\":0},{\"uuid\":\"1ea3fb53-00f1-9a57-ffff80f9b0576bc9\",\"demand\":0},{\"uuid\":\"1ea3f560-02cd-5f63-fffffb6c31cab96a\",\"demand\":0},{\"uuid\":\"1ea3fe80-000e-58d1-ffff58a96987be4f\",\"demand\":0}]\u0000"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"iceGatheringFinished\"}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":25,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"data\":[{\"date\":1774639455,\"imagePath\":\"\\/images\\/504F94A173A7\\/1774639455.jpg\",\"thumbPath\":\"\\/images\\/504F94A173A7\\/1774639455_thumb.jpg\"},{\"date\":1774550069,\"imagePath\":\"\\/images\\/504F94A173A7\\/1774550069.jpg\",\"thumbPath\":\"\\/images\\/504F94A173A7\\/1774550069_thumb.jpg\"},{\"date\":1774540724,\"imagePath\":\"\\/images\\/504F94A173A7\\/1774540724.jpg\",\"thumbPath\":\"\\/images\\/504F94A173A7\\/1774540724_thumb.jpg\"},{\"date\":1774101781,\"imagePath\":\"\\/images\\/504F94A1"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":26,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"data\":{\"sdp\":\"v=0\\r\\no=- 4199766507 1837193898 IN IP4 192.168.1.137\\r\\ns=-\\r\\nc=IN IP4 192.168.1.137\\r\\nt=0 0\\r\\na=ice-ufrag:m0eBVIv\\r\\na=ice-pwd:Fhinli4WAFy9y75JyCAD3VhXXSUJCvU\\r\\na=setup:active\\r\\na=fingerprint:SHA-256 4B:AD:92:EE:C6:C8:73:72:96:C9:C1:5E:5F:00:F8:02:EE:18:75:4A:E9:0B:17:57:3C:30:35:63:B0:40:93:84\\r\\nm=video 8414 UDP\\/TLS\\/RTP\\/SAVPF 39 41\\r\\na=rtpmap:39 H264\\/90000\\r\\na=fmtp:39 packetization-mode=0;profile-level-id=42e01f\\r\\na=rtp"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":3,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:c0a80189 1 UDP 2113929471 192.168.1.137 8414 typ host\",0,\"0\",\"m0eBVIv\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":3}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":4,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:c192f484 1 UDP 2113929471 fd7c:93f6:7988::137 8414 typ host\",0,\"0\",\"m0eBVIv\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":4}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":5,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:bcb6fcdf 1 UDP 2113929471 fd59:9a16:bbe7:fa:ba82:4dea:23c0:61ba 8414 typ host\",0,\"0\",\"m0eBVIv\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":5}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":6,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:bc7f7efb 1 UDP 2113929471 fd7c:93f6:7988:0:e614:3987:999e:d5cd 8414 typ host\",0,\"0\",\"m0eBVIv\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":6}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "԰Z\u001ah\u0000qs���^8��v�𨝋�i@԰Z\u001ah\u0000rs���^8��v�#t��g�?԰Z\u001ah\u0000ss���^8��v�a˪9\u0012�?԰Z\u001ah\u0000ts���^8��v\t���T�\u0018@԰Z\u001ah\u0000us���^8��v\u001dE6A@�3@X��\u001a�\u0001!�\u0005�ߠN%�Կ��\u000b=�@X��\u001a�\u0001\"�\u0006�ߠN%�ԭR�Rq��?X��\u001a�\u0001#�\u0007�ߠN%�Ԥ��\u0013�\u000b\u0010@X��\u001a�\u0001$�\b�ߠN%�ԡ�\u001c�x�3@X��\u001a�\u0001%�\t�ߠN%��ڳąA\"N@�M=\u001b~\u0002@�\u0005�����$��\"OO��n@�M=\u001b~\u0002A�\u0006�����$�D�E^�G�?�M=\u001b~\u0002B�\u0007�����$�5��<\\��?�M=\u001b~\u0002C�\b�����$��*6\"��!@�M=\u001b~\u0002D�\t�����$��]\u001cP�9@�M=\u001b~\u0002M�\u0005�����$��=�*v�F@�M=\u001b~\u0002N�\u0006�����$�����P?�?�M=\u001b~\u0002O�\u0007�����$��Mؤ�\u0015�?�M=\u001b~\u0002P�\b�����$�'�L]�'�?�M=\u001b~\u0002Q�\t�����$�p#�U��\u000f@"
+    },
+    {
+      "kind": "open",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u00000\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "�\u0000�\u001eK\u0000I���2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000�?\u001d\u000b�\u001e\u0016\u0001\u0011\t��2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000�?"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0003\u0000\u0000�\u0004\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "�w�\u001dv\u0002����`��\u0014�'\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000N\u0000\u0000\u0000[{\"start\":543928400,\"end\":543932334,\"reason\":1,\"isTimer\":false,\"source\":null}]\u0000\u0000\u0014��\u001d�\u0002Ў��w��0�\u001e\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000N\u0000\u0000\u0000[{\"start\":543928413,\"end\":543932334,\"reason\":1,\"isTimer\":false,\"source\":null}]\u0000\u0000�\u0011�\u001e\"\u0000�\"��2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000#\u0001\u0000\u0000[{\"uuid\":\"1ea3ea0d-0147-ae8f-ffff326fbbc40f6b\",\"demand\":0},{\"uuid\":\"1ea3fc4f-03b4-9b27-ffff169212e6db5e\",\"demand\":0},{\"uuid\":\"1ea3fb53-00f1-9a57-ffff80f9b0576bc9\",\"demand\":0},{\"uuid\":\"1ea3f560-02cd-5f63-fffffb6c31cab96a\",\"demand\":0},"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000h\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": ";X8 c\u0001T���j�S��\u0003�`sM0Py@;X8 c\u0001U���j�S��\u0003Z��H�I\u0013@;X8 c\u0001W���j�S��\u0003tt\u001e�nI@;X8 c\u0001Y���j�S��\u0003���2\u0001�q@;X8 c\u0001[���j�S��\u0003�`sM0Py@`W7 8\u0003G�\u0007�j�'v��y�C TOy@`W7 8\u0003H�\b�j�'v��?�\u0012�I\u0013@`W7 8\u0003J�\n�j�'v��\u001f�|x�nI@`W7 8\u0003L�\f�j�'v����\u0003��q@`W7 8\u0003N�\u000e�j�'v��y�C TOy@Y@8 U\u0003GH��\u0017�\r��9,�\u0015^��`@Y@8 U\u0003HH��\u0017�\r��9c�̻�h�?Y@8 U\u0003JH��\u0017�\r��9CX-���1@Y@8 U\u0003LH��\u0017�\r��9q��$��X@Y@8 U\u0003NH��\u0017�\r��9,�\u0015^��`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":0,\"jsonrpc\":\"2.0\",\"method\":\"authenticate\",\"params\":[\"BZ3qFICt3iVexw18SnpyLIvXmpilmhE8oVb6ovAHvBqPzTyXnhxQvzfZ06ZpsAb8\",\"B5BD38C86B7D557A79DFA3727FA58AF6DD3194CE62BA94BE74748C8358F81CA19EEBEF868223AF59C7FABA0CA45FE03B1F769D6427CEA908336D88C96A502BA6EF650230C3B3E70056E3057247E4D041A5951DCD1E9B98A129CB0E9ABD9E9670B084A687B78929C93213CA9938A483A2FEDF571D0AC5D3115091D7216EEBC53A47210AB4D98085A00F682F8900A896855016A4EBFB2DD86F6A65D679DDD15F0B47AB1107396D035010C1DA76FC9C0BF2A82D16D5B56B8150AF7250"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\",\"data\":[\"admin\",\"obx7U2EchmWcVXfdpiemUUQgpa2hTXRT921L9g0QyTi8HwApy/XAt0exLcGf+7UYly5ueHwcq4oItBTG8q5stdpIR3V4FE0XgGsHxosdPgqisyLCDVxRKWZ/rdQqOu8wOrrgl9jnl3Lfg6B0Z2IQzX7XYksUhSfbL/3DIAqV1WCuwZVQsKSsDIEbZYIJjruxpSgMjuaNwcRQNAWbp7OxLv49SUvA6rtnI/HkGwF5llGPytGMXNbOkOa4BPcVhZXS8GcZnbdIRTW0ehI5kOG+Oomd/LJQXHQrM1CI4aif7J8w6WHKC+0Oy6pFOfNEY9bwkNcobQYOKrBg+OrVd7GCiakMZk0+IRvQPIxcmv//L7JuiTorRr/P0zw4Ss95/po9DfL5KpqLX6I4xF3APaAX1x1RvRnI42ktOGWiuvJmPXu24F"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "O@8 �\u0001!�\u0005�9�A�ǔ�\u001a98��a@O@8 �\u0001\"�\u0006�9�A�ǔ\u0016����r�?O@8 �\u0001$�\b�9�A�ǔ$<�!bO3@O@8 �\u0001&�\n�9�A�ǔ3�<\u0012�\u001bY@O@8 �\u0001(�\f�9�A�ǔ�\u001a98��a@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "[@8 x\u0000����{�G>\u00032\u001d�j�%`@[@8 x\u0000����{�G>\u0003u��3�l�?[@8 x\u0000����{�G>\u0003/\u0015XIj�+@[@8 x\u0000����{�G>\u0003��\nڈIU@[@8 x\u0000����{�G>\u00032\u001d�j�%`@"
+    },
+    {
+      "kind": "close",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "԰Z\u001ah\u0000qs���^8��v������i@԰Z\u001ah\u0000rs���^8��v��_!�g�?԰Z\u001ah\u0000ss���^8��v\u0016�(�<\u0012�?԰Z\u001ah\u0000ts���^8��v\u0010�ĸU�\u0018@԰Z\u001ah\u0000us���^8��v�\u001b<p@�3@X��\u001a�\u0001!�\u0005�ߠN%��̮��\u000b=�@X��\u001a�\u0001\"�\u0006�ߠN%����p㏡�?X��\u001a�\u0001#�\u0007�ߠN%���\u0017���\u000b\u0010@X��\u001a�\u0001$�\b�ߠN%��2\b_Hy�3@X��\u001a�\u0001%�\t�ߠN%�ԣ���A\"N@�M=\u001b~\u0002@�\u0005�����$����W��n@�M=\u001b~\u0002A�\u0006�����$�\u0013g�H�G�?�M=\u001b~\u0002B�\u0007�����$���$Z`��?�M=\u001b~\u0002C�\b�����$��\u001d���!@�M=\u001b~\u0002D�\t�����$�_�2^P�9@�M=\u001b~\u0002M�\u0005�����$�q\u0006�/v�F@�M=\u001b~\u0002N�\u0006�����$�S�˛v?�?�M=\u001b~\u0002O�\u0007�����$�f����\u0015�?�M=\u001b~\u0002P�\b�����$�����'�?�M=\u001b~\u0002Q�\t�����$�@�͠��\u000f@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"reachMode\",\"params\":[]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":1}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": ";X8 c\u0001T���j�S��\u0003�\to�0Py@;X8 c\u0001U���j�S��\u00030�G�I\u0013@;X8 c\u0001W���j�S��\u0003Ϻ�f�nI@;X8 c\u0001Y���j�S��\u0003�KϢ\u0001�q@;X8 c\u0001[���j�S��\u0003�\to�0Py@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "`W7 8\u0003G�\u0007�j�'v��D�?�TOy@`W7 8\u0003H�\b�j�'v��r�\u0011�I\u0013@`W7 8\u0003J�\n�j�'v��z�Y��nI@`W7 8\u0003L�\f�j�'v��p��s��q@`W7 8\u0003N�\u000e�j�'v��D�?�TOy@Y@8 U\u0003GH��\u0017�\r��9�O����`@Y@8 U\u0003HH��\u0017�\r��9�\u000e��$i�?Y@8 U\u0003JH��\u0017�\r��9�{@�\u0000�1@Y@8 U\u0003LH��\u0017�\r��9RNc���X@Y@8 U\u0003NH��\u0017�\r��9�O����`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "O@8 �\u0001!�\u0005�9�A�ǔ\u001dL�s��a@O@8 �\u0001\"�\u0006�9�A�ǔ�:���r�?O@8 �\u0001$�\b�9�A�ǔ��T�cO3@O@8 �\u0001&�\n�9�A�ǔ�U���\u001bY@O@8 �\u0001(�\f�9�A�ǔ\u001dL�s��a@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "[@8 x\u0000����{�G>\u0003g\t���%`@[@8 x\u0000����{�G>\u0003ٛr�\u0014m�?[@8 x\u0000����{�G>\u0003{�\u0006Bn�+@[@8 x\u0000����{�G>\u0003L� Y�IU@[@8 x\u0000����{�G>\u0003g\t���%`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"ready\"}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"getLastActivities\",\"params\":[0,100,2],\"id\":31}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0001\u0000\u0000"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"call\",\"params\":[{\"type\":\"offer\",\"sdp\":\"v=0\\r\\no=- 5508565197525559249 2 IN IP4 127.0.0.1\\r\\ns=-\\r\\nt=0 0\\r\\na=group:BUNDLE 0 1\\r\\na=extmap-allow-mixed\\r\\na=msid-semantic: WMS\\r\\nm=video 9 UDP/TLS/RTP/SAVPF 96 97 98 99 100 101 35 36 37 38 103 104 107 108 109 114 115 116 117 118 39 40 41 42 43 44 45 46 47 48 119 120 121 49\\r\\nc=IN IP4 0.0.0.0\\r\\na=rtcp:9 IN IP4 0.0.0.0\\r\\na=ice-ufrag:9xb5\\r\\na=ice-pwd:U1HoKMJrQqog92HTryl4IUBt\\r\\na=ice-options:trickle\\r\\na=fingerprint:sha"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:1068627030 1 udp 2113937152 a3fe2006-c3b5-4795-ab30-45f5db0fcc31.local 55074 typ host generation 0 ufrag 9xb5 network-cost 999\",0,\"0\",\"9xb5\"],\"id\":33}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:1068627030 1 udp 2113937152 a3fe2006-c3b5-4795-ab30-45f5db0fcc31.local 52754 typ host generation 0 ufrag 9xb5 network-cost 999\",1,\"1\",\"9xb5\"],\"id\":34}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "԰Z\u001ah\u0000qs���^8��v��h���i@԰Z\u001ah\u0000rs���^8��v\u0019�S��g�?԰Z\u001ah\u0000ss���^8��v\u0003WǊ?\u0012�?԰Z\u001ah\u0000ts���^8��vK�tV�\u0018@԰Z\u001ah\u0000us���^8��vn\u00046�@�3@X��\u001a�\u0001!�\u0005�ߠN%�Աɉ�\u000b=�@X��\u001a�\u0001\"�\u0006�ߠN%�Ԝ�Gl���?X��\u001a�\u0001#�\u0007�ߠN%�ԃ�\u001a��\u000b\u0010@X��\u001a�\u0001$�\b�ߠN%���d��y�3@X��\u001a�\u0001%�\t�ߠN%������A\"N@�M=\u001b~\u0002@�\u0005�����$��J�_��n@�M=\u001b~\u0002A�\u0006�����$�m1�*\fH�?�M=\u001b~\u0002B�\u0007�����$���hvd��?�M=\u001b~\u0002C�\b�����$���h)��!@�M=\u001b~\u0002D�\t�����$�����P�9@�M=\u001b~\u0002M�\u0005�����$���]4v�F@�M=\u001b~\u0002N�\u0006�����$�(\u0007�0�?�?�M=\u001b~\u0002O�\u0007�����$�#E\bX�\u0015�?�M=\u001b~\u0002P�\b�����$���\u0018��'�?�M=\u001b~\u0002Q�\t�����$�X\"����\u000f@"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:2347749250 1 udp 1677729535 89.67.129.217 52754 typ srflx raddr 0.0.0.0 rport 0 generation 0 ufrag 9xb5 network-cost 999\",1,\"1\",\"9xb5\"],\"id\":35}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:2347749250 1 udp 1677729535 89.67.129.217 55074 typ srflx raddr 0.0.0.0 rport 0 generation 0 ufrag 9xb5 network-cost 999\",0,\"0\",\"9xb5\"],\"id\":36}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"method\":\"iceGatheringFinished\"}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "��\n\u001d�\u0001T���2o��\u000fk��|?eq�?;X8 c\u0001S���j�S��\u0003��|?eq�?;X8 c\u0001T���j�S��\u0003pF�'1Py@;X8 c\u0001U���j�S��\u0003H!\u0017��I\u0013@;X8 c\u0001W���j�S��\u0003򡭸�nI@;X8 c\u0001Y���j�S��\u0003��\u0005\r\u0002�q@;X8 c\u0001[���j�S��\u0003pF�'1Py@#98 �\u0003�d��2o��\u000fk\u0000\u0000\u0000\u0000\u0000\u0000�?#98 �\u0003�d\u0013���=>�G��|?eq�?#98 �\u0003�d#���=>�G��|?eq�?�Y8 �\u0002����2o��\u000fk��|?eq�?�Y8 �\u0002����2o��\u000fk��|?eq�?NW7 �\u0000`�\u0004�,�l^\u0019(��|?eq�?`W7 8\u0003F�\u0006�j�'v���|?eq�?`W7 8\u0003G�\u0007�j�'v��(�u�TOy@`W7 8\u0003H�\b�j�'v��!��I\u0013@`W7 8\u0003J�\n�j�'v���\u000bJ�nI@`W7 8\u0003L�\f�j�'v��T�����q@`W7 8\u0003N�\u000e�j�'v��(�u�TOy@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000x\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "Y@8 U\u0003GH��\u0017�\r��9�\u0004�%��`@Y@8 U\u0003HH��\u0017�\r��9(�لVi�?Y@8 U\u0003JH��\u0017�\r��9/%�\b\u0004�1@Y@8 U\u0003LH��\u0017�\r��9��³��X@Y@8 U\u0003NH��\u0017�\r��9�\u0004�%��`@"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":31,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"data\":[{\"date\":1774639455,\"imagePath\":\"\\/images\\/504F94A173A7\\/1774639455.jpg\",\"thumbPath\":\"\\/images\\/504F94A173A7\\/1774639455_thumb.jpg\"},{\"date\":1774550069,\"imagePath\":\"\\/images\\/504F94A173A7\\/1774550069.jpg\",\"thumbPath\":\"\\/images\\/504F94A173A7\\/1774550069_thumb.jpg\"},{\"date\":1774540724,\"imagePath\":\"\\/images\\/504F94A173A7\\/1774540724.jpg\",\"thumbPath\":\"\\/images\\/504F94A173A7\\/1774540724_thumb.jpg\"},{\"date\":1774101781,\"imagePath\":\"\\/images\\/504F94A1"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":32,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"data\":{\"sdp\":\"v=0\\r\\no=- 3182257214 1409322734 IN IP4 192.168.1.137\\r\\ns=-\\r\\nc=IN IP4 192.168.1.137\\r\\nt=0 0\\r\\na=ice-ufrag:dgLV3va\\r\\na=ice-pwd:KkD7AogMGk9kmsRezPKKEaxMf654NLC\\r\\na=setup:active\\r\\na=fingerprint:SHA-256 4B:AD:92:EE:C6:C8:73:72:96:C9:C1:5E:5F:00:F8:02:EE:18:75:4A:E9:0B:17:57:3C:30:35:63:B0:40:93:84\\r\\nm=video 25924 UDP\\/TLS\\/RTP\\/SAVPF 39 41\\r\\na=rtpmap:39 H264\\/90000\\r\\na=fmtp:39 packetization-mode=0;profile-level-id=42e01f\\r\\na=rt"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":3,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:c0a80189 1 UDP 2113929471 192.168.1.137 25924 typ host\",0,\"0\",\"dgLV3va\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":3}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":4,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:c192f484 1 UDP 2113929471 fd7c:93f6:7988::137 25924 typ host\",0,\"0\",\"dgLV3va\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":4}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":5,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:bcb6fcdf 1 UDP 2113929471 fd59:9a16:bbe7:fa:ba82:4dea:23c0:61ba 25924 typ host\",0,\"0\",\"dgLV3va\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":5}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":6,\"jsonrpc\":\"2.0\",\"method\":\"addIceCandidate\",\"params\":[\"candidate:bc7f7efb 1 UDP 2113929471 fd7c:93f6:7988:0:e614:3987:999e:d5cd 25924 typ host\",0,\"0\",\"dgLV3va\"]}"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"},\"id\":6}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":33,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"}}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":34,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"}}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":35,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"}}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":36,\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\"}}"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0000\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "O@8 �\u0001!�\u0005�9�A�ǔtR����a@O@8 �\u0001\"�\u0006�9�A�ǔ�e�}\u001bs�?O@8 �\u0001$�\b�9�A�ǔR���eO3@O@8 �\u0001&�\n�9�A�ǔb\u0003\u0001�\u001bY@O@8 �\u0001(�\f�9�A�ǔtR����a@[@8 x\u0000����{�G>\u0003��\u000e�%`@[@8 x\u0000����{�G>\u0003=��4m�?[@8 x\u0000����{�G>\u0003Ǜ�:r�+@[@8 x\u0000����{�G>\u0003�}6؉IU@[@8 x\u0000����{�G>\u0003��\u000e�%`@"
+    },
+    {
+      "kind": "open",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"id\":0,\"jsonrpc\":\"2.0\",\"method\":\"authenticate\",\"params\":[\"I22OM4tSUn1LFuVTNDdzlJ5dOPJL5gkS8JCWMU7RExgUFNScXm8FfDFppt0QypCx\",\"B5BD38C86B7D557A79DFA3727FA58AF6DD3194CE62BA94BE74748C8358F81CA19EEBEF868223AF59C7FABA0CA45FE03B1F769D6427CEA908336D88C96A502BA6EF650230C3B3E70056E3057247E4D041A5951DCD1E9B98A129CB0E9ABD9E9670B084A687B78929C93213CA9938A483A2FEDF571D0AC5D3115091D7216EEBC53A47210AB4D98085A00F682F8900A896855016A4EBFB2DD86F6A65D679DDD15F0B47AB1107396D035010C1DA76FC9C0BF2A82D16D5B56B8150AF7250"
+    },
+    {
+      "kind": "sent",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/proxy/1b9ccf2b-0042-4d48-ffff326fbbc40f6b/",
+      "payload": "{\"jsonrpc\":\"2.0\",\"result\":{\"code\":200,\"message\":\"Ok\",\"data\":[\"admin\",\"CHUxzsWYTSLg0PG/mdmIJYoQ/xol8sXY6rwjdruqs2aiSKoGbKa1hzxD2fm40C5ka1hv8/uDydTgUcgtRsscPkwsneB+0wIpkzKohWazcsr9vc5Q7gCjDJlLbphsiDhAo3KsLlLAogKJtozpIdvhwHg8CD4VK4RVOBLV1c3ZU2DTyc/G0M+i9Qhiw/KkRWP7cWDMCPiD90h7nTFweTm3UrzHc3+vkcVOBbCAM2xCsZx85zHsUXJCA3O4xKfNF6qNVGtaYZlGc+qki0URYSH3irkJ+J6vgssrciD/gvU0qL+ItNc1OfV+Qq9CKa+jIp0uYFp9H2Kx/r6wxHxrZ9WU13yHr1f0k050dZHdbbQ629alAotcm9skSjfTpqVfejhtLOmfi06ENIa1mMEwYLZPPsva91eiJWHv42tJUuHS7/8/Hw"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "\u0003\u0002\u0000\u0000�\u0001\u0000\u0000"
+    },
+    {
+      "kind": "received",
+      "url": "wss://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/ws/rfc6455",
+      "payload": "԰Z\u001ah\u0000qs���^8��v�%H���i@԰Z\u001ah\u0000rs���^8��v~\u0013H\u001b�g�?԰Z\u001ah\u0000ss���^8��v��ezB\u0012�?԰Z\u001ah\u0000ts���^8��v�!�0W�\u0018@԰Z\u001ah\u0000us���^8��v��/�@�3@X��\u001a�\u0001!�\u0005�ߠN%�Ԗ�Z�\u000b=�@X��\u001a�\u0001\"�\u0006�ߠN%��9\n\u001f�̡�?X��\u001a�\u0001#�\u0007�ߠN%��\u001d����\u000b\u0010@X��\u001a�\u0001$�\b�ߠN%��~��<z�3@X��\u001a�\u0001%�\t�ߠN%��IA\t=B\"N@�M=\u001b~\u0002@�\u0005�����$�N��g��n@�M=\u001b~\u0002A�\u0006�����$���\u0007\r-H�?�M=\u001b~\u0002B�\u0007�����$�%6��h��?�M=\u001b~\u0002C�\b�����$�\u00164���!@�M=\u001b~\u0002D�\t�����$��\u0013��P�9@�M=\u001b~\u0002M�\u0005�����$��4\u00109v�F@�M=\u001b~\u0002N�\u0006�����$��\u0012@��?�?�M=\u001b~\u0002O�\u0007�����$���S��\u0015�?�M=\u001b~\u0002P�\b�����$�$�k �'�?�M=\u001b~\u0002Q�\t�����$�p� 7��\u000f@"
+    }
+  ]
+}

@@ -1,0 +1,902 @@
+{
+  "clicked": null,
+  "infoAfterLogin": {
+    "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/",
+    "title": "Webinterface",
+    "bodyText": "Loading Script 3 of 49\nDepending on your connection speed this process may take a couple of seconds.\nMiniserver: 16.3.1.27\nWeb Interface: 16.2.1 (14987)",
+    "buttons": [],
+    "links": []
+  },
+  "afterClick": {
+    "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/",
+    "bodyText": "Loading Script 37 of 49\nDepending on your connection speed this process may take a couple of seconds.\nMiniserver: 16.3.1.27\nWeb Interface: 16.2.1 (14987)",
+    "videos": [],
+    "images": [],
+    "rtcEvents": [],
+    "buttons": []
+  },
+  "consoleMessages": [
+    {
+      "type": "error",
+      "text": "Icon with name \"Add1\" already exists. Duplicate at ./add-1.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"AddCircle1\" already exists. Duplicate at ./add-circle-1.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"AirConditioner\" already exists. Duplicate at ./air-conditioner.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"AlarmAfci\" already exists. Duplicate at ./alarm-afci.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"AlarmClock\" already exists. Duplicate at ./alarm-clock.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"AlarmFire\" already exists. Duplicate at ./alarm-fire.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"AlarmWater\" already exists. Duplicate at ./alarm-water.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"ArrowDown1\" already exists. Duplicate at ./arrow-down-1.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"ArrowLeft1\" already exists. Duplicate at ./arrow-left-1.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"ArrowRight1\" already exists. Duplicate at ./arrow-right-1.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"ArrowUp1\" already exists. Duplicate at ./arrow-up-1.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Attic\" already exists. Duplicate at ./attic.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Automatic\" already exists. Duplicate at ./automatic.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"BabyHangingToy\" already exists. Duplicate at ./baby-hanging-toy.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"BedDouble\" already exists. Duplicate at ./bed-double.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Bell\" already exists. Duplicate at ./bell.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Bin1\" already exists. Duplicate at ./bin-1.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Bluetooth02\" already exists. Duplicate at ./bluetooth-02.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"BrightnessDecrease\" already exists. Duplicate at ./brightness-decrease.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"BrightnessIncrease\" already exists. Duplicate at ./brightness-increase.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Car\" already exists. Duplicate at ./car.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Cellar\" already exists. Duplicate at ./cellar.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"ChairsUmbrella\" already exists. Duplicate at ./chairs-umbrella.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"ChefHat\" already exists. Duplicate at ./chef-hat.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Circle\" already exists. Duplicate at ./circle.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Clock\" already exists. Duplicate at ./clock.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Close\" already exists. Duplicate at ./close.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"ClothesHanger\" already exists. Duplicate at ./clothes-hanger.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Cocktail\" already exists. Duplicate at ./cocktail.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"CogDouble\" already exists. Duplicate at ./cog-double.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Cog\" already exists. Duplicate at ./cog.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Computer\" already exists. Duplicate at ./computer.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Delete1\" already exists. Duplicate at ./delete-1.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"DoorOpen\" already exists. Duplicate at ./door-open.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Dress\" already exists. Duplicate at ./dress.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Dumbbell\" already exists. Duplicate at ./dumbbell.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"EcoEnergy1\" already exists. Duplicate at ./eco-energy-1.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"ElectricCar\" already exists. Duplicate at ./electric-car.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Email\" already exists. Duplicate at ./email.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"EmergencyAlarm\" already exists. Duplicate at ./emergency-alarm.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Fan1\" already exists. Duplicate at ./fan-1.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"FingerTapping\" already exists. Duplicate at ./finger-tapping.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Flame2\" already exists. Duplicate at ./flame-2.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Flame\" already exists. Duplicate at ./flame.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Flash1\" already exists. Duplicate at ./flash-1.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Flash2\" already exists. Duplicate at ./flash-2.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"FloridaRoom\" already exists. Duplicate at ./florida-room.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Flower\" already exists. Duplicate at ./flower.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"GarageClosed2\" already exists. Duplicate at ./garage-closed-2.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Globe3\" already exists. Duplicate at ./globe-3.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Grill\" already exists. Duplicate at ./grill.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Hallway\" already exists. Duplicate at ./hallway.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Home3\" already exists. Duplicate at ./home-3.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Honeycomb\" already exists. Duplicate at ./honeycomb.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Hourglass\" already exists. Duplicate at ./hourglass.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"InformationCircle\" already exists. Duplicate at ./information-circle.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Iron\" already exists. Duplicate at ./iron.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"KnifeFork\" already exists. Duplicate at ./knife-fork.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Lamp2\" already exists. Duplicate at ./lamp-2.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Lamp3\" already exists. Duplicate at ./lamp-3.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"LampTable\" already exists. Duplicate at ./lamp-table.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"LocationPin\" already exists. Duplicate at ./location-pin.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"LockClose1\" already exists. Duplicate at ./lock-close-1.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"LockOpen1\" already exists. Duplicate at ./lock-open-1.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"MusicNote\" already exists. Duplicate at ./music-note.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"PauseButton\" already exists. Duplicate at ./pause-button.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Playlist3\" already exists. Duplicate at ./playlist-3.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"PoolCoverClosed\" already exists. Duplicate at ./pool-cover-closed.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"PoolCoverOpen\" already exists. Duplicate at ./pool-cover-open.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Pool\" already exists. Duplicate at ./pool.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Presence\" already exists. Duplicate at ./presence.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Refresh\" already exists. Duplicate at ./refresh.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"ReportProblemCircle\" already exists. Duplicate at ./report-problem-circle.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Sauna\" already exists. Duplicate at ./sauna.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Server\" already exists. Duplicate at ./server.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Shield2\" already exists. Duplicate at ./shield-2.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"ShieldOk\" already exists. Duplicate at ./shield-ok.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Shirt\" already exists. Duplicate at ./shirt.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Shoe1\" already exists. Duplicate at ./shoe-1.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Shoe2\" already exists. Duplicate at ./shoe-2.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Shower1\" already exists. Duplicate at ./shower-1.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Shower2\" already exists. Duplicate at ./shower-2.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Snowflake\" already exists. Duplicate at ./snowflake.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Sprinkler\" already exists. Duplicate at ./sprinkler.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Stairwell1\" already exists. Duplicate at ./stairwell-1.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Star\" already exists. Duplicate at ./star.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Sun\" already exists. Duplicate at ./sun.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Sunrise\" already exists. Duplicate at ./sunrise.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Sunset\" already exists. Duplicate at ./sunset.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"TeddyBear\" already exists. Duplicate at ./teddy-bear.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"ThermometerNegative\" already exists. Duplicate at ./thermometer-negative.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"ThermometerPositive\" already exists. Duplicate at ./thermometer-positive.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Thermometer\" already exists. Duplicate at ./thermometer.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Tickmark\" already exists. Duplicate at ./tickmark.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Timer\" already exists. Duplicate at ./timer.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Tissue\" already exists. Duplicate at ./tissue.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"ToiletSeat\" already exists. Duplicate at ./toilet-seat.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Tree\" already exists. Duplicate at ./tree.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Turntable\" already exists. Duplicate at ./turntable.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"TvScreen2\" already exists. Duplicate at ./tv-screen-2.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"UsbFlashDrive\" already exists. Duplicate at ./usb-flash-drive.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"ValveActuator1\" already exists. Duplicate at ./valve-actuator-1.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"VolumeDown\" already exists. Duplicate at ./volume-down.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"VolumeMax\" already exists. Duplicate at ./volume-max.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"VolumeMin\" already exists. Duplicate at ./volume-min.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"VolumeMute\" already exists. Duplicate at ./volume-mute.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"VolumeUp\" already exists. Duplicate at ./volume-up.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"WashingMachine\" already exists. Duplicate at ./washing-machine.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"WaterDrop\" already exists. Duplicate at ./water-drop.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Windbag\" already exists. Duplicate at ./windbag.svg"
+    },
+    {
+      "type": "error",
+      "text": "Icon with name \"Wrench\" already exists. Duplicate at ./wrench.svg"
+    },
+    {
+      "type": "error",
+      "text": "Debug already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "DefaultDataCenter already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "FONT already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "AjaxContentType already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "MiniserverType already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "GatewayType already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "ReachMode already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "Sorting already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "User already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "MAX_TEXT_SIZE_ADJUST_IN_PERCENT already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "Preference already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "UserInstructionFlag already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "ResponseCode already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "CloudDnsErrorCode already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "SSL_DEFAULT_PORT already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "NetworkStatus already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "EncryptionType already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "RQ_FLAGS_DEFAULT already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "PlatformType already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "GroupTypes already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "RoomType already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "BackupAndSync already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "HomeKit already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "Alexa already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "Icon already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "ScreenSaverTimes already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "PopupType already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "ControlType already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "ControlSubTypes already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "Control already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "StateUUID already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "UnassignedUUID already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "NotificationType already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "PushNotificationSettingType already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "PushNotificationSettingDefaults already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "PushNotificationType already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "PushNotificationLevel already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "ExpandState already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "AppPackageName already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "MergeHdAndFavs already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "ControlLoadError already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "DeviceMonitorNotificationType already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "ScreenState already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "UrlStartLocation already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "TabBar already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "NewsType already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "NEWS_HUB_HAS_BEEN_OPENED_FILE already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "CloudDNSStatus already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "HTTPS_Status already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "TLS_MAC already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "TLS_MAC_COMPACT already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "TlsState already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "TempUnit already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "DataType already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "Priority already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "UserManagement already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "DeviceManagement already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "WaitingState already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "ErrorCode already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "LoginState already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "LoxoneControlInfoType already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "AnimationType already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "LxTimeDef already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "Direction already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "MediaServerType already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "MediaServerSubType already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "Regex already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "Interaction already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "CmdSrc already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "UrlIds already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "SEPARATOR_SYMBOL already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "NBR_SPACE already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "LINE_BREAK_POSSIBILITY already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "WEATHER_UUID already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "GLOBAL_UUID already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "AUTOMATIC_DESIGNER_STATES already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "WAITING_INFO_TIMEOUT already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "MsPermission already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "PermissionError already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "AuthType already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "ControlSettingType already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "ControlSettingID already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "ControlSettingResponseCode already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "ControlLockState already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "WebSocketCloseCode already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "Restrictions already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "NOT_AVAILABLE already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "ControlCard already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "DEFAULT_TICK_INTERVAL already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "DEV_PUBLIC_KEY already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "DIFFERENT_ROOM_IDENTIFIER already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "PLEASE_UPDATE_LINK already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "WEATHER_ABO_LINK already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "HTTP_METHODS already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "Requirements already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "FeatureCheckStates already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "CONNECTION_TYPE already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "MIN_CARDS_DEVICE_WIDTH already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "TRANSPARENT_1X1 already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "TRANSPARENT_16X9 already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "NO_REQUEST_ID already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "EXPERT_MODE already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "CHANGE already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "DeviceOrientation already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "TrustListType already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "StatisticV2Mode already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "StatisticV2DiffDataPointUnit already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "WAITING_FOR_STATES_TIMEOUT already on ensureGlobal!"
+    },
+    {
+      "type": "error",
+      "text": "SOUNDSUIT_TITLE already on ensureGlobal!"
+    }
+  ],
+  "failedRequests": [],
+  "wsEvents": []
+}

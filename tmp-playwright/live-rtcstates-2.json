@@ -1,0 +1,35 @@
+{
+  "summary": {
+    "bodyText": "CUSTOM LOXONE APP\n\nConfigure app\n\nEnter your Loxone server address and login details. The configuration is stored locally in the browser.\n\nCONNECTION\n\nSettings are stored locally in the browser. If you use a custom HTTPS certificate, trust it in a separate tab first.\n\nLoxone address\nLogin\nPassword\nSave and connect",
+    "mediaTag": null,
+    "mediaSrc": "",
+    "videoSrcObject": false,
+    "connectLabel": "",
+    "hasHistoryTab": false,
+    "mediaFrameText": "",
+    "rtcEvents": []
+  },
+  "proxyProbe": {
+    "streamUrl": "",
+    "status": null,
+    "contentType": "",
+    "textSample": ""
+  },
+  "failedRequests": [],
+  "responseHits": [
+    {
+      "url": "https://dns.loxonecloud.com/504F94A173A7/jdev/sys/getPublicKey",
+      "status": 307
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/jdev/sys/getPublicKey",
+      "status": 200
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/jdev/sys/fenc/X3jf2b3%2FvbpXyZn3LRHdir1BE6J4t7X2IlEimPZRY3g%3D?sk=AdowtpNruei%2FGu4f%2BXS1PjxQUKLgTWpR1wp%2BfVxjOQYiPt9%2B5c5qkxT0uqI7W%2Bqihyov9OvaRLx7tBdXRVe4ogkLddzuoFVszgHMMyZGp5tdeQy2%2FG3IpnUD8aFWWwvoZbMpeDCVFt%2F2lKFANKbjXkp%2B%2B6o6iJ2WwS0WjXknnFQ%2FeKK9NgEHBCuOttWsbjI5cYO0NymkjViEfGTS5DMTQokAdEL%2B%2FCBjEONxs%2Fs58KgfFap%2F6JS4ynYdx%2BmqKT3GsOfX4GEwJa5aN51sCAQJrdrf9H3YTyQ%2FGutVdZD9ubzozU080wRfq%2B%2FLEXr%2FpYsoVWtbH8BWposTpWnZKU1AYU27X2nf9WspOqMpuLNEpNuJ3gV5Jz6fP34VyWxC0%2FeeMNsBJGelv1AzQ2b2RPWVodVlYHfyaYLMfYZAl%2By9XpEl4lsRvb5hIcvPCxewB1d9L4hlbnzFEMd9VcPpzCy3NizborlH4MR62Yjd67bD7snAubBEcmI%2BST0dq5QTsnsNeJYEQCwkyqFzAYPknNLbpNdMImu3D8paXKs8dhb20y5yv%2FqCQR5pfjGcEs5wqztWyPHjT%2BkRZuyEg3%2BDRZXo%2Ba827qODyNF8ov%2FgsjNsYiESMTjzjcPHFsMKxdePWznzhq3V4p6hnmK0LovOi92vdvpfSdvRiLNcQr%2F1UxSWHMc%3D",
+      "status": 401
+    }
+  ],
+  "consoleMessages": [],
+  "webSocketEvents": []
+}

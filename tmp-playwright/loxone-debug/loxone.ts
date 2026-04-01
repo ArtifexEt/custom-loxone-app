@@ -3,24 +3,19 @@ import forge from 'node-forge';
 import type {
   ActivityLogSourceSummary,
   IntercomFunction,
-  IntercomMediaAuthMode,
   IntercomSummary,
-  IntercomTransportMode,
   IntercomViewConfig,
   IntercomViewModel,
   LoxoneControl,
   LoxoneStateValue,
   LoxoneStructure,
   StoredCredentials,
-} from './types';
-import { localeForLanguage, rt } from './translations';
+} from './types.ts';
+import { localeForLanguage, rt } from './translations.ts';
 
 const WS_PATH = 'ws/rfc6455';
 const TOKEN_PERMISSION_APP = '4';
 const JWT_SUPPORT_VERSION = '10.1.12.11';
-const AUTH_BOOTSTRAP_RETRIES = 5;
-const AUTH_BOOTSTRAP_RETRY_DELAY_MS = 350;
-const AUTH_TOKEN_STEP_DELAY_MS = 150;
 const KEEPALIVE_RESPONSE = 6;
 const OUT_OF_SERVICE = 5;
 const TEXT_MESSAGE = 0;
@@ -111,20 +106,6 @@ interface LoxoneClientHandlers {
 
 interface LoxoneConnectionHints {
   serial: string | null;
-}
-
-interface IntercomTransportProfile {
-  deviceUuid: string | null;
-  mode: IntercomTransportMode;
-  mediaAuthMode: IntercomMediaAuthMode;
-  signalingUrl: string | null;
-  mediaBaseUrl: string | null;
-  historyBaseUrl: string | null;
-  mediaRootPath: string | null;
-  snapshotUrl: string | null;
-  streamUrl: string | null;
-  runtimeOrigin: string | null;
-  addressHost: string | null;
 }
 
 interface PendingHeader {
@@ -512,7 +493,7 @@ export function buildIntercomViewModel(
   structure: LoxoneStructure | null,
   stateValues: Record<string, LoxoneStateValue>,
   credentials: StoredCredentials | null,
-  _cachedHistoryByUuidAction: Record<string, string[]> = {},
+  cachedHistoryByUuidAction: Record<string, string[]> = {},
   cachedPreviewByUuidAction: Record<string, string> = {},
 ): IntercomViewModel | null {
   if (!structure) {
@@ -526,28 +507,39 @@ export function buildIntercomViewModel(
 
   const doorbellActive = lookupBooleanState(summary, stateValues, DOORBELL_STATE_CANDIDATES);
   const microphoneMuted = lookupBooleanState(summary, stateValues, MUTE_STATE_CANDIDATES);
-  const deviceState = lookupNumericState(summary, stateValues, ['deviceState']);
   const supportsAnswer = supportsIntercomAnswer(summary);
   const supportsMute = supportsIntercomMute(summary);
-  const transport = credentials
-    ? resolveIntercomTransportProfile(summary, mediaControl, stateValues, credentials)
-    : {
-        deviceUuid: null,
-        mode: 'none',
-        mediaAuthMode: 'none',
-        signalingUrl: null,
-        mediaBaseUrl: null,
-        historyBaseUrl: null,
-        mediaRootPath: null,
-        snapshotUrl: null,
-        streamUrl: null,
-        runtimeOrigin: null,
-        addressHost: null,
-      } satisfies IntercomTransportProfile;
+  const runtimeOrigin = credentials ? effectiveOrigin(credentials) : null;
 
-  const streamUrl = transport.streamUrl;
-  const snapshotUrl = transport.snapshotUrl;
-  const history: IntercomViewModel['history'] = [];
+  const streamUrl = credentials ? resolveMediaUrl(mediaControl, stateValues, STREAM_DETAIL_PATHS, credentials) : null;
+  const snapshotUrl =
+    credentials
+      ? resolveMediaUrl(mediaControl, stateValues, SNAPSHOT_DETAIL_PATHS, credentials) ??
+        signUrl(runtimeOrigin!, `camimage/${encodeURIComponent(summary.uuidAction)}`, credentials, 'server')
+      : null;
+
+  const nativeHistoryTokens = parseLastBellEvents(mediaControl, stateValues);
+  const historyTokens = mergeHistoryTokens(nativeHistoryTokens, cachedHistoryByUuidAction[summary.uuidAction] ?? []);
+  const history = credentials
+    ? historyTokens.slice(0, config.historyLimit).map((timestamp) => ({
+        timestamp,
+        label: formatBellLabel(timestamp),
+        imageUrl:
+          nativeHistoryTokens.length > 0
+            ? signUrl(
+                runtimeOrigin!,
+                `camimage/${encodeURIComponent(summary.uuidAction)}/${encodeURIComponent(timestamp)}`,
+                credentials,
+                'server',
+              )
+            : signUrl(
+                runtimeOrigin!,
+                `camimage/${encodeURIComponent(summary.uuidAction)}?event=${encodeURIComponent(timestamp)}`,
+                credentials,
+                'server',
+              ),
+      }))
+    : [];
 
   const activityLogControl = config.activityLogControlUuidAction
     ? structure.controlsByAction[config.activityLogControlUuidAction] ?? null
@@ -563,19 +555,12 @@ export function buildIntercomViewModel(
     uuidAction: summary.uuidAction,
     name: summary.name,
     roomName: summary.roomName,
-    deviceUuid: transport.deviceUuid,
-    address: transport.addressHost,
-    origin: transport.runtimeOrigin,
+    deviceUuid: resolveIntercomDeviceUuid(summary),
+    address: resolveAddressHost(mediaControl, stateValues) ?? resolveAddressHost(summary, stateValues),
+    origin: runtimeOrigin,
     authToken: credentials?.token ?? null,
-    transportMode: transport.mode,
-    mediaAuthMode: transport.mediaAuthMode,
-    signalingUrl: transport.signalingUrl,
-    mediaBaseUrl: transport.mediaBaseUrl,
-    historyBaseUrl: transport.historyBaseUrl,
-    mediaRootPath: transport.mediaRootPath,
     doorbellActive,
     microphoneMuted,
-    deviceState,
     supportsAnswer,
     supportsMute,
     snapshotUrl,
@@ -669,25 +654,6 @@ function lookupBooleanState(
   return false;
 }
 
-function lookupNumericState(
-  control: LoxoneControl,
-  stateValues: Record<string, LoxoneStateValue>,
-  candidates: string[],
-): number | null {
-  for (const stateName of Object.keys(control.states)) {
-    const normalized = normalizeText(stateName);
-    if (!candidates.some((candidate) => normalized.includes(normalizeText(candidate)))) {
-      continue;
-    }
-    const stateValue = stateValues[control.states[stateName]];
-    const resolved = toNumberLike(stateValue);
-    if (resolved !== null) {
-      return resolved;
-    }
-  }
-  return null;
-}
-
 function supportsIntercomAnswer(control: LoxoneControl): boolean {
   return isIntercomControl(control) && hasAnyState(control, ['bell', 'ring', 'doorbell']);
 }
@@ -723,6 +689,26 @@ function hasAnyState(control: LoxoneControl, candidates: string[]): boolean {
   });
 }
 
+function parseLastBellEvents(
+  control: LoxoneControl,
+  stateValues: Record<string, LoxoneStateValue>,
+): string[] {
+  for (const stateName of Object.keys(control.states)) {
+    if (normalizeText(stateName) !== 'lastbellevents') {
+      continue;
+    }
+    return coerceLastBellEvents(stateValues[control.states[stateName]]);
+  }
+  for (const detailPath of HISTORY_DETAIL_PATHS) {
+    const value = getNestedValue(control.details, detailPath);
+    const parsed = coerceLastBellEvents(value);
+    if (parsed.length > 0) {
+      return parsed;
+    }
+  }
+  return [];
+}
+
 function hasIntercomMediaSignals(control: LoxoneControl): boolean {
   if (hasAnyState(control, ['lastBellEvents', ...ADDRESS_STATE_CANDIDATES])) {
     return true;
@@ -731,68 +717,49 @@ function hasIntercomMediaSignals(control: LoxoneControl): boolean {
   return detailPaths.some((path) => getNestedValue(control.details, path) != null);
 }
 
-function resolveIntercomTransportProfile(
-  control: LoxoneControl,
-  mediaControl: LoxoneControl,
-  stateValues: Record<string, LoxoneStateValue>,
-  credentials: StoredCredentials,
-): IntercomTransportProfile {
-  const runtimeOrigin = effectiveOrigin(credentials);
-  const deviceUuid = resolveIntercomDeviceUuid(control) ?? resolveIntercomDeviceUuid(mediaControl);
-  const addressBase = resolveAddressBase(mediaControl, stateValues) ?? resolveAddressBase(control, stateValues);
-  const addressHost = addressBase ? new URL(addressBase).host : null;
+function mergeHistoryTokens(...sources: string[][]): string[] {
+  const seen = new Set<string>();
+  const tokens = sources
+    .flat()
+    .map((item) => item.trim())
+    .filter(Boolean);
+  tokens.sort((left, right) => historyTokenScore(right) - historyTokenScore(left));
+  return tokens.filter((item) => {
+    if (seen.has(item)) {
+      return false;
+    }
+    seen.add(item);
+    return true;
+  });
+}
 
-  if (addressBase && self.location.protocol !== 'https:') {
-    const intercomAuth = resolveIntercomAuth(mediaControl, credentials);
-    const signalingUrl = toWebSocketUrl(addressBase);
-    const mediaBaseUrl = signAbsoluteUrl(ensureTrailingSlash(addressBase), credentials, 'intercom', intercomAuth);
-    return {
-      deviceUuid,
-      mode: 'lan-direct',
-      mediaAuthMode: 'basic',
-      signalingUrl,
-      mediaBaseUrl,
-      historyBaseUrl: mediaBaseUrl,
-      mediaRootPath: null,
-      snapshotUrl: signUrl(addressBase, DIRECT_INTERCOM_SNAPSHOT_PATHS[0], credentials, 'intercom', intercomAuth),
-      streamUrl: signUrl(addressBase, DIRECT_INTERCOM_STREAM_PATHS[0], credentials, 'intercom', intercomAuth),
-      runtimeOrigin,
-      addressHost,
-    };
+function historyTokenScore(value: string): number {
+  if (/^\d{14}$/.test(value)) {
+    const iso = `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}T${value.slice(8, 10)}:${value.slice(10, 12)}:${value.slice(12, 14)}`;
+    const parsed = Date.parse(iso);
+    if (!Number.isNaN(parsed)) {
+      return parsed;
+    }
   }
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
 
-  if (runtimeOrigin && deviceUuid) {
-    const rootPath = `/proxy/${encodeURIComponent(deviceUuid)}`;
-    const mediaBaseUrl = `${runtimeOrigin.replace(/\/$/, '')}${rootPath}/`;
-    const signalingUrl = toWebSocketUrl(mediaBaseUrl);
-    return {
-      deviceUuid,
-      mode: 'secure-proxy',
-      mediaAuthMode: 'token',
-      signalingUrl,
-      mediaBaseUrl,
-      historyBaseUrl: mediaBaseUrl,
-      mediaRootPath: rootPath,
-      snapshotUrl: new URL('jpg/image.jpg', mediaBaseUrl).toString(),
-      streamUrl: new URL('mjpg/video.mjpg', mediaBaseUrl).toString(),
-      runtimeOrigin,
-      addressHost,
-    };
+function coerceLastBellEvents(value: unknown): string[] {
+  if (typeof value === 'string') {
+    const parts = value
+      .split('|')
+      .map((part) => part.trim())
+      .filter(Boolean);
+    return parts.reverse();
   }
-
-  return {
-    deviceUuid,
-    mode: 'none',
-    mediaAuthMode: 'none',
-    signalingUrl: null,
-    mediaBaseUrl: null,
-    historyBaseUrl: null,
-    mediaRootPath: null,
-    snapshotUrl: null,
-    streamUrl: null,
-    runtimeOrigin,
-    addressHost,
-  };
+  if (Array.isArray(value)) {
+    return value.map((part) => String(part)).filter(Boolean);
+  }
+  if (value && typeof value === 'object') {
+    return coerceLastBellEvents((value as Record<string, unknown>).value);
+  }
+  return [];
 }
 
 function extractActivityLogEntries(
@@ -884,6 +851,127 @@ function splitEventLogText(value: string): string[] {
     .filter(Boolean);
 }
 
+function resolveMediaUrl(
+  control: LoxoneControl,
+  stateValues: Record<string, LoxoneStateValue>,
+  detailPaths: string[],
+  credentials: StoredCredentials,
+): string | null {
+  for (const stateName of Object.keys(control.states)) {
+    const tail = normalizeText(stateName);
+    if (!detailPaths.some((path) => normalizeText(path.split('.').at(-1) ?? '') === tail)) {
+      continue;
+    }
+    const value = stateValues[control.states[stateName]];
+    const resolved = resolveIntercomHttpUrl(control, value, stateValues, credentials);
+    if (resolved) {
+      return resolved;
+    }
+  }
+  for (const detailPath of detailPaths) {
+    const value = getNestedValue(control.details, detailPath);
+    const resolved = resolveIntercomHttpUrl(control, value, stateValues, credentials);
+    if (resolved) {
+      return resolved;
+    }
+  }
+  return resolveDirectIntercomMediaUrl(control, stateValues, credentials, detailPaths);
+}
+
+function resolveDirectIntercomMediaUrl(
+  control: LoxoneControl,
+  stateValues: Record<string, LoxoneStateValue>,
+  credentials: StoredCredentials,
+  detailPaths: string[],
+): string | null {
+  if (self.location.protocol === 'https:') {
+    return null;
+  }
+  const addressBase = resolveAddressBase(control, stateValues);
+  if (!addressBase) {
+    return null;
+  }
+  const candidates =
+    detailPaths === STREAM_DETAIL_PATHS
+      ? DIRECT_INTERCOM_STREAM_PATHS
+      : detailPaths === SNAPSHOT_DETAIL_PATHS
+        ? DIRECT_INTERCOM_SNAPSHOT_PATHS
+        : [];
+  const intercomAuth = resolveIntercomAuth(control, credentials);
+  for (const path of candidates) {
+    return signUrl(addressBase, path, credentials, 'intercom', intercomAuth);
+  }
+  return null;
+}
+
+function resolveIntercomHttpUrl(
+  control: LoxoneControl,
+  value: unknown,
+  stateValues: Record<string, LoxoneStateValue>,
+  credentials: StoredCredentials,
+): string | null {
+  if (typeof value === 'string') {
+    const rawValue = value.trim();
+    if (!rawValue) {
+      return null;
+    }
+    if (rawValue.startsWith('{') || rawValue.startsWith('[')) {
+      try {
+        return resolveIntercomHttpUrl(control, JSON.parse(rawValue), stateValues, credentials);
+      } catch {
+        return null;
+      }
+    }
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const resolved = resolveIntercomHttpUrl(control, item, stateValues, credentials);
+      if (resolved) {
+        return resolved;
+      }
+    }
+    return null;
+  }
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    for (const key of ['streamUrl', 'url', 'href', 'path', 'liveImageUrl', 'liveImage', 'alertImage', 'imageUrl', 'value']) {
+      if (!(key in record)) {
+        continue;
+      }
+      const resolved = resolveIntercomHttpUrl(control, record[key], stateValues, credentials);
+      if (resolved) {
+        return resolved;
+      }
+    }
+    return null;
+  }
+  if (typeof value !== 'string' || !value.trim()) {
+    return null;
+  }
+  const raw = value.trim();
+  const intercomAuth = resolveIntercomAuth(control, credentials);
+  if (raw.startsWith('http://') || raw.startsWith('https://')) {
+    const mode = pickAuthMode(raw, effectiveOrigin(credentials));
+    return signAbsoluteUrl(raw, credentials, mode, mode === 'intercom' ? intercomAuth : undefined);
+  }
+  if (raw.startsWith('/camimage/') || raw.startsWith('camimage/')) {
+    return signUrl(effectiveOrigin(credentials), raw, credentials, 'server');
+  }
+  if (raw.startsWith('/')) {
+    return signUrl(effectiveOrigin(credentials), raw, credentials, 'server');
+  }
+
+  const addressBase = resolveAddressBase(control, stateValues);
+  if (addressBase) {
+    return signUrl(addressBase, raw, credentials, 'intercom', intercomAuth);
+  }
+
+  if (raw.includes('/')) {
+    return signUrl(effectiveOrigin(credentials), raw, credentials, 'server');
+  }
+  return signUrl(effectiveOrigin(credentials), raw, credentials, 'server');
+}
+
 function resolveAddressBase(
   control: LoxoneControl,
   stateValues: Record<string, LoxoneStateValue>,
@@ -949,41 +1037,24 @@ function resolveAddressBaseValue(value: unknown): string | null {
   return null;
 }
 
-function resolveIntercomDeviceUuid(control: LoxoneControl): string | null {
-  for (const path of ['deviceUuid', 'videoInfo.deviceUuid']) {
-    const value = getNestedValue(control.details, path);
-    if (typeof value === 'string' && value.trim()) {
-      return value.trim();
-    }
-  }
-
-  const proxyPathCandidate = extractProxyDeviceUuidFromValue(control.details);
-  return proxyPathCandidate;
-}
-
-function extractProxyDeviceUuidFromValue(value: unknown): string | null {
-  if (typeof value === 'string') {
-    const match = value.match(/\/proxy\/([^/?#]+)/i);
-    return match?.[1] ? decodeURIComponent(match[1]) : null;
-  }
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      const resolved = extractProxyDeviceUuidFromValue(item);
-      if (resolved) {
-        return resolved;
-      }
-    }
+function resolveAddressHost(
+  control: LoxoneControl,
+  stateValues: Record<string, LoxoneStateValue>,
+): string | null {
+  const base = resolveAddressBase(control, stateValues);
+  if (!base) {
     return null;
   }
-  if (value && typeof value === 'object') {
-    for (const nested of Object.values(value as Record<string, unknown>)) {
-      const resolved = extractProxyDeviceUuidFromValue(nested);
-      if (resolved) {
-        return resolved;
-      }
-    }
+  try {
+    return new URL(base).host;
+  } catch {
+    return null;
   }
-  return null;
+}
+
+function resolveIntercomDeviceUuid(control: LoxoneControl): string | null {
+  const value = getNestedValue(control.details, 'deviceUuid');
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
 function normalizeBaseUrl(value: string): string | null {
@@ -997,10 +1068,9 @@ function normalizeBaseUrl(value: string): string | null {
   return `${isPrivateHost(value) ? 'http' : 'https'}://${value}`;
 }
 
-function toWebSocketUrl(value: string): string {
-  const url = new URL(value);
-  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-  return url.toString();
+function pickAuthMode(url: string, origin: string): 'server' | 'intercom' {
+  const normalizedOrigin = new URL(origin).host;
+  return new URL(url).host === normalizedOrigin ? 'server' : 'intercom';
 }
 
 function signAbsoluteUrl(
@@ -1486,63 +1556,35 @@ async function requestJwtToken(
   let lastError: unknown = null;
 
   for (const candidateOrigin of candidates) {
-    for (let attempt = 0; attempt < AUTH_BOOTSTRAP_RETRIES; attempt += 1) {
-      try {
-        const tokenResult = await requestJwtTokenOnce(
-          candidateOrigin,
-          username,
-          password,
-          clientUuid,
-          clientInfo,
-        );
-        return {
-          origin: candidateOrigin,
-          resolvedOrigin: tokenResult.resolvedOrigin,
-          payload: tokenResult.payload,
-        };
-      } catch (error) {
-        lastError = error;
-        if (attempt < AUTH_BOOTSTRAP_RETRIES - 1) {
-          await delay(AUTH_BOOTSTRAP_RETRY_DELAY_MS * (attempt + 1));
-        }
-      }
+    try {
+      const { publicKeyPem, resolvedOrigin, authOrigin } = await fetchPublicKey(candidateOrigin);
+      const tokenSalts = await requestEncryptedValue(
+        authOrigin,
+        `jdev/sys/getkey2/${encodeURIComponent(username)}`,
+        publicKeyPem,
+      );
+      const key = asString(tokenSalts.key);
+      const salt = asString(tokenSalts.salt);
+      const hashAlg = asString(tokenSalts.hashAlg ?? 'SHA1').toUpperCase();
+      const passwordHash = await hashPassword(password, salt, hashAlg);
+      const userHash = await hmacUserHash(username, passwordHash, key, hashAlg);
+      const tokenPath = supportsVersion(JWT_SUPPORT_VERSION, null) ? 'jdev/sys/getjwt/' : 'jdev/sys/gettoken/';
+      const payload = await requestEncryptedValue(
+        authOrigin,
+        `${tokenPath}${userHash}/${encodeURIComponent(username)}/${TOKEN_PERMISSION_APP}/${encodeURIComponent(clientUuid)}/${encodeURIComponent(clientInfo)}`,
+        publicKeyPem,
+      );
+      return {
+        origin: candidateOrigin,
+        resolvedOrigin,
+        payload,
+      };
+    } catch (error) {
+      lastError = error;
     }
   }
 
   throw (lastError instanceof Error ? lastError : new Error(rt('loxone_unknown_error')));
-}
-
-async function requestJwtTokenOnce(
-  candidateOrigin: string,
-  username: string,
-  password: string,
-  clientUuid: string,
-  clientInfo: string,
-): Promise<{ resolvedOrigin: string; payload: Record<string, unknown> }> {
-  const { publicKeyPem, resolvedOrigin, authOrigin } = await fetchPublicKey(candidateOrigin);
-  const tokenSalts = await requestEncryptedValue(
-    authOrigin,
-    `jdev/sys/getkey2/${encodeURIComponent(username)}`,
-    publicKeyPem,
-    hasAuthKeyPayload,
-  );
-  const key = asString(tokenSalts.key);
-  const salt = asString(tokenSalts.salt);
-  const hashAlg = asString(tokenSalts.hashAlg ?? 'SHA1').toUpperCase();
-  const passwordHash = await hashPassword(password, salt, hashAlg);
-  const userHash = await hmacUserHash(username, passwordHash, key, hashAlg);
-  const tokenPath = supportsVersion(JWT_SUPPORT_VERSION, null) ? 'jdev/sys/getjwt/' : 'jdev/sys/gettoken/';
-  await delay(AUTH_TOKEN_STEP_DELAY_MS);
-  const payload = await requestEncryptedValue(
-    authOrigin,
-    `${tokenPath}${userHash}/${encodeURIComponent(username)}/${TOKEN_PERMISSION_APP}/${encodeURIComponent(clientUuid)}/${encodeURIComponent(clientInfo)}`,
-    publicKeyPem,
-    hasAuthTokenPayload,
-  );
-  return {
-    resolvedOrigin,
-    payload,
-  };
 }
 
 async function fetchPublicKey(origin: string): Promise<{ publicKeyPem: string; resolvedOrigin: string; authOrigin: string }> {
@@ -1578,61 +1620,30 @@ async function requestEncryptedValue(
   origin: string,
   command: string,
   publicKeyPem: string,
-  validator?: (value: Record<string, unknown>) => boolean,
 ): Promise<Record<string, unknown>> {
   const encrypted = await encryptCommand(command, publicKeyPem);
-  const urls = buildEncryptedCommandUrls(origin, encrypted);
-  let lastError: unknown = null;
-
-  for (const url of urls) {
-    try {
-      const response = await fetch(url, {
-        method: 'GET',
-      });
-      const rawResponse = await response.text();
-      const decrypted = await tryDecryptEncryptedResponse(rawResponse, encrypted.aesKey, encrypted.aesIv);
-      const payload = parseCommandPayload(decrypted ?? rawResponse, command);
-      const record = coerceMaybeJsonRecord(payload.value);
-      if (validator && !validator(record)) {
-        throw new Error(rt('loxone_missing_value'));
-      }
-      return record;
-    } catch (error) {
-      lastError = error;
-    }
+  try {
+    const response = await fetch(buildEncryptedCommandUrl(origin, encrypted), {
+      method: 'GET',
+    });
+    const rawResponse = await response.text();
+    const decrypted = await tryDecryptEncryptedResponse(rawResponse, encrypted.aesKey, encrypted.aesIv);
+    const payload = parseCommandPayload(decrypted ?? rawResponse, command);
+    return coerceMaybeJsonRecord(payload.value);
+  } catch (error) {
+    throw mapAuthBootstrapError(error, origin, command);
   }
-
-  throw mapAuthBootstrapError(lastError, origin, command);
 }
 
-function hasAuthKeyPayload(value: Record<string, unknown>): boolean {
-  return hasNonEmptyString(value.key) && hasNonEmptyString(value.salt);
-}
-
-function hasAuthTokenPayload(value: Record<string, unknown>): boolean {
-  return hasNonEmptyString(value.token);
-}
-
-function hasNonEmptyString(value: unknown): boolean {
-  return typeof value === 'string' && value.trim().length > 0;
-}
-
-function buildEncryptedCommandUrls(
+function buildEncryptedCommandUrl(
   origin: string,
   encrypted: {
     encryptedCommand: string;
     encryptedSessionKey: string;
   },
-): string[] {
+): string {
   const base = ensureTrailingSlash(origin);
-  const candidates = [
-    `${base}${encrypted.encryptedCommand}?sk=${encodeURIComponent(encrypted.encryptedSessionKey)}`,
-  ];
-  const simplifiedCommand = encrypted.encryptedCommand.replace(/^jdev\/sys\//, '');
-  if (simplifiedCommand !== encrypted.encryptedCommand) {
-    candidates.push(`${base}${simplifiedCommand}?sk=${encodeURIComponent(encrypted.encryptedSessionKey)}`);
-  }
-  return candidates;
+  return `${base}${encrypted.encryptedCommand}?sk=${encodeURIComponent(encrypted.encryptedSessionKey)}`;
 }
 
 
@@ -1742,12 +1753,6 @@ function sanitizeAuthSegment(value: string): string {
   return value.trim();
 }
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
 function isExpired(value: string | null): boolean {
   if (!value) {
     return false;
@@ -1805,32 +1810,6 @@ function toBoolean(value: unknown): boolean {
   return false;
 }
 
-function toNumberLike(value: unknown): number | null {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
-  }
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    if (!trimmed) {
-      return null;
-    }
-    const parsed = Number(trimmed);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  if (value && typeof value === 'object') {
-    const record = value as Record<string, unknown>;
-    for (const key of ['value', 'text', 'number']) {
-      if (key in record) {
-        const nested = toNumberLike(record[key]);
-        if (nested !== null) {
-          return nested;
-        }
-      }
-    }
-  }
-  return null;
-}
-
 function getNestedValue(object: Record<string, unknown>, path: string): unknown {
   const segments = path.split('.');
   let current: unknown = object;
@@ -1841,6 +1820,25 @@ function getNestedValue(object: Record<string, unknown>, path: string): unknown 
     current = (current as Record<string, unknown>)[segment];
   }
   return current;
+}
+
+function formatBellLabel(timestamp: string): string {
+  if (/^\d{14}$/.test(timestamp)) {
+    const year = timestamp.slice(0, 4);
+    const month = timestamp.slice(4, 6);
+    const day = timestamp.slice(6, 8);
+    const hours = timestamp.slice(8, 10);
+    const minutes = timestamp.slice(10, 12);
+    return `${day}.${month}.${year} ${hours}:${minutes}`;
+  }
+  const parsed = Date.parse(timestamp);
+  if (Number.isNaN(parsed)) {
+    return timestamp;
+  }
+  return new Intl.DateTimeFormat('pl-PL', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(parsed);
 }
 
 function toErrorMessage(error: unknown): string {
@@ -1948,7 +1946,7 @@ function buildCloudDnsOrigin(serial: string): URL | null {
   if (!normalizedSerial) {
     return null;
   }
-  return new URL(`https://connect.loxonecloud.com/${encodeURIComponent(normalizedSerial)}/`);
+  return new URL(`https://dns.loxonecloud.com/${encodeURIComponent(normalizedSerial)}/`);
 }
 
 function isPrivateHost(hostname: string): boolean {

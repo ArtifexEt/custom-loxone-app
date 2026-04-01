@@ -291,7 +291,7 @@ async function runTts(viewId: string, message: string): Promise<void> {
 
 async function runBuiltInAction(
   viewId: string,
-  action: 'connect' | 'answer' | 'mute' | 'unmute',
+  action: 'answer' | 'mute' | 'unmute',
 ): Promise<void> {
   if (!client) {
     setErrorNotice(t(resolveLanguage(), 'no_intercom_connection'));
@@ -309,10 +309,8 @@ async function runBuiltInAction(
   }
 
   const command =
-    action === 'connect'
-      ? 'connect'
-      : action === 'answer'
-        ? 'answer'
+    action === 'answer'
+      ? 'answer'
       : action === 'mute'
         ? 'mute/1'
         : 'mute/0';

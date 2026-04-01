@@ -1,0 +1,38 @@
+{
+  "summary": {
+    "bodyText": "CUSTOM LOXONE APP\n\nConfigure app\n\nEnter your Loxone server address and login details. The configuration is stored locally in the browser.\n\nCONNECTION\n\nSettings are stored locally in the browser. If you use a custom HTTPS certificate, trust it in a separate tab first.\n\nLoxone address\nLogin\nPassword\nSave and connect",
+    "mediaTag": null,
+    "mediaSrc": "",
+    "videoSrcObject": false,
+    "connectLabel": "",
+    "hasHistoryTab": false,
+    "mediaFrameText": ""
+  },
+  "proxyProbe": {
+    "streamUrl": "",
+    "status": null,
+    "contentType": "",
+    "textSample": ""
+  },
+  "failedRequests": [],
+  "responseHits": [
+    {
+      "url": "https://dns.loxonecloud.com/504F94A173A7/jdev/sys/getPublicKey",
+      "status": 307
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/jdev/sys/getPublicKey",
+      "status": 200
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/jdev/sys/fenc/yinmQh1gzLL8Z58Bj8HMuXISovbZ6vU0hfLIJs%2FjHVI%3D?sk=GoFfTrr5FChPQE4iDot4A4yYUCdE%2BJugvAJCcY%2FTyNc%2FteDmQOwTVIDizH4iNGMdiurNJvWuQNHUAiSSZ8C%2FPeTNJu3f6MUQ6vN%2FRoNMuX%2F9DNy4nEnlbDJBIPotBhb9hcVhzQKyoSIZGdg0aW26RrHO28O9PN4E7z7GUl9sV4pLQlV3DeJnTuJROj%2FGxSrkTngUkobNC%2FWRWiLKgnA2UNXAo9HmAnu2UQOg5U76XcGRXRYQOK%2B7p8FZBlRz%2FVkdmDLUwjcNAqw89Yt26Ik15Qd9kAB5iWdHEhaZlR9k3zOeeqhf0oRrd7IRU%2Fjo%2BbRQRsaBBwX7PVhTH7KB4wMqlOpZl3kL5K7GgM59m%2BHHTB0pla8cucU6dnytPE6weDkvP7wgIPFFGdu%2Fh3SFbg8OpEY19eV%2FkQO5uFl25SUq9%2BdG9XFGrRuJJKpd%2F1NA2YuL0d%2F75LL5XyWl1W1TeCNrQ71dDm91d2HZm7ArH5Xrv7ulkMjwHgT22GWAgRc5d1tC1mIDHEx9vFJP%2BnrW0hTioB7XPsJwY%2FF9NWDPibwM4WwPpzsP8wuNDQ8KtLywcMqmx1glu04ZiTd0nfyB125R5z7f1qtdKJj2EPIeyH7JdTCAdG%2BXF1IpqXFdBf9frlwHe86QqxSLyglV3TeXjcCWQdunMz3q5vKOYNF5symtjB0%3D",
+      "status": 200
+    },
+    {
+      "url": "https://195-201-222-243.504f94a173a7.dyndns.loxonecloud.com:27130/jdev/sys/fenc/kT6VGraIdhzkYE9CradLNgIic%2B6HHR30Di%2BnWGLb2C9kSs4PonMmETZ%2BjXMaUz0R07VccR1FzFVX5w6i9I%2FBP2jbecYB7E%2BcozU%2B2KGhJXM%2BSRmoVHcbAmNc98q5A1LkfeOEovu3Q4PJptzZnJ1qd2iqt7cXdVZvRaX31gHna1g%3D?sk=n6j2QXy%2Fq1ify4aCvQiKn0ZjeHQg7PgEU3a0KAadQbHtEgsGzGsv9sQtlUBk3%2B%2B9rrXrMh91sjJA2oTdXslSpTtUq%2B05Vs%2FQdXZCbtf5tNV0ccp0KX77HFS%2FDlRzJPbwtJbYPwddtfWaZQ4bEqDSAxaBRqiyZXnltzjtbZzsMVHHbhIqza4EMv11ZMybal3GoaciYTMBP39k9c5CwZGVRl1OL%2FDmYoKgVEA7%2Br3%2B1tRgn48JsRth7qt%2B3Fk0an5blIA0f8FKR3LjlAu8xFgf%2BTmaWWA6suCDbiOo97myO7Ydpx2NtIz0BEfOXpFZemgrhyPFGeoEzwoLNIC5Ap8NfCchIgn4XM2RwH%2BaDLhcyt9QGqYLKzUVt9ouujs5PDvrEePkVTBGLQzqJSDoMWk9MSpSm8XSyBCEsl8SSDz7y5nwA1OEnMV4YgZeZ%2F3iJjeKNxqYxvAHMQIE%2BY9AWO93zYlzyniTgHr%2BOP3SXz%2BA87vxOBicbe2WrMyYkU7BlWOfZyNVHALr%2BTeIdR5HMF%2Bb2SKcin8yBM56qSWJoiZI%2FeCL1D%2FWagufnZUaJv4e0s1uWASqCTh2IsRByshLIwe8ZmqXzjMUPep5lM8WVZcsz9s6pAVSDVfw1RbyUQKSi5rKzgiDlT54%2FSoDXArq7yIPcZoaKXrSgfiuR%2B6VhKkOG2g%3D",
+      "status": 401
+    }
+  ],
+  "consoleMessages": [],
+  "webSocketEvents": []
+}

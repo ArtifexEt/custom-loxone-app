@@ -128,9 +128,6 @@ export interface ActivityLogItem {
   label: string;
 }
 
-export type IntercomTransportMode = 'secure-proxy' | 'lan-direct' | 'none';
-export type IntercomMediaAuthMode = 'token' | 'basic' | 'none';
-
 export interface IntercomViewModel {
   uuidAction: string;
   name: string;
@@ -139,15 +136,8 @@ export interface IntercomViewModel {
   address: string | null;
   origin: string | null;
   authToken: string | null;
-  transportMode: IntercomTransportMode;
-  mediaAuthMode: IntercomMediaAuthMode;
-  signalingUrl: string | null;
-  mediaBaseUrl: string | null;
-  historyBaseUrl: string | null;
-  mediaRootPath: string | null;
   doorbellActive: boolean;
   microphoneMuted: boolean;
-  deviceState: number | null;
   supportsAnswer: boolean;
   supportsMute: boolean;
   snapshotUrl: string | null;
@@ -212,7 +202,7 @@ export type MainToWorkerMessage =
   | { type: 'setDefaultView'; viewId: string }
   | { type: 'sendChildFunction'; viewId: string; functionUuidAction: string }
   | { type: 'sendTts'; viewId: string; message: string }
-  | { type: 'runBuiltInAction'; viewId: string; action: 'answer' | 'mute' | 'unmute' }
+  | { type: 'runBuiltInAction'; viewId: string; action: 'connect' | 'answer' | 'mute' | 'unmute' }
   | { type: 'cacheIntercomPreview'; uuidAction: string; url: string | null }
   | { type: 'dismissNotice' };
 

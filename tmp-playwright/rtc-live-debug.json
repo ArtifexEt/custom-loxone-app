@@ -1,0 +1,7 @@
+{
+  "bodyText": "CUSTOM LOXONE APP\n\nConfigure app\n\nEnter your Loxone server address and login details. The configuration is stored locally in the browser.\n\nCONNECTION\n\nSettings are stored locally in the browser. If you use a custom HTTPS certificate, trust it in a separate tab first.\n\nLoxone address\nLogin\nPassword\nSave and connect",
+  "mediaTag": null,
+  "mediaSrc": "",
+  "connectLabel": "",
+  "rtcEvents": []
+}
