@@ -44,6 +44,7 @@ let connection: AppViewModel['connection'] = {
 let persistCacheTimer: number | null = null;
 let browserLanguage: string | null = null;
 let resolvedOriginRefreshTimer: number | null = null;
+let lastEmittedStateSignature: string | null = null;
 
 const RESOLVED_ORIGIN_REFRESH_MS = 120000;
 
@@ -370,7 +371,6 @@ async function connect(forceReload = false): Promise<void> {
         cache = {
           ...cache,
           stateValues: nextStateValues,
-          updatedAt: new Date().toISOString(),
         };
         scheduleCachePersist();
         emitState();
@@ -476,9 +476,15 @@ function listHydrationIntercoms(structure: NonNullable<CachedRuntime['structure'
 }
 
 function emitState(): void {
+  const state = buildViewState();
+  const signature = JSON.stringify(state);
+  if (signature === lastEmittedStateSignature) {
+    return;
+  }
+  lastEmittedStateSignature = signature;
   const message: WorkerToMainMessage = {
     type: 'state',
-    state: buildViewState(),
+    state,
   };
   self.postMessage(message);
 }

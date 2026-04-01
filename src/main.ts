@@ -448,7 +448,6 @@ class IntercomRtcSession {
 
     if (message.method === 'reachMode') {
       this.comReady = true;
-      render();
       respondOk();
       return;
     }
@@ -458,7 +457,6 @@ class IntercomRtcSession {
       if (this.callState === null) {
         this.callState = 'AVAILABLE';
       }
-      render();
       respondOk();
       return;
     }
@@ -466,7 +464,6 @@ class IntercomRtcSession {
     if (message.method === 'callState') {
       const params = Array.isArray(message.params) ? message.params : [];
       this.callState = params[0] ?? null;
-      render();
       respondOk();
       return;
     }
@@ -2356,10 +2353,16 @@ async function startBrowserConversation(intercom: CurrentIntercom): Promise<void
     }
     browserConversationState = 'error';
     const message = toErrorMessage(error);
+    const isCallTimeout = message.includes(tr('signaling_timeout', { method: 'call' }));
     browserConversationMessage =
       message === INTERCOM_AUDIO_UNSUPPORTED_ERROR
         ? tr('intercom_audio_not_supported')
+        : isCallTimeout
+          ? tr('intercom_call_timeout')
         : tr('rtc_audio_failed', { message });
+    if (message === INTERCOM_AUDIO_UNSUPPORTED_ERROR || isCallTimeout) {
+      void intercomRtcSession.ensurePreview(intercom).catch(() => undefined);
+    }
   }
   render();
 }
