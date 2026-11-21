@@ -100,31 +100,12 @@ img { max-width: 100%; }
   line-height: 1.2;
 }
 .brand-mark {
-  position: relative;
-  display: grid;
-  place-items: center;
+  display: block;
   width: 34px;
   height: 34px;
   flex: 0 0 auto;
   border-radius: 8px;
-  background: #194d43;
-}
-.brand-mark::before {
-  content: "";
-  width: 17px;
-  height: 20px;
-  border: 1px solid #c1e0c9;
-  border-radius: 5px;
-}
-.brand-mark::after {
-  content: "";
-  position: absolute;
-  top: 11px;
-  left: 13px;
-  width: 8px;
-  height: 8px;
-  border: 2px solid #f1f8ec;
-  border-radius: 50%;
+  background: var(--camera);
 }
 .status-pill {
   display: inline-flex;

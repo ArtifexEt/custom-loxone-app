@@ -903,7 +903,12 @@ function renderLoadingScreen(): string {
 }
 
 function renderBrand(): string {
-  return '<div class="brand"><span class="brand-mark" aria-hidden="true"></span><span>Custom Loxone App</span></div>';
+  return `
+    <div class="brand">
+      <img class="brand-mark" src="${import.meta.env.BASE_URL}entry-icon.svg" width="34" height="34" alt="" />
+      <span>Custom Loxone App</span>
+    </div>
+  `;
 }
 
 function renderAppShell(): string {
