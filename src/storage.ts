@@ -4,35 +4,43 @@ const DATABASE_NAME = 'custom-loxone-app';
 const STORE_NAME = 'kv';
 const MEDIA_STORE_NAME = 'media-cache';
 const VERSION = 2;
+let database: Promise<IDBDatabase> | null = null;
 
-const DEFAULT_CONFIG: AppConfig = {
-  credentials: null,
-  languageOverride: null,
-  defaultViewId: null,
-  lastViewId: null,
-  views: [],
-};
+function defaultConfig(): AppConfig {
+  return {
+    credentials: null,
+    languageOverride: null,
+    panelMode: false,
+    keepScreenAwake: false,
+    defaultViewId: null,
+    lastViewId: null,
+    views: [],
+  };
+}
 
-const DEFAULT_CACHE: CachedRuntime = {
-  structure: null,
-  stateValues: {},
-  intercomHistoryByUuidAction: {},
-  intercomPreviewByUuidAction: {},
-  updatedAt: null,
-};
+function defaultCache(): CachedRuntime {
+  return {
+    structure: null,
+    stateValues: {},
+    intercomHistoryByUuidAction: {},
+    intercomPreviewByUuidAction: {},
+    updatedAt: null,
+  };
+}
 
 export function defaultPersistedState(): PersistedState {
   return {
-    config: structuredClone(DEFAULT_CONFIG),
-    cache: structuredClone(DEFAULT_CACHE),
+    config: defaultConfig(),
+    cache: defaultCache(),
   };
 }
 
 export async function loadPersistedState(): Promise<PersistedState> {
   const db = await openDatabase();
+  const tx = db.transaction(STORE_NAME, 'readonly');
   const [config, cache] = await Promise.all([
-    getValue<AppConfig>(db, 'config'),
-    getValue<CachedRuntime>(db, 'cache'),
+    getValue<AppConfig>(tx, STORE_NAME, 'config'),
+    getValue<CachedRuntime>(tx, STORE_NAME, 'cache'),
   ]);
 
   return {
@@ -42,8 +50,9 @@ export async function loadPersistedState(): Promise<PersistedState> {
 }
 
 export async function saveConfig(config: AppConfig): Promise<void> {
+  const snapshot = snapshotConfig(config);
   const db = await openDatabase();
-  await setValue(db, 'config', config);
+  await setValue(db, 'config', snapshot);
 }
 
 export async function saveCache(cache: CachedRuntime): Promise<void> {
@@ -51,9 +60,23 @@ export async function saveCache(cache: CachedRuntime): Promise<void> {
   await setValue(db, 'cache', cache);
 }
 
+export async function saveServerState(config: AppConfig, cache: CachedRuntime): Promise<void> {
+  const snapshot = snapshotConfig(config);
+  const db = await openDatabase();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.oncomplete = () => resolve();
+    tx.onabort = () => reject(tx.error);
+    const store = tx.objectStore(STORE_NAME);
+    store.put(snapshot, 'config');
+    store.put(cache, 'cache');
+  });
+}
+
 export async function loadMediaCacheEntry(key: string): Promise<string | null> {
   const db = await openDatabase();
-  return (await getValue<string>(db, key, MEDIA_STORE_NAME)) ?? null;
+  const tx = db.transaction(MEDIA_STORE_NAME, 'readonly');
+  return (await getValue<string>(tx, MEDIA_STORE_NAME, key)) ?? null;
 }
 
 export async function saveMediaCacheEntry(key: string, value: string): Promise<void> {
@@ -63,7 +86,7 @@ export async function saveMediaCacheEntry(key: string, value: string): Promise<v
 
 function normalizeConfig(value: AppConfig | undefined): AppConfig {
   if (!value) {
-    return structuredClone(DEFAULT_CONFIG);
+    return defaultConfig();
   }
 
   return {
@@ -86,6 +109,8 @@ function normalizeConfig(value: AppConfig | undefined): AppConfig {
           : value.languageOverride === 'pl'
             ? 'pl'
             : null,
+    panelMode: value.panelMode === true,
+    keepScreenAwake: value.keepScreenAwake === true,
     defaultViewId: value.defaultViewId ?? null,
     lastViewId: value.lastViewId ?? null,
     views: Array.isArray(value.views)
@@ -102,7 +127,7 @@ function normalizeConfig(value: AppConfig | undefined): AppConfig {
 
 function normalizeCache(value: CachedRuntime | undefined): CachedRuntime {
   if (!value) {
-    return structuredClone(DEFAULT_CACHE);
+    return defaultCache();
   }
 
   return {
@@ -114,10 +139,25 @@ function normalizeCache(value: CachedRuntime | undefined): CachedRuntime {
   };
 }
 
-async function openDatabase(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
+function snapshotConfig(config: AppConfig): AppConfig {
+  return {
+    ...config,
+    credentials: config.credentials ? { ...config.credentials } : null,
+    views: config.views.map((view) => ({
+      ...view,
+      quickTts: view.quickTts.map((phrase) => ({ ...phrase })),
+    })),
+  };
+}
+
+function openDatabase(): Promise<IDBDatabase> {
+  database ??= new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open(DATABASE_NAME, VERSION);
     request.onerror = () => reject(request.error);
+    request.onblocked = () => {
+      request.onsuccess = () => request.result.close();
+      reject(new Error('IndexedDB is blocked'));
+    };
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
@@ -127,13 +167,23 @@ async function openDatabase(): Promise<IDBDatabase> {
         db.createObjectStore(MEDIA_STORE_NAME);
       }
     };
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => {
+      const db = request.result;
+      db.onversionchange = () => {
+        db.close();
+        database = null;
+      };
+      resolve(db);
+    };
+  }).catch((error) => {
+    database = null;
+    throw error;
   });
+  return database;
 }
 
-async function getValue<T>(db: IDBDatabase, key: string, storeName = STORE_NAME): Promise<T | undefined> {
+async function getValue<T>(tx: IDBTransaction, storeName: string, key: string): Promise<T | undefined> {
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(storeName, 'readonly');
     const store = tx.objectStore(storeName);
     const request = store.get(key);
     request.onerror = () => reject(request.error);
@@ -148,6 +198,6 @@ async function setValue(db: IDBDatabase, key: string, value: unknown, storeName 
     const request = store.put(value, key);
     request.onerror = () => reject(request.error);
     tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
   });
 }

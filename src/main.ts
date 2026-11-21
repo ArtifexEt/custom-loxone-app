@@ -1,7 +1,10 @@
 import './styles.css';
-import CryptoJS from 'crypto-js';
-import forge from 'node-forge';
-import { loadMediaCacheEntry, saveMediaCacheEntry } from './storage';
+import AppWorker from './app.worker.ts?worker';
+import { throwIfAborted } from './abort';
+import { parseConnectionAddress, parseMiniserverSerial, remoteConnectSerial, remoteConnectUrl } from './connection-address';
+import { canKeepScreenAwake, PanelScreenWakeLock } from './panel-display';
+import { applyPwaUpdate, canApplyPwaUpdate, canInstallPwa, installPwa, startPwa } from './pwa';
+import { IntercomMediaError, IntercomRtcSession, supportsBrowserRtc } from './intercom-rtc';
 import { localeForLanguage, setRuntimeLanguage, t } from './translations';
 import type {
   ActivityLogItem,
@@ -14,7 +17,7 @@ import type {
   WorkerToMainMessage,
 } from './types';
 
-const worker = new Worker(new URL('./app.worker.ts', import.meta.url), { type: 'module' });
+const worker = new AppWorker();
 const rootElement = document.querySelector<HTMLDivElement>('#app');
 
 if (!rootElement) {
@@ -24,7 +27,6 @@ if (!rootElement) {
 const root = rootElement;
 type SidePanelTab = 'history' | 'log';
 type BrowserConversationState = 'idle' | 'starting' | 'active' | 'error';
-type IntercomPanelMode = 'actions' | 'tts' | null;
 const TRANSPARENT_1PX =
   'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
 
@@ -34,6 +36,8 @@ let state: AppViewModel = {
   settingsMode: null,
   language: 'pl',
   languageOverride: null,
+  panelMode: false,
+  keepScreenAwake: false,
   connection: { status: 'idle' },
   notice: null,
   serverForm: {
@@ -54,10 +58,11 @@ let state: AppViewModel = {
 };
 let sidePanelOpen = false;
 let sidePanelTab: SidePanelTab = 'history';
-let intercomPanelMode: IntercomPanelMode = null;
 let browserConversationState: BrowserConversationState = 'idle';
 let browserConversationMessage = '';
-let browserConversationAttempt = 0;
+let browserConversationAttempt: AbortController | null = null;
+let conversationNegotiation: Promise<void> | null = null;
+let endingConversation: Promise<void> | null = null;
 let selectedHistoryImage: IntercomHistoryItem | null = null;
 let savedMessagesDialogViewId: string | null = null;
 let selectedSavedMessageId: string | null = null;
@@ -73,17 +78,25 @@ let localServerDraft: {
 let browserHistoryByIntercomUuidAction = new Map<string, IntercomHistoryItem[]>();
 let historyImageCache = new Map<string, string>();
 let failedHistoryImageLoads = new Set<string>();
-let pendingHistoryImageCacheReads = new Set<string>();
-let pendingHistoryImageCacheWrites = new Set<string>();
+const requestedHistoryImageKeys = new Set<string>();
+const encodingHistoryImageKeys = new Set<string>();
+let historyCacheGeneration = 0;
+const failedPreviewUrls = new Set<string>();
 let activeHistoryIntercomKey: string | null = null;
-let historyDrawerScrollTop = 0;
-let historyDrawerViewportHeight = 0;
-let historyVirtualWindowKey = '';
-let pendingFocusSelector: string | null = null;
-let deferredRenderRequested = false;
 let rtcPlaybackRetryTimer: number | null = null;
-let lastRapidActionSignature = '';
-let lastRapidActionAt = 0;
+let pendingFrame: number | null = null;
+let lastMarkup: string | null = null;
+let panelFromUrl = new URL(window.location.href).searchParams.get('panel') === '1';
+let wakeLockUnavailable = false;
+let updateStatus: 'close-other-tabs' | 'unavailable' | null = null;
+let fullscreenFailed = false;
+let legacyDialogReturnFocus: HTMLElement | null = null;
+const screenWakeLock = new PanelScreenWakeLock((unavailable) => {
+  if (unavailable !== wakeLockUnavailable) {
+    wakeLockUnavailable = unavailable;
+    scheduleRender();
+  }
+});
 
 function toErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -95,17 +108,6 @@ function toErrorMessage(error: unknown): string {
   return 'Unknown error';
 }
 
-const HISTORY_DRAWER_GAP = 12;
-const HISTORY_DRAWER_OVERSCAN_ROWS = 2;
-const HISTORY_CARD_HEIGHT_DESKTOP = 196;
-const HISTORY_CARD_HEIGHT_MOBILE = 236;
-const RTC_PREVIEW_STALL_MS = 8000;
-const INTERCOM_AUDIO_UNSUPPORTED_ERROR = '__INTERCOM_AUDIO_UNSUPPORTED__';
-const INTERCOM_ICE_SERVERS: RTCIceServer[] = [
-  { urls: 'stun:stun.loxonecloud.com:3478' },
-  { urls: 'stun:stun.l.google.com:19302' },
-];
-
 type CurrentIntercom = NonNullable<NonNullable<AppViewModel['currentView']>['intercom']>;
 
 function tr<Key extends Parameters<typeof t>[1]>(
@@ -115,823 +117,236 @@ function tr<Key extends Parameters<typeof t>[1]>(
   return t(state.language, key, params);
 }
 
-class IntercomRtcSession {
-  private socket: WebSocket | null = null;
-  private peer: RTCPeerConnection | null = null;
-  private remoteStream: MediaStream | null = null;
-  private conversationEnabled = false;
-  private authReady: Promise<void> | null = null;
-  private resolveAuthReady: (() => void) | null = null;
-  private rejectAuthReady: ((reason?: unknown) => void) | null = null;
-  private commandId = 1000;
-  private pendingCommands = new Map<number, { resolve: (value: unknown) => void; reject: (reason?: unknown) => void }>();
-  private pendingRemoteCandidates: RTCIceCandidateInit[] = [];
-  private currentIntercomKey: string | null = null;
-  private currentSocketUrl: string | null = null;
-  private connectPromise: Promise<void> | null = null;
-  private retryTimer: number | null = null;
-  private previewDeadlineTimer: number | null = null;
-  private previewStartAt: number | null = null;
-  private firstRenderedVideoFrameAt: number | null = null;
-  private remoteVideoTrackSeen = false;
-  private historyLoadedForKey: string | null = null;
-  private historyLoadingForKey: string | null = null;
-  private bootstrapPromise: Promise<void> | null = null;
-  private comReady = false;
-  private callState: unknown = null;
-
-  hasRemoteStreamFor(uuidAction: string): boolean {
-    return this.currentIntercomKey === uuidAction && this.hasIncomingVideo();
-  }
-
-  hasPendingSessionFor(uuidAction: string): boolean {
-    return this.currentIntercomKey === uuidAction && this.isPeerSessionPending();
-  }
-
-  hasRemoteTrackFor(uuidAction: string): boolean {
-    return this.currentIntercomKey === uuidAction && this.remoteVideoTrackSeen;
-  }
-
-  isConversationEnabledFor(uuidAction: string): boolean {
-    return this.currentIntercomKey === uuidAction && this.conversationEnabled;
-  }
-
-  getRemoteStream(): MediaStream | null {
-    return this.remoteStream;
-  }
-
-  noteRenderedVideoFrame(): boolean {
-    const firstFrame = this.firstRenderedVideoFrameAt === null;
-    this.firstRenderedVideoFrameAt = Date.now();
-    if (firstFrame) {
-      this.clearPreviewDeadline();
-    }
-    return firstFrame;
-  }
-
-  async ensurePreview(intercom: CurrentIntercom, localAudioStream: MediaStream | null = null): Promise<void> {
-    const wantsConversation = Boolean(localAudioStream?.getAudioTracks().length);
-    if (this.connectPromise) {
-      await this.connectPromise.catch(() => {
-        // Let the follow-up attempt decide whether another retry is needed.
-      });
-      if (
-        this.currentIntercomKey !== intercom.uuidAction ||
-        this.conversationEnabled !== wantsConversation ||
-        !this.hasIncomingVideo()
-      ) {
-        return this.ensurePreview(intercom, localAudioStream);
-      }
+const intercomRtcSession = new IntercomRtcSession({
+  post,
+  changed: scheduleRender,
+  interrupted: () => {
+    if (browserConversationState !== 'starting' && browserConversationState !== 'active') {
       return;
     }
-    if (!this.connectPromise) {
-      this.connectPromise = this.ensurePreviewInternal(intercom, localAudioStream).finally(() => {
-        this.connectPromise = null;
-      });
-    }
-    return this.connectPromise;
-  }
-
-  async disconnect(): Promise<void> {
-    this.clearRetry();
-    await this.teardown();
-  }
-
-  private async ensurePreviewInternal(intercom: CurrentIntercom, localAudioStream: MediaStream | null): Promise<void> {
-    const signalingUrls = resolveIntercomSignalingUrls(intercom);
-    if (signalingUrls.length === 0 || !intercom.authToken || !intercom.deviceUuid) {
-      throw new Error(tr('signaling_data_missing'));
-    }
-
-    const wantsConversation = Boolean(localAudioStream?.getAudioTracks().length);
-    const intercomChanged = this.currentIntercomKey !== intercom.uuidAction;
-    const modeChanged = this.conversationEnabled !== wantsConversation;
-    if (intercomChanged || modeChanged) {
-      await this.teardown();
-      this.currentIntercomKey = intercom.uuidAction;
-      this.conversationEnabled = wantsConversation;
-      if (intercomChanged) {
-        this.historyLoadedForKey = null;
-        this.historyLoadingForKey = null;
-      }
-    }
-
-    let lastError: unknown = null;
-    for (const signalingUrl of signalingUrls) {
-      try {
-        if (this.currentSocketUrl !== signalingUrl || !this.socket || this.socket.readyState !== WebSocket.OPEN) {
-          await this.teardown();
-          this.currentIntercomKey = intercom.uuidAction;
-          this.currentSocketUrl = signalingUrl;
-        }
-        await this.ensureAuthorized(intercom, signalingUrl);
-        if (this.peer && this.hasIncomingVideo()) {
-          this.clearRetry();
-          this.clearPreviewDeadline();
-          attachRtcStreamToDom();
-          void this.refreshHistory(intercom);
-          return;
-        }
-        if (this.peer && this.isPeerSessionPending()) {
-          this.clearRetry();
-          attachRtcStreamToDom();
-          void this.refreshHistory(intercom);
-          return;
-        }
-        if (this.peer) {
-          await this.teardown();
-          this.currentIntercomKey = intercom.uuidAction;
-          this.currentSocketUrl = signalingUrl;
-          this.conversationEnabled = wantsConversation;
-          await this.ensureAuthorized(intercom, signalingUrl);
-        }
-        await this.startVideo(localAudioStream);
-        this.clearRetry();
-        void this.refreshHistory(intercom);
-        return;
-      } catch (error) {
-        lastError = error;
-        await this.teardown();
-        this.currentIntercomKey = intercom.uuidAction;
-        this.conversationEnabled = wantsConversation;
-      }
-    }
-
-    this.scheduleRetry(intercom.uuidAction);
-    throw (lastError instanceof Error ? lastError : new Error(tr('signaling_open_failed')));
-  }
-
-  private async ensureAuthorized(intercom: CurrentIntercom, signalingUrl: string): Promise<void> {
-    if (this.socket && this.socket.readyState === WebSocket.OPEN && this.authReady) {
-      await this.authReady;
-      await this.ensureSessionBootstrap(intercom);
-      return;
-    }
-    this.authReady = new Promise<void>((resolve, reject) => {
-      this.resolveAuthReady = resolve;
-      this.rejectAuthReady = reject;
-    });
-    await new Promise<void>((resolve, reject) => {
-      const socket = new WebSocket(signalingUrl, 'webrtc-signaling');
-      this.socket = socket;
-      socket.onopen = () => resolve();
-      socket.onerror = () => reject(new Error(tr('signaling_open_failed')));
-      socket.onclose = () => {
-        this.rejectAllPending(new Error(tr('signaling_closed')));
-        if (this.rejectAuthReady) {
-          this.rejectAuthReady(new Error(tr('signaling_closed')));
-        }
-        this.resolveAuthReady = null;
-        this.rejectAuthReady = null;
-        this.authReady = null;
-        this.socket = null;
-        const peerHealthy = this.hasIncomingVideo() || this.isPeerSessionPending();
-        if (!peerHealthy) {
-          this.peer = null;
-          this.remoteStream = null;
-        }
-        if (this.currentIntercomKey && !peerHealthy) {
-          this.scheduleRetry(this.currentIntercomKey);
-        }
-        render();
-      };
-      socket.onmessage = (event) => {
-        void this.handleMessage(event.data, intercom);
-      };
-    });
-    await this.authReady;
-    await this.ensureSessionBootstrap(intercom);
-  }
-
-  private async ensureSessionBootstrap(intercom: CurrentIntercom): Promise<void> {
-    if (this.comReady && this.callState !== null && this.historyLoadedForKey === intercom.uuidAction) {
-      return;
-    }
-    if (this.bootstrapPromise) {
-      await this.bootstrapPromise;
-      return;
-    }
-    this.bootstrapPromise = (async () => {
-      if (!this.comReady || this.callState === null) {
-        try {
-          await this.request('info', undefined, 4000);
-          this.comReady = true;
-          if (this.callState === null) {
-            this.callState = 'AVAILABLE';
-          }
-        } catch {
-          // `info()` is best-effort, but when it succeeds it mirrors the
-          // official app's session bootstrap and unlocks state updates such as
-          // `callState`.
-        }
-      }
-      await this.refreshHistory(intercom, 4000);
-      render();
-    })().finally(() => {
-      this.bootstrapPromise = null;
-    });
-    await this.bootstrapPromise;
-  }
-
-  private async handleMessage(rawData: unknown, intercom: CurrentIntercom): Promise<void> {
-    const payload = typeof rawData === 'string' ? rawData : new TextDecoder().decode(rawData as ArrayBuffer);
-    const message = JSON.parse(payload) as {
-      id?: number;
-      method?: string;
-      params?: unknown[];
-      result?: { data?: unknown };
-      error?: { message?: string };
-    };
-
-    if (typeof message.method === 'string' && typeof message.id === 'number') {
-      await this.handleRpcCall(
-        {
-          id: message.id,
-          method: message.method,
-          params: message.params,
-        },
-        intercom,
-      );
-      return;
-    }
-
-    if (typeof message.method === 'string') {
-      if (message.method === 'ready') {
-        this.resolveAuthReady?.();
-        this.resolveAuthReady = null;
-        this.rejectAuthReady = null;
-        return;
-      }
-      await this.handleRpcCall(
-        {
-          id: null,
-          method: message.method,
-          params: message.params,
-        },
-        intercom,
-      );
-      return;
-    }
-
-    if (typeof message.id === 'number') {
-      const pending = this.pendingCommands.get(message.id);
-      if (!pending) {
-        return;
-      }
-      this.pendingCommands.delete(message.id);
-      if (message.error) {
-        pending.reject(new Error(message.error.message ?? tr('signaling_error')));
-        return;
-      }
-      pending.resolve(message.result?.data);
-    }
-  }
-
-  private async handleRpcCall(
-    message: { id: number | null; method: string; params?: unknown[] },
-    intercom: CurrentIntercom,
-  ): Promise<void> {
-    const respondOk = (data?: unknown) => {
-      if (message.id === null) {
-        return;
-      }
-      this.sendRaw({
-        jsonrpc: '2.0',
-        result: {
-          code: 200,
-          message: 'Ok',
-          ...(data === undefined ? {} : { data }),
-        },
-        id: message.id,
-      });
-    };
-
-    if (message.method === 'authenticate') {
-      const params = Array.isArray(message.params) ? message.params : [];
-      const [sessionToken, modulus, exponent, publicKey] = params;
-      const authPayload = await buildIntercomAuthenticationPayload({
-        username: state.serverForm.username,
-        token: intercom.authToken,
-        sessionToken: String(sessionToken ?? ''),
-        modulus: typeof modulus === 'string' ? modulus : null,
-        exponent: typeof exponent === 'string' ? exponent : null,
-        publicKey: typeof publicKey === 'string' ? publicKey : null,
-      });
-      respondOk(authPayload);
-      return;
-    }
-
-    if (message.method === 'addIceCandidate') {
-      const params = Array.isArray(message.params) ? message.params : [];
-      const candidate: RTCIceCandidateInit =
-        typeof params[0] === 'object' && params[0] !== null
-          ? (params[0] as RTCIceCandidateInit)
-          : {
-              candidate: String(params[0] ?? ''),
-              sdpMLineIndex:
-                typeof params[1] === 'number'
-                  ? params[1]
-                  : Number.isFinite(Number(params[1]))
-                    ? Number(params[1])
-                    : null,
-              sdpMid: typeof params[2] === 'string' ? params[2] : null,
-              usernameFragment: typeof params[3] === 'string' ? params[3] : null,
-            };
-      if (this.peer?.remoteDescription) {
-        await this.peer.addIceCandidate(candidate);
-      } else {
-        this.pendingRemoteCandidates.push(candidate);
-      }
-      respondOk();
-      return;
-    }
-
-    if (message.method === 'reachMode') {
-      this.comReady = true;
-      respondOk();
-      return;
-    }
-
-    if (message.method === 'info') {
-      this.comReady = true;
-      if (this.callState === null) {
-        this.callState = 'AVAILABLE';
-      }
-      respondOk();
-      return;
-    }
-
-    if (message.method === 'callState') {
-      const params = Array.isArray(message.params) ? message.params : [];
-      this.callState = params[0] ?? null;
-      respondOk();
-      return;
-    }
-
-    // Intercom signaling can invoke benign client RPCs that do not require
-    // local handling. Rejecting them tears down the RTC bootstrap, so keep the
-    // session permissive unless a method really needs client-side work.
-    respondOk();
-  }
-
-  private async startVideo(localAudioStream: MediaStream | null, allowAudioFallback = true): Promise<void> {
-    const wantsConversation = Boolean(localAudioStream?.getAudioTracks().length);
-    const localAudioTrack = localAudioStream?.getAudioTracks()[0] ?? null;
-    this.remoteStream = new MediaStream();
-    this.remoteVideoTrackSeen = false;
-    this.previewStartAt = Date.now();
-    this.firstRenderedVideoFrameAt = null;
-    this.peer = new RTCPeerConnection({
-      iceServers: INTERCOM_ICE_SERVERS,
-      iceCandidatePoolSize: 4,
-    });
-    this.pendingRemoteCandidates = [];
-    this.armPreviewDeadline();
-
-    this.peer.ontrack = (event) => {
-      const [stream] = event.streams;
-      if (event.track?.kind === 'video') {
-        this.remoteVideoTrackSeen = true;
-      }
-      if (stream) {
-        this.remoteStream = stream;
-      } else if (this.remoteStream) {
-        this.remoteStream.addTrack(event.track);
-      }
-      attachRtcStreamToDom();
-      render();
-    };
-
-    this.peer.onconnectionstatechange = () => {
-      if (!this.peer) {
-        return;
-      }
-      if (this.peer.connectionState === 'failed' || this.peer.connectionState === 'disconnected') {
-        if (this.currentIntercomKey) {
-          this.scheduleRetry(this.currentIntercomKey);
-        }
-      }
-      render();
-    };
-
-    this.peer.oniceconnectionstatechange = () => {
-      if (!this.peer) {
-        return;
-      }
-      if (this.peer.iceConnectionState === 'failed' || this.peer.iceConnectionState === 'disconnected') {
-        if (this.currentIntercomKey) {
-          this.scheduleRetry(this.currentIntercomKey);
-        }
-      }
-      render();
-    };
-
-    this.peer.onicecandidate = (event) => {
-      if (event.candidate) {
-        void this.request('addIceCandidate', [
-          event.candidate.candidate,
-          event.candidate.sdpMLineIndex,
-          event.candidate.sdpMid,
-          event.candidate.usernameFragment,
-        ]).catch(() => {
-          // Candidate ACKs can race with reconnects and are safe to ignore.
-        });
-        return;
-      }
-      this.sendRaw({
-        jsonrpc: '2.0',
-        method: 'iceGatheringFinished',
-      });
-    };
-
-    this.peer.addTransceiver('video', { direction: 'recvonly' });
-    if (localAudioTrack) {
-      const audioTransceiver = this.peer.addTransceiver('audio', {
-        direction: 'sendrecv',
-      });
-      await audioTransceiver.sender.replaceTrack(localAudioTrack);
-    }
-    const offer = await this.peer.createOffer();
-    await this.peer.setLocalDescription(offer);
-    let rawAnswer: unknown;
-    try {
-      rawAnswer = await this.request('call', [
-        this.peer.localDescription,
-        'new',
-        wantsConversation,
-        0,
-      ]);
-    } catch (error) {
-      const message = toErrorMessage(error);
-      const shouldFallback =
-        wantsConversation &&
-        allowAudioFallback &&
-        message.includes(tr('signaling_timeout', { method: 'call' }));
-      if (!shouldFallback) {
-        throw error;
-      }
-      await this.teardown();
-      await this.startVideo(null, false);
-      throw new Error(INTERCOM_AUDIO_UNSUPPORTED_ERROR);
-    }
-    const answer = normalizeRtcAnswer(rawAnswer);
-    if (!answer?.sdp) {
-      throw new Error(tr('intercom_no_sdp'));
-    }
-    try {
-      await this.peer.setRemoteDescription(answer);
-    } catch (error) {
-      const message = toErrorMessage(error);
-      const shouldFallback = wantsConversation && allowAudioFallback && /m-?lines?/i.test(message);
-      if (!shouldFallback) {
-        throw error;
-      }
-      await this.teardown();
-      await this.startVideo(null, false);
-      throw new Error(INTERCOM_AUDIO_UNSUPPORTED_ERROR);
-    }
-    for (const candidate of this.pendingRemoteCandidates.splice(0)) {
-      await this.peer.addIceCandidate(candidate);
-    }
-    attachRtcStreamToDom();
-    render();
-  }
-
-  private async refreshHistory(intercom: CurrentIntercom, timeoutMs = 10000): Promise<void> {
-    if (this.historyLoadedForKey === intercom.uuidAction || this.historyLoadingForKey === intercom.uuidAction) {
-      return;
-    }
-    this.historyLoadingForKey = intercom.uuidAction;
-    try {
-      const response = await this.request('getLastActivities', [0, 100, 2], timeoutMs);
-      const items = mapIntercomActivitiesToHistory(response, intercom);
-      if (items.length > 0) {
-        browserHistoryByIntercomUuidAction.set(intercom.uuidAction, items);
-      }
-      this.historyLoadedForKey = intercom.uuidAction;
-      render();
-    } catch {
-      // Keep existing fallback history from worker.
-    } finally {
-      if (this.historyLoadingForKey === intercom.uuidAction) {
-        this.historyLoadingForKey = null;
-      }
-    }
-  }
-
-  private request(method: string, params?: unknown[], timeoutMs = 10000): Promise<unknown> {
-    const id = this.commandId++;
-    this.sendRaw({
-      jsonrpc: '2.0',
-      method,
-      params,
-      id,
-    });
-    return new Promise((resolve, reject) => {
-      this.pendingCommands.set(id, { resolve, reject });
-      window.setTimeout(() => {
-        const pending = this.pendingCommands.get(id);
-        if (!pending) {
-          return;
-        }
-        this.pendingCommands.delete(id);
-        reject(new Error(tr('signaling_timeout', { method })));
-      }, timeoutMs);
-    });
-  }
-
-  private sendRaw(payload: unknown): void {
-    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-      return;
-    }
-    this.socket.send(JSON.stringify(payload));
-  }
-
-  private rejectAllPending(error: Error): void {
-    for (const pending of this.pendingCommands.values()) {
-      pending.reject(error);
-    }
-    this.pendingCommands.clear();
-  }
-
-  private async teardown(): Promise<void> {
-    this.rejectAllPending(new Error(tr('session_reset')));
-    this.clearPreviewDeadline();
-    if (this.peer) {
-      this.peer.ontrack = null;
-      this.peer.onicecandidate = null;
-      this.peer.close();
-      this.peer = null;
-    }
-    if (this.socket) {
-      this.socket.onopen = null;
-      this.socket.onclose = null;
-      this.socket.onerror = null;
-      this.socket.onmessage = null;
-      if (this.socket.readyState === WebSocket.OPEN) {
-        this.socket.close();
-      }
-      this.socket = null;
-    }
-    this.remoteStream = null;
-    this.pendingRemoteCandidates = [];
-    this.currentIntercomKey = null;
-    this.currentSocketUrl = null;
-    this.conversationEnabled = false;
-    this.previewStartAt = null;
-    this.authReady = null;
-    this.resolveAuthReady = null;
-    this.rejectAuthReady = null;
-    this.firstRenderedVideoFrameAt = null;
-    this.remoteVideoTrackSeen = false;
-    this.bootstrapPromise = null;
-    this.comReady = false;
-    this.callState = null;
-    this.historyLoadingForKey = null;
-  }
-
-  private hasIncomingVideo(): boolean {
-    return this.firstRenderedVideoFrameAt !== null;
-  }
-
-  private hasRemoteVideoTrack(): boolean {
-    return Boolean(this.remoteStream && this.remoteStream.getVideoTracks().length > 0);
-  }
-
-  private isPeerSessionPending(): boolean {
-    if (!this.peer) {
-      return false;
-    }
-    if (this.hasIncomingVideo()) {
-      return false;
-    }
-    const { connectionState, iceConnectionState, signalingState } = this.peer;
-    if (connectionState === 'failed' || connectionState === 'closed') {
-      return false;
-    }
-    if (iceConnectionState === 'failed' || iceConnectionState === 'closed') {
-      return false;
-    }
-    if (this.previewStartAt && Date.now() - this.previewStartAt > RTC_PREVIEW_STALL_MS) {
-      return false;
-    }
-    if (this.hasRemoteVideoTrack()) {
-      return true;
-    }
-    return (
-      connectionState === 'new' ||
-      connectionState === 'connecting' ||
-      iceConnectionState === 'new' ||
-      iceConnectionState === 'checking' ||
-      signalingState === 'have-local-offer' ||
-      signalingState === 'have-remote-offer'
+    stopBrowserConversation(false);
+    browserConversationState = 'error';
+    browserConversationMessage = tr('signaling_closed');
+  },
+  history: (items, intercom) => {
+    browserHistoryByIntercomUuidAction.set(intercom.uuidAction,
+      items.map(item => ({ ...item, label: formatDate(item.timestamp) })),
     );
-  }
+    scheduleRender();
+  },
+});
 
-  private scheduleRetry(uuidAction: string): void {
-    if (this.retryTimer !== null) {
-      return;
-    }
-    this.retryTimer = window.setTimeout(() => {
-      this.retryTimer = null;
-      const intercom = state.currentView?.intercom;
-      if (!intercom || intercom.uuidAction !== uuidAction) {
-        return;
-      }
-      const rtcAudioStream =
-        browserConversationState === 'active' || browserConversationState === 'starting'
-          ? localMicrophoneStream
-          : null;
-      void this.ensurePreview(intercom, rtcAudioStream).catch(() => {
-        // Keep existing fallback UI; retry stays best-effort.
-      });
-    }, 3000);
-  }
-
-  private clearRetry(): void {
-    if (this.retryTimer !== null) {
-      window.clearTimeout(this.retryTimer);
-      this.retryTimer = null;
-    }
-  }
-
-  private armPreviewDeadline(): void {
-    const uuidAction = this.currentIntercomKey;
-    this.clearPreviewDeadline();
-    this.previewDeadlineTimer = window.setTimeout(() => {
-      this.previewDeadlineTimer = null;
-      if (!uuidAction || this.hasIncomingVideo()) {
-        return;
-      }
-      void this.teardown().finally(() => {
-        this.currentIntercomKey = uuidAction;
-        this.scheduleRetry(uuidAction);
-        render();
-      });
-    }, RTC_PREVIEW_STALL_MS);
-  }
-
-  private clearPreviewDeadline(): void {
-    if (this.previewDeadlineTimer !== null) {
-      window.clearTimeout(this.previewDeadlineTimer);
-      this.previewDeadlineTimer = null;
-    }
-  }
+function syncIntercomMedia(): void {
+  const intercom = !document.hidden && state.screen === 'dashboard' && isRealtimeAvailable()
+    ? state.currentView?.intercom
+    : null;
+  intercomRtcSession.sync(intercom ?? null);
 }
 
-const intercomRtcSession = new IntercomRtcSession();
+function suspendIntercomMedia(): void {
+  stopBrowserConversation(false);
+  intercomRtcSession.sync(null);
+}
 
-worker.onmessage = (event: MessageEvent<WorkerToMainMessage>) => {
-  if (event.data.type !== 'state') {
+function isPanelMode(): boolean {
+  return panelFromUrl || state.panelMode;
+}
+
+function syncPanelScreen(): void {
+  screenWakeLock.sync(isPanelMode() && state.keepScreenAwake);
+}
+
+function resumeVisibleApp(): void {
+  if (document.hidden) {
     return;
   }
+  post({ type: 'resume' });
+  syncPanelScreen();
+  syncIntercomMedia();
+  scheduleRender();
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    screenWakeLock.sync(false);
+    suspendIntercomMedia();
+  } else {
+    resumeVisibleApp();
+  }
+});
+window.addEventListener('pagehide', () => {
+  screenWakeLock.sync(false);
+  suspendIntercomMedia();
+});
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) {
+    resumeVisibleApp();
+  }
+});
+window.addEventListener('online', resumeVisibleApp);
+document.addEventListener('fullscreenchange', scheduleRender);
+window.addEventListener('popstate', () => {
+  panelFromUrl = new URL(window.location.href).searchParams.get('panel') === '1';
+  syncPanelScreen();
+  scheduleRender();
+});
+
+worker.onmessage = (event: MessageEvent<WorkerToMainMessage>) => {
+  if (event.data.type === 'historyImageCache') {
+    if (event.data.requestId === historyCacheGeneration) {
+      let changed = false;
+      for (const [key, url] of event.data.entries) {
+        if (!historyImageCache.has(key)) {
+          historyImageCache.set(key, url);
+          changed = true;
+        }
+      }
+      if (changed) {
+        scheduleRender();
+      }
+    }
+    return;
+  }
+  if (event.data.type !== 'state') {
+    intercomRtcSession.handle(event.data);
+    return;
+  }
+  const previousIntercom = state.currentView?.intercom;
+  const previousViewId = state.currentView?.config.id;
+  const previousServer = state.serverForm;
+  const previousConnection = state.connection.status;
   state = event.data.state;
   setRuntimeLanguage(state.language);
+  document.documentElement.lang = state.language;
   syncLocalViewDraft();
-  const nextIntercomKey = state.currentView?.intercom?.uuidAction ?? null;
-  if (nextIntercomKey !== activeHistoryIntercomKey) {
+  if (previousViewId !== state.currentView?.config.id) {
+    closeSavedMessagesDialog();
+    selectedHistoryImage = null;
+  }
+  const intercom = state.currentView?.intercom;
+  const accountChanged = previousServer.origin !== state.serverForm.origin ||
+    previousServer.serial !== state.serverForm.serial ||
+    previousServer.username !== state.serverForm.username;
+  if (accountChanged) {
+    browserHistoryByIntercomUuidAction.clear();
+  }
+  if (accountChanged || previousViewId !== state.currentView?.config.id || previousConnection !== state.connection.status) {
+    failedPreviewUrls.clear();
+  }
+  if (accountChanged || previousIntercom?.uuidAction !== intercom?.uuidAction ||
+      previousIntercom?.signalingUrl !== intercom?.signalingUrl ||
+      (previousConnection === 'online' && !isRealtimeAvailable())) {
+    suspendIntercomMedia();
+    selectedHistoryImage = null;
+  }
+  const nextIntercomKey = intercom?.uuidAction ?? null;
+  if (accountChanged || nextIntercomKey !== activeHistoryIntercomKey) {
     activeHistoryIntercomKey = nextIntercomKey;
     historyImageCache = new Map();
     failedHistoryImageLoads = new Set();
-    pendingHistoryImageCacheReads = new Set();
-    pendingHistoryImageCacheWrites = new Set();
-    historyDrawerScrollTop = 0;
-    historyDrawerViewportHeight = 0;
-    historyVirtualWindowKey = '';
+    requestedHistoryImageKeys.clear();
+    encodingHistoryImageKeys.clear();
+    historyCacheGeneration += 1;
   }
-  if (!state.currentView?.intercom) {
+  if (!intercom) {
     sidePanelOpen = false;
-    intercomPanelMode = null;
-    selectedHistoryImage = null;
-    stopBrowserConversation(false);
-    void intercomRtcSession.disconnect();
   }
-  render();
+  if (!intercom?.activityLogSourceName) {
+    sidePanelTab = 'history';
+  }
+  syncPanelScreen();
+  syncIntercomMedia();
+  scheduleRender();
 };
 
 worker.onerror = () => {
+  suspendIntercomMedia();
+  cancelScheduledRender();
   renderMarkup(
-    `<main class="shell"><section class="panel error-card"><h1>Błąd workera</h1><p>Nie udało się uruchomić logiki aplikacji. Odśwież stronę i sprawdź konsolę przeglądarki.</p></section></main>`,
+    `<main class="shell"><section class="panel error-card" role="alert"><h1>${escapeHtml(tr('worker_start_failed'))}</h1></section></main>`,
   );
 };
 
-function rapidActionSignature(actionElement: HTMLElement): string {
-  return [
-    actionElement.dataset.action ?? '',
-    actionElement.dataset.viewId ?? '',
-    actionElement.dataset.panel ?? '',
-    actionElement.dataset.messageId ?? '',
-  ].join('|');
-}
+root.addEventListener('click', (event) => {
+  const action = event.target instanceof Element
+    ? event.target.closest<HTMLElement>('[data-action]')
+    : null;
+  if (action && !action.matches(':disabled')) {
+    handleUiAction(action);
+  }
+});
 
-function shouldHandleRapidAction(actionElement: HTMLElement): boolean {
-  const signature = rapidActionSignature(actionElement);
-  const now = Date.now();
-  if (signature === lastRapidActionSignature && now - lastRapidActionAt < 450) {
-    return false;
-  }
-  lastRapidActionSignature = signature;
-  lastRapidActionAt = now;
-  return true;
-}
-
-root.addEventListener('pointerdown', (event) => {
-  const target = event.target as HTMLElement;
-  const actionElement = target.closest<HTMLElement>('[data-action]');
-  if (!actionElement) {
-    return;
-  }
-  const action = actionElement.dataset.action;
-  if (
-    action !== 'connect-toggle' &&
-    action !== 'open-saved-messages' &&
-    action !== 'close-saved-messages' &&
-    action !== 'select-saved-message' &&
-    action !== 'confirm-saved-message'
-  ) {
-    return;
-  }
-  if (!shouldHandleRapidAction(actionElement)) {
+root.addEventListener('cancel', (event) => {
+  const dialog = event.target;
+  if (!(dialog instanceof HTMLElement) || dialog.tagName !== 'DIALOG') {
     return;
   }
   event.preventDefault();
-  handleUiAction(actionElement);
-});
+  dialog.querySelector<HTMLButtonElement>('[data-dialog-close]')?.click();
+}, true);
 
-root.addEventListener('click', (event) => {
-  const target = event.target as HTMLElement;
-  const actionElement = target.closest<HTMLElement>('[data-action]');
-  if (!actionElement) {
+root.addEventListener('keydown', (event) => {
+  if (handleLegacyDialogKeys(event)) {
     return;
   }
-  const action = actionElement.dataset.action;
-  if (
-    action === 'open-saved-messages' ||
-    action === 'close-saved-messages' ||
-    action === 'select-saved-message' ||
-    action === 'confirm-saved-message'
-  ) {
+  if (!selectedHistoryImage || !(event.target instanceof Element) || !event.target.closest('.history-lightbox')) {
     return;
   }
-
-  if (action === 'connect-toggle') {
-    if (!shouldHandleRapidAction(actionElement)) {
-      return;
-    }
-    handleUiAction(actionElement);
-    return;
+  const action = event.key === 'ArrowLeft' ? 'history-image-prev' : event.key === 'ArrowRight' ? 'history-image-next' : null;
+  if (action) {
+    event.preventDefault();
+    root.querySelector<HTMLButtonElement>(`[data-action="${action}"]`)?.click();
   }
-
-  handleUiAction(actionElement);
 });
 
 function handleUiAction(actionElement: HTMLElement): void {
   switch (actionElement.dataset.action) {
+    case 'install-pwa':
+      void installPwa().then(render, render);
+      return;
+    case 'apply-pwa-update':
+      updateStatus = null;
+      void applyPwaUpdate().then((status) => {
+        if (status !== 'reloading') {
+          updateStatus = status;
+          render();
+        }
+      });
+      return;
+    case 'panel-fullscreen':
+      void togglePanelFullscreen();
+      return;
     case 'show-app-settings':
+      updateStatus = null;
       post({ type: 'showAppSettings' });
       return;
     case 'show-view-settings':
       post({ type: 'showViewSettings', viewId: actionElement.dataset.viewId });
       return;
     case 'close-settings':
-      void closeSettingsOverlay();
+      localServerDraft = null;
+      post({ type: 'closeSettings' });
       return;
-    case 'toggle-side-panel':
-      if (sidePanelOpen) {
-        prepareSidePanelCloseFocus();
-      }
-      sidePanelOpen = !sidePanelOpen;
+    case 'open-side-panel': {
+      const tab = actionElement.dataset.tab === 'log' ? 'log' : 'history';
+      sidePanelOpen = !sidePanelOpen || sidePanelTab !== tab;
+      sidePanelTab = tab;
       render();
       return;
-    case 'open-side-panel':
-      sidePanelOpen = true;
-      sidePanelTab = (actionElement.dataset.tab as SidePanelTab) || 'history';
-      render();
-      return;
-    case 'close-side-panel':
-      prepareSidePanelCloseFocus();
-      sidePanelOpen = false;
-      render();
-      return;
+    }
     case 'open-history-image': {
       const timestamp = actionElement.dataset.timestamp ?? '';
       const intercom = state.currentView?.intercom;
       if (!intercom) {
         return;
       }
-      const historyItems = browserHistoryByIntercomUuidAction.get(intercom.uuidAction) ?? intercom.history;
-      if (actionElement instanceof HTMLButtonElement) {
-        actionElement.blur();
-      }
+      const historyItems = viewHistory(intercom);
       selectedHistoryImage = historyItems.find((item) => item.timestamp === timestamp) ?? null;
-      sidePanelOpen = false;
-      pendingFocusSelector = '[data-action="close-history-image"]';
       render();
       return;
     }
     case 'close-history-image':
       selectedHistoryImage = null;
-      pendingFocusSelector = null;
       render();
       return;
     case 'history-image-prev': {
@@ -950,16 +365,8 @@ function handleUiAction(actionElement: HTMLElement): void {
       }
       return;
     }
-    case 'toggle-intercom-panel': {
-      const panel = (actionElement.dataset.panel as IntercomPanelMode) || null;
-      intercomPanelMode = intercomPanelMode === panel ? null : panel;
-      render();
-      return;
-    }
-    case 'close-intercom-panel':
-      intercomPanelMode = null;
-      render();
-      return;
+
+
     case 'select-view':
       if (actionElement.dataset.viewId) {
         post({ type: 'selectView', viewId: actionElement.dataset.viewId });
@@ -997,12 +404,7 @@ function handleUiAction(actionElement: HTMLElement): void {
       return;
     case 'connect-toggle':
       if (actionElement.dataset.viewId) {
-        const intercom = state.currentView?.intercom ?? null;
-        if (intercom && isIntercomConversationActive(intercom)) {
-          stopBrowserConversation(true);
-        } else {
-          void handleConnect(actionElement.dataset.viewId);
-        }
+        void handleConnect(actionElement.dataset.viewId);
       }
       return;
     case 'mute':
@@ -1031,9 +433,10 @@ function handleUiAction(actionElement: HTMLElement): void {
       selectedSavedMessageId = actionElement.dataset.phraseId ?? null;
       render();
       return;
+    case 'send-quick-message':
     case 'confirm-saved-message':
       if (actionElement.dataset.viewId) {
-        confirmSavedMessage(actionElement.dataset.viewId, actionElement.dataset.phraseId ?? '');
+        sendSavedMessage(actionElement.dataset.viewId, actionElement.dataset.phraseId ?? '');
       }
       return;
     case 'add-tts-row':
@@ -1061,6 +464,14 @@ root.addEventListener('submit', (event) => {
     }
     const formData = new FormData(form);
     const serialField = form.querySelector<HTMLInputElement>('input[name="serial"]');
+    syncDraftFromServerForm(form);
+    if (localServerDraft) {
+      localServerDraft.password = '';
+    }
+    const passwordInput = form.querySelector<HTMLInputElement>('[name="password"]');
+    if (passwordInput) {
+      passwordInput.value = '';
+    }
     post({
       type: 'saveServer',
       payload: {
@@ -1093,21 +504,32 @@ root.addEventListener('submit', (event) => {
 
   if (form.dataset.form === 'tts') {
     const formData = new FormData(form);
-    post({
-      type: 'sendTts',
-      viewId: String(formData.get('viewId') ?? ''),
-      message: String(formData.get('message') ?? ''),
-    });
+    const message = String(formData.get('message') ?? '').trim();
+    if (!message) {
+      return;
+    }
+    post({ type: 'sendTts', viewId: String(formData.get('viewId') ?? ''), message });
     form.reset();
   }
 });
 
 root.addEventListener('change', (event) => {
   const target = event.target;
-  if (!(target instanceof HTMLSelectElement)) {
+  if (target instanceof HTMLInputElement && (target.name === 'panelMode' || target.name === 'keepScreenAwake')) {
+    const name = target.name;
+    if (name === 'panelMode' && !target.checked && panelFromUrl) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('panel');
+      history.replaceState(history.state, '', url);
+      panelFromUrl = false;
+    }
+    state = { ...state, [name]: target.checked };
+    syncPanelScreen();
+    post({ type: 'saveAppSettings', payload: { [name]: target.checked } });
+    render();
     return;
   }
-  if (target.name !== 'languageOverride') {
+  if (!(target instanceof HTMLSelectElement) || target.name !== 'languageOverride') {
     return;
   }
   const nextLanguageOverride = normalizeLanguage(target.value);
@@ -1118,6 +540,7 @@ root.addEventListener('change', (event) => {
     language: nextLanguage,
   };
   setRuntimeLanguage(nextLanguage);
+  document.documentElement.lang = nextLanguage;
   render();
   post({
     type: 'saveAppSettings',
@@ -1126,38 +549,6 @@ root.addEventListener('change', (event) => {
     },
   });
 });
-
-root.addEventListener(
-  'scroll',
-  (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLElement) || !target.classList.contains('insight-drawer-body')) {
-      return;
-    }
-    if (!sidePanelOpen || sidePanelTab !== 'history') {
-      return;
-    }
-    const nextScrollTop = target.scrollTop;
-    const nextViewportHeight = target.clientHeight;
-    if (Math.abs(nextScrollTop - historyDrawerScrollTop) < 2 && nextViewportHeight === historyDrawerViewportHeight) {
-      return;
-    }
-    historyDrawerScrollTop = nextScrollTop;
-    historyDrawerViewportHeight = nextViewportHeight;
-    const intercom = state.currentView?.intercom;
-    if (!intercom) {
-      return;
-    }
-    const historyItems = browserHistoryByIntercomUuidAction.get(intercom.uuidAction) ?? intercom.history;
-    const nextWindowKey = getHistoryVirtualizationState(historyItems).windowKey;
-    if (nextWindowKey === historyVirtualWindowKey) {
-      return;
-    }
-    historyVirtualWindowKey = nextWindowKey;
-    render();
-  },
-  true,
-);
 
 root.addEventListener(
   'load',
@@ -1170,203 +561,133 @@ root.addEventListener(
     if (!sourceUrl || target.currentSrc.startsWith('data:')) {
       return;
     }
-    void cacheHistoryImageFromElement(target, sourceUrl);
+    cacheHistoryImageFromElement(target, sourceUrl);
   },
   true,
 );
 
-registerServiceWorker();
-setupViewportHeightTracking();
+root.addEventListener('error', (event) => {
+  const media = event.target;
+  if (!(media instanceof HTMLElement) || media.id !== 'intercom-live-media') {
+    return;
+  }
+  const src = media.getAttribute('src');
+  if (src && !failedPreviewUrls.has(src)) {
+    failedPreviewUrls.add(src);
+    render();
+  }
+}, true);
+
+startPwa(scheduleRender);
 post({ type: 'bootstrap', browserLanguage: navigator.language });
 render();
 
-function render(): void {
-  if (shouldDeferRenderForActiveEditor()) {
-    deferredRenderRequested = true;
-    return;
+function scheduleRender(): void {
+  if (pendingFrame === null) {
+    pendingFrame = window.requestAnimationFrame(() => {
+      pendingFrame = null;
+      render();
+    });
   }
-  deferredRenderRequested = false;
-  const focusedField = captureFocusedFieldState();
+}
+
+function cancelScheduledRender(): void {
+  if (pendingFrame !== null) {
+    window.cancelAnimationFrame(pendingFrame);
+    pendingFrame = null;
+  }
+}
+
+function render(): void {
+  cancelScheduledRender();
   renderMarkup(`
-    <main class="shell ${state.screen === 'loading' ? 'shell-loading' : ''}">
-      <div class="ambient ambient-a"></div>
-      <div class="ambient ambient-b"></div>
-      ${state.screen === 'loading' ? renderLoadingScreen() : renderAppShell()}
+    <main class="shell ${state.screen === 'loading' ? 'shell-loading' : ''} ${isPanelMode() ? 'shell-panel' : ''}">
+      <div class="shell-content">
+        ${state.screen === 'loading' ? renderLoadingScreen() : renderAppShell()}
+      </div>
       ${state.settingsOpen ? renderSettingsOverlay() : ''}
       ${selectedHistoryImage ? renderHistoryImageOverlay(selectedHistoryImage) : ''}
       ${renderSavedMessagesOverlay()}
-      ${state.notice ? renderNotice() : ''}
+      ${state.notice && !state.settingsOpen ? renderNotice() : ''}
     </main>
   `);
+  syncModalDialogs();
   attachRtcStreamToDom();
-  syncHistoryDrawerMetrics();
-  flushPendingFocus();
-  if (!pendingFocusSelector) {
-    restoreFocusedFieldState(focusedField);
-  }
   const intercom = state.currentView?.intercom;
   if (intercom) {
-    void hydrateVisibleHistoryCache(intercom);
-  }
-  if (
-    intercom &&
-    canUseRtcPreview(intercom) &&
-    !intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction) &&
-    !intercomRtcSession.hasPendingSessionFor(intercom.uuidAction)
-  ) {
-    const rtcAudioStream = browserConversationState === 'active' || browserConversationState === 'starting'
-      ? localMicrophoneStream
-      : null;
-    void intercomRtcSession.ensurePreview(intercom, rtcAudioStream).catch(() => undefined);
+    requestVisibleHistoryCache(intercom);
   }
 }
 
-function shouldDeferRenderForActiveEditor(): boolean {
-  if (pendingFocusSelector) {
-    return false;
-  }
-  const activeElement = document.activeElement;
-  if (
-    !(activeElement instanceof HTMLInputElement) &&
-    !(activeElement instanceof HTMLTextAreaElement) &&
-    !(activeElement instanceof HTMLSelectElement)
-  ) {
-    return false;
-  }
-  return Boolean(activeElement.closest('form[data-form]'));
-}
-
-type FocusedFieldState = {
-  selector: string;
-  selectionStart: number | null;
-  selectionEnd: number | null;
-};
-
-function captureFocusedFieldState(): FocusedFieldState | null {
-  const activeElement = document.activeElement;
-  if (
-    !(activeElement instanceof HTMLInputElement) &&
-    !(activeElement instanceof HTMLTextAreaElement) &&
-    !(activeElement instanceof HTMLSelectElement)
-  ) {
-    return null;
-  }
-
-  const form = activeElement.closest<HTMLFormElement>('form[data-form]');
-  const fieldName = activeElement.getAttribute('name');
-  if (!form || !fieldName) {
-    return null;
-  }
-
-  const formName = form.dataset.form;
-  if (!formName) {
-    return null;
-  }
-
-  const escapedFormName = escapeCssSelectorValue(formName);
-  const escapedFieldName = escapeCssSelectorValue(fieldName);
-  const selector = `form[data-form="${escapedFormName}"] [name="${escapedFieldName}"]`;
-  const selectionStart =
-    activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement
-      ? activeElement.selectionStart
-      : null;
-  const selectionEnd =
-    activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement
-      ? activeElement.selectionEnd
-      : null;
-
-  return {
-    selector,
-    selectionStart,
-    selectionEnd,
-  };
-}
-
-function restoreFocusedFieldState(fieldState: FocusedFieldState | null): void {
-  if (!fieldState) {
-    return;
-  }
-  const target = document.querySelector<HTMLElement>(fieldState.selector);
-  if (
-    !(target instanceof HTMLInputElement) &&
-    !(target instanceof HTMLTextAreaElement) &&
-    !(target instanceof HTMLSelectElement)
-  ) {
-    return;
-  }
-  if (document.activeElement === target) {
-    return;
-  }
-  target.focus({ preventScroll: true });
-  if (
-    (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) &&
-    fieldState.selectionStart !== null &&
-    fieldState.selectionEnd !== null
-  ) {
-    try {
-      target.setSelectionRange(fieldState.selectionStart, fieldState.selectionEnd);
-    } catch {
-      // Some input types do not support selection ranges.
+function syncModalDialogs(): void {
+  for (const dialog of Array.from(root.querySelectorAll<HTMLDialogElement>('dialog:not([open])'))) {
+    if (typeof dialog.showModal === 'function') {
+      dialog.showModal();
+    } else {
+      const active = document.activeElement;
+      legacyDialogReturnFocus = active instanceof HTMLElement ? active : null;
+      dialog.setAttribute('data-legacy-modal', '');
+      dialog.setAttribute('open', '');
+      const initialFocus = dialog.querySelector<HTMLElement>('[autofocus]') ?? dialog.querySelector<HTMLElement>('[data-dialog-close]');
+      initialFocus?.focus();
+      root.querySelector('.shell-content')?.setAttribute('aria-hidden', 'true');
     }
   }
+  document.body.classList.toggle('modal-open', Boolean(root.querySelector('dialog[open]')));
 }
 
-function escapeCssSelectorValue(value: string): string {
-  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
-    return CSS.escape(value);
+function handleLegacyDialogKeys(event: KeyboardEvent): boolean {
+  const dialog = root.querySelector<HTMLElement>('dialog[data-legacy-modal][open]');
+  if (!dialog) {
+    return false;
   }
-  return value.replace(/["\\]/g, '\\$&');
-}
-
-document.addEventListener('focusout', () => {
-  window.setTimeout(() => {
-    if (!deferredRenderRequested || shouldDeferRenderForActiveEditor()) {
-      return;
-    }
-    render();
-  }, 0);
-});
-
-function flushPendingFocus(): void {
-  if (!pendingFocusSelector) {
-    return;
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    dialog.querySelector<HTMLButtonElement>('[data-dialog-close]')?.click();
+    return true;
   }
-  const target = document.querySelector<HTMLElement>(pendingFocusSelector);
-  if (!target) {
-    return;
+  if (event.key !== 'Tab') {
+    return false;
   }
-  target.focus();
-  pendingFocusSelector = null;
-}
-
-function prepareSidePanelCloseFocus(): void {
-  const drawer = document.querySelector<HTMLElement>('.insight-drawer');
-  const activeElement = document.activeElement;
-  if (!drawer || !(activeElement instanceof HTMLElement) || !drawer.contains(activeElement)) {
-    return;
+  const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(
+    'button:not(:disabled), input:not(:disabled):not([type="hidden"]), select:not(:disabled), textarea:not(:disabled), a[href]',
+  ));
+  const current = focusable.indexOf(document.activeElement as HTMLElement);
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (current === -1 || (event.shiftKey && current === 0) || (!event.shiftKey && current === focusable.length - 1)) {
+    event.preventDefault();
+    (event.shiftKey ? last : first)?.focus();
+    return true;
   }
-  pendingFocusSelector = `.rail-tab-button[data-tab="${sidePanelTab}"]`;
-}
-
-function syncHistoryDrawerMetrics(): void {
-  const drawerBody = document.querySelector<HTMLElement>('.insight-drawer-body');
-  if (!drawerBody || !sidePanelOpen || sidePanelTab !== 'history') {
-    return;
-  }
-  historyDrawerScrollTop = drawerBody.scrollTop;
-  historyDrawerViewportHeight = drawerBody.clientHeight;
-  const intercom = state.currentView?.intercom;
-  if (!intercom) {
-    return;
-  }
-  const historyItems = browserHistoryByIntercomUuidAction.get(intercom.uuidAction) ?? intercom.history;
-  historyVirtualWindowKey = getHistoryVirtualizationState(historyItems).windowKey;
+  return false;
 }
 
 function renderMarkup(markup: string): void {
+  if (markup === lastMarkup) {
+    return;
+  }
+  lastMarkup = markup;
   const template = document.createElement('template');
   template.innerHTML = markup.trim();
+  const nextDialogs = new Set(Array.from(template.content.querySelectorAll('dialog'), (dialog) => dialog.id));
+  let restoreFocus: HTMLElement | null = null;
+  for (const dialog of Array.from(root.querySelectorAll<HTMLDialogElement>('dialog[open]'))) {
+    if (!nextDialogs.has(dialog.id)) {
+      if (typeof dialog.close === 'function' && !dialog.hasAttribute('data-legacy-modal')) {
+        dialog.close();
+      } else {
+        restoreFocus = legacyDialogReturnFocus;
+        legacyDialogReturnFocus = null;
+      }
+    }
+  }
   morphChildren(root, template.content);
+  if (root.querySelector('dialog[data-legacy-modal][open]')) {
+    root.querySelector('.shell-content')?.setAttribute('aria-hidden', 'true');
+  } else if (restoreFocus && root.contains(restoreFocus)) {
+    restoreFocus.focus();
+  }
 }
 
 function morphChildren(targetParent: Node, sourceParent: Node): void {
@@ -1400,7 +721,9 @@ function morphNode(targetNode: Node, sourceNode: Node): Node {
     targetNode.nodeType !== sourceNode.nodeType ||
     (targetNode instanceof Element &&
       sourceNode instanceof Element &&
-      targetNode.tagName !== sourceNode.tagName)
+      (targetNode.tagName !== sourceNode.tagName ||
+        (sourceNode.hasAttribute('data-render-key') &&
+         targetNode.getAttribute('data-render-key') !== sourceNode.getAttribute('data-render-key'))))
   ) {
     const replacement = sourceNode.cloneNode(true);
     targetNode.parentNode?.replaceChild(replacement, targetNode);
@@ -1419,9 +742,9 @@ function morphNode(targetNode: Node, sourceNode: Node): Node {
   }
 
   syncAttributes(targetNode, sourceNode);
-  syncElementState(targetNode, sourceNode);
   if (!(targetNode instanceof HTMLTextAreaElement)) {
     morphChildren(targetNode, sourceNode);
+    syncElementState(targetNode, sourceNode);
   }
   return targetNode;
 }
@@ -1429,7 +752,8 @@ function morphNode(targetNode: Node, sourceNode: Node): Node {
 function syncAttributes(target: HTMLElement, source: HTMLElement): void {
   const sourceAttributes = new Map(Array.from(source.attributes).map((attribute) => [attribute.name, attribute.value]));
   for (const attribute of Array.from(target.attributes)) {
-    if (!sourceAttributes.has(attribute.name)) {
+    const userDisclosure = attribute.name === 'open' && (target.tagName === 'DIALOG' || target.tagName === 'DETAILS');
+    if (!sourceAttributes.has(attribute.name) && !userDisclosure && attribute.name !== 'data-legacy-modal') {
       target.removeAttribute(attribute.name);
     }
   }
@@ -1454,13 +778,6 @@ function syncElementState(target: HTMLElement, source: HTMLElement): void {
     return;
   }
 
-  if (target instanceof HTMLTextAreaElement && source instanceof HTMLTextAreaElement) {
-    if (!isFocused && target.value !== source.value) {
-      target.value = source.value;
-    }
-    return;
-  }
-
   if (target instanceof HTMLSelectElement && source instanceof HTMLSelectElement) {
     if (!isFocused && target.value !== source.value) {
       target.value = source.value;
@@ -1473,82 +790,85 @@ function renderLoadingScreen(): string {
     Boolean(state.serverForm.origin.trim()) &&
     Boolean(state.serverForm.username.trim()) &&
     state.serverForm.passwordStored;
-  const showForm =
-    !hasSavedServerConfiguration ||
-    state.connection.status === 'error' ||
-    state.connection.status === 'offline';
-  const title = showForm ? tr('loading_title_configure') : tr('loading_title_starting');
-  const copy = showForm ? tr('loading_copy_configure') : tr('loading_copy_starting');
+  const connecting = state.connection.status === 'connecting' ||
+    (hasSavedServerConfiguration && state.connection.status === 'idle');
 
   return `
     <section class="splash-screen">
-      <div class="splash-brand">
-        <p class="eyebrow">Custom Loxone App</p>
-        <h1>${escapeHtml(title)}</h1>
-        <p class="splash-copy">${escapeHtml(copy)}</p>
-        ${showForm ? '' : '<div class="spinner-row"><span class="spinner"></span></div>'}
+      <div class="splash-art" aria-hidden="true">
+        <div class="door-station">
+          <span class="door-station-lens"></span>
+          <span class="door-station-grille"></span>
+          <span class="door-station-button"></span>
+        </div>
       </div>
-      <div class="panel splash-panel">
-        ${showForm ? renderConnectionPanel() : `<p class="empty-copy">${escapeHtml(tr('loading_fetching'))}</p>`}
+      <div class="splash-content">
+        ${renderBrand()}
+        <h1>${escapeHtml(tr('connection_title'))}</h1>
+        ${connecting
+          ? `<p class="loading-status" role="status"><span class="spinner" aria-hidden="true"></span>${escapeHtml(tr('connecting_miniserver'))}</p>`
+          : `${renderServerForm()}<p class="connection-copy">${escapeHtml(tr('connection_helper'))}</p>`}
       </div>
     </section>
   `;
 }
 
+function renderBrand(): string {
+  return '<div class="brand"><span class="brand-mark" aria-hidden="true"></span><span>Custom Loxone App</span></div>';
+}
+
 function renderAppShell(): string {
+  const options = {
+    idle: 'configure_miniserver',
+    connecting: 'connecting_miniserver',
+    online: 'status_online',
+    offline: 'status_offline',
+    error: 'status_offline',
+  } as const;
+  const { status } = state.connection;
+  const syncedAt = state.lastSyncedAt ? formatDate(state.lastSyncedAt) : null;
+
   return `
     <header class="topbar">
-      <div>
-        <p class="eyebrow">Custom Loxone App</p>
-        <h1>${escapeHtml(state.miniserverName ?? tr('topbar_fallback_name'))}</h1>
-      </div>
+      ${renderBrand()}
       <div class="topbar-actions">
-        ${state.lastSyncedAt ? `<span class="status-pill">${escapeHtml(formatDate(state.lastSyncedAt))}</span>` : ''}
+        <span class="status-pill status-${status}" role="status"${syncedAt ? ` title="${escapeAttribute(syncedAt)}"` : ''}>
+          ${escapeHtml(tr(options[status]))}
+        </span>
         <button class="icon-button" data-action="show-app-settings" aria-label="${escapeAttribute(tr('app_settings_aria'))}">⚙</button>
+        ${isPanelMode() && canUseFullscreen() ? renderFullscreenButton() : ''}
       </div>
     </header>
     ${state.screen === 'picker' ? renderViewPicker() : renderDashboard()}
   `;
 }
 
-function renderConnectionPanel(): string {
-  return `
-    <div class="section-head compact">
-      <p class="eyebrow">${escapeHtml(tr('connection_section'))}</p>
-    </div>
-    <p class="empty-copy connection-copy">
-      ${escapeHtml(tr('connection_helper'))}
-    </p>
-    ${renderServerForm()}
-  `;
-}
-
 function renderViewPicker(): string {
-  const intercomCount = state.intercoms.length;
+  const hasIntercom = state.intercoms.length > 0;
   return `
     <section class="picker-screen">
-      <div class="picker-copy">
-        <p class="eyebrow">${escapeHtml(tr('picker_step'))}</p>
-        <h2>${escapeHtml(tr('picker_title'))}</h2>
-        <p class="subtle">
-          ${escapeHtml(tr('picker_copy'))}
-        </p>
+      <div class="picker-heading">
+        <p class="eyebrow">${escapeHtml(state.miniserverName ?? tr('topbar_fallback_name'))}</p>
+        <h1>${escapeHtml(tr('picker_title'))}</h1>
       </div>
       <article class="panel picker-card">
         <div class="picker-card-head">
-          <p class="eyebrow">${escapeHtml(tr('picker_intercom'))}</p>
-          <button class="icon-button" data-action="configure-intercom-view" aria-label="${escapeAttribute(tr('view_settings_aria'))}">⚙</button>
+          <span class="picker-icon" aria-hidden="true"></span>
+          <div>
+            <h2>${escapeHtml(tr('picker_intercom'))}</h2>
+            <p class="subtle">${escapeHtml(hasIntercom
+              ? tr('picker_detected_intercoms', { count: state.intercoms.length })
+              : tr('picker_no_intercom'))}</p>
+          </div>
         </div>
-        <p class="picker-meta">
-          ${escapeHtml(tr('picker_detected_intercoms', { count: intercomCount }))}: <strong>${intercomCount}</strong>
-        </p>
-        <p class="subtle">
-          ${escapeHtml(tr('picker_intercom_copy'))}
-        </p>
-        <button class="action-button action-button-wide" data-action="add-intercom-view" ${intercomCount === 0 ? 'disabled' : ''}>
-          ${escapeHtml(tr('picker_add_intercom'))}
-        </button>
-        ${intercomCount === 0 ? `<p class="empty-copy">${escapeHtml(tr('picker_no_intercom'))}</p>` : ''}
+        <div class="inline-actions">
+          <button class="action-button" data-action="add-intercom-view" ${hasIntercom ? '' : 'disabled'}>
+            ${escapeHtml(tr('picker_add_intercom'))}
+          </button>
+          <button class="ghost-button" data-action="configure-intercom-view" ${hasIntercom ? '' : 'disabled'}>
+            ${escapeHtml(tr('configure_now'))}
+          </button>
+        </div>
       </article>
     </section>
   `;
@@ -1565,13 +885,14 @@ function renderDashboard(): string {
 
 function renderViewTabs(): string {
   return `
-    <div class="view-tabs">
+    <nav class="view-tabs" aria-label="${escapeAttribute(tr('views_section'))}">
       ${state.views
         .map(
           (view) => `
             <button
               class="view-chip ${view.id === state.activeViewId ? 'view-chip-active' : ''}"
               data-action="select-view"
+              aria-current="${view.id === state.activeViewId ? 'true' : 'false'}"
               data-view-id="${escapeAttribute(view.id)}"
             >
               ${escapeHtml(view.title)}
@@ -1579,7 +900,7 @@ function renderViewTabs(): string {
           `,
         )
         .join('')}
-    </div>
+    </nav>
   `;
 }
 
@@ -1597,278 +918,179 @@ function renderIntercomStage(): string {
   if (!currentView) {
     return renderEmptyDashboard();
   }
-  const intercom = currentView.intercom;
-  const viewId = currentView.config.id;
+  const { intercom, config } = currentView;
+  const viewId = escapeAttribute(config.id);
   if (!intercom) {
     return `
       <section class="panel">
-        <h2>${escapeHtml(currentView.config.title)}</h2>
+        <h1>${escapeHtml(config.title)}</h1>
         <p class="empty-copy">${escapeHtml(tr('view_needs_config'))}</p>
-        <button class="ghost-button" data-action="show-view-settings" data-view-id="${escapeAttribute(viewId)}">${escapeHtml(tr('configure_now'))}</button>
+        <button class="ghost-button" data-action="show-view-settings" data-view-id="${viewId}">${escapeHtml(tr('configure_now'))}</button>
       </section>
     `;
   }
+
   const realtimeAvailable = isRealtimeAvailable();
   const controlsDisabled = realtimeAvailable ? '' : 'disabled';
-  const expandedPanels = shouldExpandIntercomPanels();
-  const hasRtcMedia =
-    intercomRtcSession.hasRemoteTrackFor(intercom.uuidAction) ||
-    intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction);
-  const rtcConnectPending =
-    canUseRtcPreview(intercom) && browserConversationState === 'starting' && !hasRtcMedia;
+  const conversationPending = browserConversationState === 'starting';
+  const conversationActive = isIntercomConversationActive();
+  const hasRtcMedia = intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction);
   const fallbackMediaUrl = resolveFallbackMediaUrl(intercom);
-  const hasVisualMedia = hasRtcMedia || (!rtcConnectPending && Boolean(fallbackMediaUrl));
-  const conversationActive = isIntercomConversationActive(intercom);
-  const mediaFrameStateClass = !realtimeAvailable && !hasVisualMedia
-    ? 'media-frame-offline'
-    : hasVisualMedia
-      ? ''
-      : 'media-frame-connecting';
-  const mediaFrameOverlay = !realtimeAvailable && !hasVisualMedia
-    ? `<div class="media-frame-status-overlay"><span>${escapeHtml(tr('offline_intercom'))}</span></div>`
-    : hasVisualMedia
-      ? ''
-      : `<div class="media-frame-status-overlay"><span>${escapeHtml(tr('rtc_connecting'))}</span></div>`;
-  const connectLabel =
-    conversationActive
-      ? tr('disconnect')
-      : intercom.doorbellActive
-        ? tr('answer')
-        : tr('connect');
-  const connectDisabled = !realtimeAvailable || !intercom.supportsAnswer ? 'disabled' : '';
+  const hasVisualMedia = hasRtcMedia || Boolean(fallbackMediaUrl);
+  const canPreview = realtimeAvailable && canUseRtcPreview(intercom);
+  const connectLabel = conversationPending ? tr('cancel_connection')
+    : conversationActive ? tr('disconnect')
+    : intercom.doorbellActive ? tr('answer')
+    : tr('connect');
+  const canConnect = conversationActive || (realtimeAvailable &&
+    ((intercom.doorbellActive && intercom.supportsAnswer) || canStartBrowserConversation(intercom)));
+  const location = [state.miniserverName, intercom.roomName].filter(Boolean).join(' / ');
+  const mediaLabel = intercom.doorbellActive ? tr('doorbell_ringing')
+    : conversationActive && !conversationPending ? tr('conversation_active')
+    : hasRtcMedia ? tr('camera_live')
+    : tr('camera_preview');
 
   return `
-    <article class="intercom-layout ${expandedPanels ? 'intercom-layout-expanded' : 'intercom-layout-compact'}">
-      <section class="panel media-panel">
-        <div class="media-header">
-          <div>
-            <p class="eyebrow">${escapeHtml(intercom.roomName ?? tr('intercom_room_fallback'))}</p>
-            <p class="subtle">${escapeHtml(intercom.name)}</p>
-          </div>
-          <div class="badge-row">
-            <button class="icon-button" data-action="show-view-settings" data-view-id="${escapeAttribute(viewId)}" aria-label="${escapeAttribute(tr('view_settings_aria'))}">⚙</button>
-          </div>
+    <article class="intercom-layout">
+      <header class="media-header">
+        <div>
+          ${location ? `<p class="eyebrow">${escapeHtml(location)}</p>` : ''}
+          <h1>${escapeHtml(config.title || intercom.name)}</h1>
+          ${config.title && config.title !== intercom.name ? `<p class="subtle intercom-name">${escapeHtml(intercom.name)}</p>` : ''}
         </div>
-        <div class="media-frame ${intercom.doorbellActive ? 'media-frame-bell-active' : ''} ${conversationActive ? 'media-frame-conversation-active' : ''} ${mediaFrameStateClass}">
-          ${mediaFrameOverlay}
-          <div class="media-overlay-controls">
-            <button
-              class="ghost-button media-overlay-button"
-              data-action="connect-toggle"
-              data-view-id="${escapeAttribute(viewId)}"
-              ${connectDisabled}
-            >
-              ${escapeHtml(connectLabel)}
+        <button class="icon-button" data-action="show-view-settings" data-view-id="${viewId}" aria-label="${escapeAttribute(tr('view_settings_aria'))}">✎</button>
+      </header>
+      <section class="panel media-panel">
+        <div class="media-frame ${intercom.doorbellActive ? 'media-frame-bell-active' : ''} ${conversationActive ? 'media-frame-conversation-active' : ''}">
+          ${renderMedia(intercom, fallbackMediaUrl)}
+          ${!hasVisualMedia ? `
+            <div class="media-frame-status-overlay">
+              <span class="camera-reticle" aria-hidden="true"></span>
+              <span>${escapeHtml(tr(!realtimeAvailable ? 'offline_intercom' : canPreview && !failedPreviewUrls.size ? 'rtc_connecting' : 'media_empty'))}</span>
+            </div>
+          ` : ''}
+          <span class="media-label ${hasRtcMedia ? 'media-label-live' : ''}" role="status">${escapeHtml(mediaLabel)}</span>
+        </div>
+        <div class="media-overlay-controls">
+          <button class="action-button call-button ${conversationActive ? 'call-button-active' : ''}"
+            data-action="connect-toggle" data-view-id="${viewId}" ${canConnect ? '' : 'disabled'}>
+            <span class="call-symbol" aria-hidden="true"></span>
+            ${escapeHtml(connectLabel)}
+          </button>
+          ${intercom.supportsMute ? `
+            <button class="ghost-button" data-action="${intercom.doorbellMuted ? 'unmute' : 'mute'}"
+              data-view-id="${viewId}" ${controlsDisabled}>
+              ${escapeHtml(tr(intercom.doorbellMuted ? 'unmute_bell' : 'mute_bell'))}
             </button>
-            ${intercom.supportsMute
-              ? `
-                <button
-                  class="ghost-button media-overlay-button"
-                  data-action="${intercom.microphoneMuted ? 'unmute' : 'mute'}"
-                  data-view-id="${escapeAttribute(viewId)}"
-                  ${controlsDisabled}
-                >
-                  ${escapeHtml(intercom.microphoneMuted ? tr('unmute') : tr('mute'))}
-                </button>
-              `
-              : ''}
-            ${expandedPanels
-              ? ''
-              : `
-                <button
-                  class="ghost-button media-overlay-button ${intercomPanelMode === 'actions' ? 'intercom-panel-switch-active' : ''}"
-                  type="button"
-                  data-action="toggle-intercom-panel"
-                  data-panel="actions"
-                  ${controlsDisabled}
-                >
-                  ${escapeHtml(tr('actions'))}
-                </button>
-                <button
-                  class="ghost-button media-overlay-button ${intercomPanelMode === 'tts' ? 'intercom-panel-switch-active' : ''}"
-                  type="button"
-                  data-action="toggle-intercom-panel"
-                  data-panel="tts"
-                  ${controlsDisabled}
-                >
-                  ${escapeHtml(tr('tts'))}
-                </button>
-              `}
-          </div>
-          ${renderMedia(intercom)}
+          ` : ''}
         </div>
         ${renderBrowserConversationStatus()}
       </section>
-
-      ${expandedPanels || intercomPanelMode === 'actions'
-        ? `
-      <section class="panel">
-        <div class="section-head compact">
-          <p class="eyebrow">${escapeHtml(tr('actions'))}</p>
-          ${expandedPanels ? '' : `<button class="icon-button" type="button" data-action="close-intercom-panel" aria-label="${escapeAttribute(tr('close_actions_aria'))}">×</button>`}
-        </div>
-        <div class="secondary-action-grid">
-          ${intercom.functions.length > 0
-            ? intercom.functions
-                .map(
-                  (item) => `
-                    <button
-                      class="ghost-button function-button"
-                      data-action="run-child-function"
-                      data-view-id="${escapeAttribute(viewId)}"
-                      data-function-uuid-action="${escapeAttribute(item.uuidAction)}"
-                      ${controlsDisabled}
-                    >
-                      ${escapeHtml(item.name)}
-                    </button>
-                  `,
-                )
-                .join('')
-            : `<p class="empty-copy">${escapeHtml(tr('no_extra_actions'))}</p>`}
-        </div>
-      </section>
-      `
-        : ''}
-
-      ${expandedPanels || intercomPanelMode === 'tts'
-        ? `
-      <section class="panel">
-        <div class="section-head compact">
-          <p class="eyebrow">${escapeHtml(tr('tts'))}</p>
-          <div class="inline-actions">
-            <button
-              class="icon-button"
-              type="button"
-              data-action="show-view-settings"
-              data-view-id="${escapeAttribute(viewId)}"
-              aria-label="${escapeAttribute(tr('tts_settings_aria'))}"
-            >
-              ⚙
-            </button>
-            ${expandedPanels ? '' : `<button class="icon-button" type="button" data-action="close-intercom-panel" aria-label="${escapeAttribute(tr('close_tts_aria'))}">×</button>`}
-          </div>
-        </div>
-        <form class="tts-form" data-form="tts">
-          <input type="hidden" name="viewId" value="${escapeAttribute(viewId)}" />
-          <textarea id="tts-message" name="message" rows="3" placeholder="${escapeAttribute(tr('tts_placeholder'))}" ${controlsDisabled}></textarea>
-          ${currentView.config.quickTts.length > 0
-            ? `
-              <button
-                type="button"
-                class="ghost-button saved-messages-button"
-                data-action="open-saved-messages"
-                data-view-id="${escapeAttribute(viewId)}"
-                ${controlsDisabled}
-              >
-                ${escapeHtml(tr('saved_messages'))}
-              </button>
-            `
-            : ''}
-          <button class="action-button action-button-wide" type="submit" ${controlsDisabled}>${escapeHtml(tr('tts_read'))}</button>
-        </form>
-      </section>
-      `
-        : ''}
-
-      ${renderInsightRail(intercom)}
+      <div class="intercom-side">
+        ${renderIntercomTools(intercom, config, controlsDisabled)}
+        ${renderInsightRail(intercom)}
+      </div>
     </article>
   `;
 }
 
-function renderInsightRail(intercom: NonNullable<AppViewModel['currentView']>['intercom']): string {
-  if (!intercom) {
-    return '';
-  }
-  const hasActivityLog = Boolean(intercom.activityLogSourceName);
-  if (!hasActivityLog && sidePanelTab === 'log') {
-    sidePanelTab = 'history';
-  }
-  const historyActive = sidePanelTab === 'history';
-  const logActive = hasActivityLog && sidePanelTab === 'log';
-  return `
-    <div class="insight-rail ${sidePanelOpen ? 'insight-rail-open' : ''}">
-      <div class="insight-rail-handles">
-        <button
-          class="rail-tab-button ${historyActive ? 'rail-tab-button-active' : ''}"
-          data-action="open-side-panel"
-          data-tab="history"
-          aria-expanded="${sidePanelOpen && historyActive ? 'true' : 'false'}"
-        >
-          <span class="rail-tab-label">${escapeHtml(tr('photos'))}</span>
-        </button>
-        ${hasActivityLog
-          ? `
-            <button
-              class="rail-tab-button ${logActive ? 'rail-tab-button-active' : ''}"
-              data-action="open-side-panel"
-              data-tab="log"
-              aria-expanded="${sidePanelOpen && logActive ? 'true' : 'false'}"
-            >
-              <span class="rail-tab-label">${escapeHtml(tr('log'))}</span>
-            </button>
-          `
-          : ''}
+function renderIntercomTools(intercom: CurrentIntercom, config: IntercomViewConfig, controlsDisabled: string): string {
+  const viewId = escapeAttribute(config.id);
+  const panelMode = isPanelMode();
+  const phrases = config.quickTts.filter((phrase) => phrase.message.trim());
+  const shortcuts = panelMode ? phrases.slice(0, 3) : [];
+  const writtenMessage = `
+    <form class="tts-form" data-form="tts" data-render-key="${viewId}">
+      <input type="hidden" name="viewId" value="${viewId}" />
+      <textarea id="tts-message" name="message" rows="2" required maxlength="300" aria-label="${escapeAttribute(tr('voice_message'))}"
+        placeholder="${escapeAttribute(tr('tts_placeholder'))}" ${controlsDisabled}></textarea>
+      <div class="tts-controls">
+        <button class="action-button" type="submit" ${controlsDisabled}>${escapeHtml(tr('tts_read'))}</button>
+        ${!panelMode && phrases.length ? renderSavedMessagesButton(viewId, controlsDisabled) : ''}
       </div>
-      <aside class="insight-drawer panel" aria-hidden="${sidePanelOpen ? 'false' : 'true'}" ${sidePanelOpen ? '' : 'inert'}>
-        <div class="insight-drawer-head">
-          <p class="eyebrow">${historyActive ? escapeHtml(tr('photos')) : escapeHtml(tr('log'))}</p>
-          <button class="icon-button" data-action="close-side-panel" aria-label="${escapeAttribute(tr('close_side_panel_aria'))}">×</button>
+    </form>
+  `;
+  return `
+    ${intercom.functions.length ? `
+      <section class="panel action-panel">
+        <h2 class="panel-title">${escapeHtml(tr('actions'))}</h2>
+        <div class="secondary-action-grid">
+          ${intercom.functions.map((item) => `
+            <button class="ghost-button function-button" data-action="run-child-function" data-view-id="${viewId}"
+              data-function-uuid-action="${escapeAttribute(item.uuidAction)}" ${controlsDisabled}>
+              ${escapeHtml(item.name)}
+            </button>
+          `).join('')}
         </div>
-        <div class="insight-drawer-body">
-          ${historyActive ? renderHistoryPanel(intercom) : renderActivityLogPanel(intercom)}
+      </section>
+    ` : ''}
+    <section class="panel action-panel voice-panel">
+      <h2 class="panel-title">${escapeHtml(tr('voice_message'))}</h2>
+      ${shortcuts.length ? `
+        <div class="panel-voice-shortcuts">
+          ${shortcuts.map((phrase) => `
+            <button type="button" class="ghost-button" data-action="send-quick-message"
+              data-view-id="${viewId}" data-phrase-id="${escapeAttribute(phrase.id)}" ${controlsDisabled}>
+              ${escapeHtml(phrase.label || phrase.message)}
+            </button>
+          `).join('')}
+          ${phrases.length > shortcuts.length ? renderSavedMessagesButton(viewId, controlsDisabled) : ''}
         </div>
-      </aside>
-    </div>
+        <details class="panel-voice-compose" data-render-key="${viewId}">
+          <summary>${escapeHtml(tr('compose_voice_message'))}</summary>
+          ${writtenMessage}
+        </details>
+      ` : writtenMessage}
+    </section>
   `;
 }
 
-function renderHistoryPanel(intercom: NonNullable<AppViewModel['currentView']>['intercom']): string {
-  if (!intercom) {
-    return '';
-  }
-  const historyItems = browserHistoryByIntercomUuidAction.get(intercom.uuidAction) ?? intercom.history;
-  const virtualization = getHistoryVirtualizationState(historyItems);
+function renderSavedMessagesButton(viewId: string, controlsDisabled: string): string {
+  return `<button type="button" class="ghost-button saved-messages-button" data-action="open-saved-messages"
+    data-view-id="${viewId}" ${controlsDisabled}>${escapeHtml(tr('saved_messages'))}</button>`;
+}
+
+function renderInsightRail(intercom: CurrentIntercom): string {
+  const hasActivityLog = Boolean(intercom.activityLogSourceName);
+  const selectedTab = sidePanelTab === 'log' && hasActivityLog ? 'log' : 'history';
+  const historyActive = selectedTab === 'history';
   return `
-    <div class="drawer-section">
-      <div
-        class="history-virtual-window"
-        style="padding-top:${virtualization.topSpacerHeight}px;padding-bottom:${virtualization.bottomSpacerHeight}px"
-      >
-      <div class="history-grid history-grid-drawer">
-        ${historyItems.length > 0
-          ? `
-              ${virtualization.items
-              .map(
-                (item) => {
-                  const cacheKey = normalizeHistoryImageCacheKey(item.imageUrl);
-                  return `
-                  <button
-                    class="history-card"
-                    type="button"
-                    data-action="open-history-image"
-                    data-timestamp="${escapeAttribute(item.timestamp)}"
-                    aria-label="${escapeAttribute(tr('open_photo_aria', { label: item.label }))}"
-                  >
-                    <span class="history-card-media">
-                      <img
-                        src="${escapeAttribute(resolveHistoryImageDisplayUrl(item.imageUrl, intercom) ?? TRANSPARENT_1PX)}"
-                        alt="${escapeAttribute(item.label)}"
-                        loading="lazy"
-                        decoding="async"
-                        data-history-source-url="${escapeAttribute(item.imageUrl)}"
-                        data-loading="${historyImageCache.has(cacheKey) ? 'false' : 'true'}"
-                      />
-                    </span>
-                    <span>${escapeHtml(item.label)}</span>
-                  </button>
-                `;
-                },
-              )
-              .join('')}
-            `
-          : `<p class="empty-copy">${escapeHtml(tr('no_photos'))}</p>`}
+    <section class="panel insight-rail">
+      <div class="insight-rail-handles">
+        <button class="rail-tab-button" data-action="open-side-panel" data-tab="history"
+          aria-controls="insight-drawer" aria-expanded="${sidePanelOpen && historyActive}">
+          ${escapeHtml(tr('photos'))}
+        </button>
+        ${hasActivityLog ? `
+          <button class="rail-tab-button" data-action="open-side-panel" data-tab="log"
+            aria-controls="insight-drawer" aria-expanded="${sidePanelOpen && !historyActive}">
+            ${escapeHtml(tr('log'))}
+          </button>
+        ` : ''}
       </div>
+      <div class="insight-drawer" id="insight-drawer" ${sidePanelOpen ? '' : 'hidden'}>
+        ${sidePanelOpen ? historyActive ? renderHistoryPanel(intercom) : renderActivityLogPanel(intercom) : ''}
       </div>
+    </section>
+  `;
+}
+
+function renderHistoryPanel(intercom: CurrentIntercom): string {
+  const items = viewHistory(intercom);
+  if (!items.length) {
+    return `<p class="empty-copy">${escapeHtml(tr('no_photos'))}</p>`;
+  }
+  return `
+    <div class="history-grid">
+      ${items.map((item) => `
+        <button class="history-card" type="button" data-action="open-history-image"
+          data-timestamp="${escapeAttribute(item.timestamp)}"
+          aria-label="${escapeAttribute(tr('open_photo_aria', { label: item.label }))}">
+          <img src="${escapeAttribute(resolveHistoryImageDisplayUrl(item.imageUrl, intercom))}"
+            alt="" loading="lazy" decoding="async" data-history-source-url="${escapeAttribute(item.imageUrl)}" />
+          <span>${escapeHtml(item.label)}</span>
+        </button>
+      `).join('')}
     </div>
   `;
 }
@@ -1924,16 +1146,15 @@ function renderSettingsOverlay(): string {
   const isAppSettings = state.settingsMode === 'app';
   const isViewSettings = state.settingsMode === 'view';
   return `
-    <div class="overlay">
-      <section class="overlay-panel">
+    <dialog id="settings-dialog" role="dialog" aria-modal="true" data-render-key="settings-dialog" class="overlay-panel" aria-labelledby="settings-title">
         <div class="section-head">
-          <p class="eyebrow">${escapeHtml(isAppSettings ? tr('app_settings') : tr('view_settings'))}</p>
-          <button class="icon-button" data-action="close-settings" aria-label="${escapeAttribute(tr('close_settings_aria'))}">×</button>
+          <h2 id="settings-title">${escapeHtml(isAppSettings ? tr('app_settings') : tr('view_settings'))}</h2>
+          <button class="icon-button" data-action="close-settings" data-dialog-close autofocus aria-label="${escapeAttribute(tr('close_settings_aria'))}">×</button>
         </div>
         ${isAppSettings ? renderAppSettingsContent() : ''}
         ${isViewSettings ? renderViewSettingsContent() : ''}
-      </section>
-    </div>
+        ${state.notice ? renderNotice(true) : ''}
+    </dialog>
   `;
 }
 
@@ -1948,13 +1169,12 @@ function renderSavedMessagesOverlay(): string {
   }
   const selectedPhrase = phrases.find((phrase) => phrase.id === selectedSavedMessageId) ?? phrases[0] ?? null;
   return `
-    <div class="overlay">
-      <section class="overlay-panel saved-messages-panel">
+    <dialog id="messages-dialog" role="dialog" aria-modal="true" data-render-key="messages-dialog" class="overlay-panel saved-messages-panel" aria-labelledby="messages-title">
         <div class="section-head">
-          <p class="eyebrow">${escapeHtml(tr('saved_messages'))}</p>
-          <button class="icon-button" data-action="close-saved-messages" aria-label="${escapeAttribute(tr('close_saved_messages_aria'))}">×</button>
+          <h2 id="messages-title">${escapeHtml(tr('saved_messages'))}</h2>
+          <button class="icon-button" data-action="close-saved-messages" data-dialog-close aria-label="${escapeAttribute(tr('close_saved_messages_aria'))}">×</button>
         </div>
-        <div class="saved-messages-list" role="listbox" aria-label="${escapeAttribute(tr('saved_messages'))}">
+        <div class="saved-messages-list" role="group" aria-label="${escapeAttribute(tr('saved_messages'))}">
           ${phrases
             .map(
               (phrase) => `
@@ -1963,10 +1183,11 @@ function renderSavedMessagesOverlay(): string {
                   class="saved-message-item ${selectedPhrase?.id === phrase.id ? 'saved-message-item-active' : ''}"
                   data-action="select-saved-message"
                   data-phrase-id="${escapeAttribute(phrase.id)}"
-                  aria-selected="${selectedPhrase?.id === phrase.id ? 'true' : 'false'}"
+                  aria-pressed="${selectedPhrase?.id === phrase.id}"
+                  ${selectedPhrase?.id === phrase.id ? 'autofocus' : ''}
                 >
                   <strong>${escapeHtml(phrase.label || phrase.message)}</strong>
-                  <span>${escapeHtml(phrase.message)}</span>
+                  ${phrase.label && phrase.label !== phrase.message ? `<span>${escapeHtml(phrase.message)}</span>` : ''}
                 </button>
               `,
             )
@@ -1984,22 +1205,19 @@ function renderSavedMessagesOverlay(): string {
             ${escapeHtml(tr('send_selected_message'))}
           </button>
         </div>
-      </section>
-    </div>
+    </dialog>
   `;
 }
 
 function renderHistoryImageOverlay(item: IntercomHistoryItem): string {
   const intercom = state.currentView?.intercom ?? null;
-  const imageSrc =
-    intercom ? resolveHistoryImageDisplayUrl(item.imageUrl, intercom) ?? item.imageUrl : historyImageCache.get(normalizeHistoryImageCacheKey(item.imageUrl)) ?? item.imageUrl;
+  const imageSrc = intercom ? resolveHistoryImageDisplayUrl(item.imageUrl, intercom) : TRANSPARENT_1PX;
   const previous = getAdjacentHistoryImage(-1);
   const next = getAdjacentHistoryImage(1);
   return `
-    <div class="overlay history-lightbox">
-      <section class="overlay-panel history-lightbox-panel">
+    <dialog id="history-dialog" role="dialog" aria-modal="true" data-render-key="history-dialog" class="overlay-panel history-lightbox history-lightbox-panel" aria-labelledby="history-title">
         <div class="section-head history-lightbox-head">
-          <p class="eyebrow">${escapeHtml(tr('photo_title'))}</p>
+          <h2 id="history-title">${escapeHtml(item.label || tr('photo_title'))}</h2>
           <div class="inline-actions">
             <button
               class="icon-button"
@@ -2017,7 +1235,7 @@ function renderHistoryImageOverlay(item: IntercomHistoryItem): string {
             >
               ›
             </button>
-            <button class="icon-button" data-action="close-history-image" aria-label="${escapeAttribute(tr('close_photo_aria'))}">×</button>
+            <button class="icon-button" data-action="close-history-image" data-dialog-close autofocus aria-label="${escapeAttribute(tr('close_photo_aria'))}">×</button>
           </div>
         </div>
         <div class="history-lightbox-body">
@@ -2029,10 +1247,8 @@ function renderHistoryImageOverlay(item: IntercomHistoryItem): string {
             decoding="async"
             data-history-source-url="${escapeAttribute(item.imageUrl)}"
           />
-          <p class="history-lightbox-caption">${escapeHtml(item.label)}</p>
         </div>
-      </section>
-    </div>
+    </dialog>
   `;
 }
 
@@ -2044,7 +1260,7 @@ function getAdjacentHistoryImage(offset: -1 | 1): IntercomHistoryItem | null {
   if (!intercom) {
     return null;
   }
-  const historyItems = browserHistoryByIntercomUuidAction.get(intercom.uuidAction) ?? intercom.history;
+  const historyItems = viewHistory(intercom);
   const currentIndex = historyItems.findIndex((item) => item.timestamp === selectedHistoryImage?.timestamp);
   if (currentIndex === -1) {
     return null;
@@ -2059,8 +1275,9 @@ function renderAppSettingsContent(): string {
         <div class="section-head compact">
           <p class="eyebrow">${escapeHtml(tr('server_section'))}</p>
         </div>
-        ${renderServerForm(false)}
+        ${renderServerForm('settings')}
         ${renderLanguageForm()}
+        ${renderPanelSettings()}
         <div class="settings-panel-footer">
           <a
             class="support-link"
@@ -2099,39 +1316,113 @@ function renderLanguageForm(): string {
   `;
 }
 
+function renderPanelSettings(): string {
+  return `
+    <div class="display-settings">
+      <label class="toggle-row">
+        <span>${escapeHtml(tr('panel_mode'))}</span>
+        <input type="checkbox" name="panelMode" ${isPanelMode() ? 'checked' : ''} />
+      </label>
+      ${isPanelMode() && canKeepScreenAwake() ? `
+        <label class="toggle-row">
+          <span>${escapeHtml(tr('keep_awake'))}</span>
+          <input type="checkbox" name="keepScreenAwake" ${state.keepScreenAwake ? 'checked' : ''} />
+        </label>
+        ${wakeLockUnavailable ? `<p class="empty-copy" role="status">${escapeHtml(tr('wake_lock_unavailable'))}</p>` : ''}
+      ` : ''}
+      ${canInstallPwa() ? `<button type="button" class="ghost-button" data-action="install-pwa">${escapeHtml(tr('install_app'))}</button>` : ''}
+      ${canApplyPwaUpdate() ? `<button type="button" class="ghost-button" data-action="apply-pwa-update">${escapeHtml(tr('update_app'))}</button>` : ''}
+      ${updateStatus ? `<p class="empty-copy" role="status">${escapeHtml(tr(updateStatus === 'close-other-tabs' ? 'update_close_tabs' : 'update_unavailable'))}</p>` : ''}
+    </div>
+  `;
+}
+
+function canUseFullscreen(): boolean {
+  return Boolean(document.fullscreenEnabled && typeof document.documentElement.requestFullscreen === 'function');
+}
+
+function renderFullscreenButton(): string {
+  const fullscreen = Boolean(document.fullscreenElement);
+  const label = tr(fullscreen ? 'exit_fullscreen' : 'enter_fullscreen');
+  return `
+    <button type="button" class="icon-button" data-action="panel-fullscreen"
+      aria-label="${escapeAttribute(label)}" title="${escapeAttribute(label)}"><span class="fullscreen-icon" aria-hidden="true"></span></button>
+    ${fullscreenFailed ? `<span class="fullscreen-feedback" role="status">${escapeHtml(tr('fullscreen_unavailable'))}</span>` : ''}
+  `;
+}
+
+async function togglePanelFullscreen(): Promise<void> {
+  fullscreenFailed = false;
+  try {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+    } else {
+      await document.documentElement.requestFullscreen();
+    }
+  } catch {
+    fullscreenFailed = true;
+  }
+  render();
+}
+
 function renderViewSettingsContent(): string {
   const editorView = localViewDraft ?? state.currentEditorView;
   return `
     <div class="settings-grid settings-grid-single">
       <article class="panel">
-        <div class="section-head compact">
-          <p class="eyebrow">${escapeHtml(tr('view_section'))}</p>
-        </div>
         ${editorView ? renderViewEditor(editorView) : `<p class="empty-copy">${escapeHtml(tr('no_editor_view'))}</p>`}
       </article>
     </div>
   `;
 }
 
-function renderServerForm(showSubmit = true): string {
+function renderServerForm(section: 'setup' | 'settings' = 'setup'): string {
   const serverForm = localServerDraft ?? state.serverForm;
+  const connecting = state.connection.status === 'connecting';
+  const address = parseConnectionAddress(serverForm.origin);
+  const showSerial = needsConnectionSerial(address);
+  const hintId = `connection-address-hint-${section}`;
+  const serial = showSerial ? parseMiniserverSerial(serverForm.serial ?? '') : remoteConnectSerial(address);
   return `
     <form class="server-form" data-form="server">
       <label>
-        <span>${escapeHtml(tr('loxone_address'))}</span>
-        <input name="origin" placeholder="https://miniserver.local" value="${escapeAttribute(serverForm.origin)}" />
+        <span>${escapeHtml(tr('connection_address_or_serial'))}</span>
+        <input name="origin" required autocapitalize="none" spellcheck="false" aria-describedby="${hintId}"
+          placeholder="https://connect.loxonecloud.com/…" value="${escapeAttribute(serverForm.origin)}" />
       </label>
+      <div class="server-connection-help">
+        ${showSerial ? `
+          <label>
+            <span>${escapeHtml(tr('miniserver_serial'))}</span>
+            <input name="serial" required autocapitalize="characters" spellcheck="false"
+              aria-describedby="${hintId}" value="${escapeAttribute(serverForm.serial ?? '')}" />
+          </label>
+        ` : ''}
+        <p id="${hintId}" class="field-hint">${escapeHtml(tr(showSerial ? 'local_http_needs_serial' : 'connection_serial_hint'))}</p>
+        ${serial ? `
+          <a class="support-link" href="${escapeAttribute(remoteConnectUrl(serial))}" target="_blank" rel="noopener noreferrer">
+            ${escapeHtml(tr('open_remote_connect'))}
+          </a>
+          ${state.connection.status === 'error' ? `<p class="field-hint">${escapeHtml(tr('remote_connect_manual_hint'))}</p>` : ''}
+        ` : ''}
+      </div>
       <label>
         <span>${escapeHtml(tr('login'))}</span>
-        <input name="username" required placeholder="uzytkownik" value="${escapeAttribute(serverForm.username)}" />
+        <input name="username" required autocomplete="username" autocapitalize="none" spellcheck="false" value="${escapeAttribute(serverForm.username)}" />
       </label>
       <label>
         <span>${escapeHtml(tr('password'))}</span>
-        <input name="password" type="password" placeholder="${escapeAttribute(serverForm.passwordStored ? tr('password_keep') : tr('password_placeholder'))}" value="${escapeAttribute(localServerDraft?.password ?? '')}" />
+        <input name="password" type="password" autocomplete="current-password" ${serverForm.passwordStored ? '' : 'required'} placeholder="${escapeAttribute(serverForm.passwordStored ? tr('password_keep') : tr('password_placeholder'))}" value="${escapeAttribute(localServerDraft?.password ?? '')}" />
       </label>
-      ${showSubmit ? `<button class="action-button action-button-wide" type="submit">${escapeHtml(tr('save_and_connect'))}</button>` : ''}
+      <button class="action-button action-button-wide" type="submit" ${connecting ? 'disabled' : ''}>
+        ${escapeHtml(tr(connecting ? 'rtc_connecting' : 'save_and_connect'))}
+      </button>
     </form>
   `;
+}
+
+function needsConnectionSerial(address: URL | null): boolean {
+  return window.location.protocol === 'https:' && address?.protocol === 'http:';
 }
 
 function renderViewList(): string {
@@ -2139,11 +1430,13 @@ function renderViewList(): string {
     <div class="view-list">
       ${state.views
         .map(
-          (view) => `
+          (view) => {
+            const deviceName = resolveIntercomName(view.intercomUuidAction);
+            return `
             <article class="view-list-item ${view.id === state.settingsEditorViewId ? 'view-list-item-active' : ''}">
               <div>
                 <strong>${escapeHtml(view.title)}</strong>
-                <p>${escapeHtml(resolveIntercomName(view.intercomUuidAction))}</p>
+                ${deviceName !== view.title ? `<p>${escapeHtml(deviceName)}</p>` : ''}
               </div>
               <div class="inline-actions">
                 <button class="ghost-button mini-button" data-action="edit-view" data-view-id="${escapeAttribute(view.id)}">${escapeHtml(tr('edit'))}</button>
@@ -2151,7 +1444,8 @@ function renderViewList(): string {
                 <button class="ghost-button mini-button" data-action="delete-view" data-view-id="${escapeAttribute(view.id)}">${escapeHtml(tr('delete'))}</button>
               </div>
             </article>
-          `,
+            `;
+          },
         )
         .join('')}
     </div>
@@ -2217,20 +1511,20 @@ function renderViewEditor(view: IntercomViewConfig): string {
 function renderTtsRow(phrase: QuickTtsPhrase): string {
   return `
     <div class="tts-row" data-phrase-id="${escapeAttribute(phrase.id)}">
-      <input name="phraseMessage" placeholder="${escapeAttribute(tr('phrase_placeholder'))}" value="${escapeAttribute(phrase.message ?? phrase.label ?? '')}" />
+      <input name="phraseMessage" maxlength="300" aria-label="${escapeAttribute(tr('phrase_placeholder'))}" placeholder="${escapeAttribute(tr('phrase_placeholder'))}" value="${escapeAttribute(phrase.message ?? phrase.label ?? '')}" />
       <button class="icon-button tts-row-remove" type="button" data-action="remove-tts-row" aria-label="${escapeAttribute(tr('remove_phrase_aria'))}">×</button>
     </div>
   `;
 }
 
-function renderNotice(): string {
+function renderNotice(inDialog = false): string {
   if (!state.notice) {
     return '';
   }
   const label =
     state.notice.kind === 'error' ? tr('app_warning') : state.notice.kind === 'success' ? tr('app_ok') : tr('app_info');
   return `
-    <section class="notice notice-${state.notice.kind} toast-notice">
+    <section class="notice notice-${state.notice.kind} toast-notice ${inDialog ? 'dialog-notice' : ''}" role="${state.notice.kind === 'error' ? 'alert' : 'status'}">
       <span class="toast-dot toast-dot-${state.notice.kind}" aria-hidden="true"></span>
       <div>
         <strong>${escapeHtml(label)}</strong>
@@ -2247,7 +1541,7 @@ function renderBrowserConversationStatus(): string {
   }
   const tone = 'empty-copy';
   return `
-    <div class="conversation-status">
+    <div class="conversation-status" role="status">
       <p class="${tone}">${escapeHtml(browserConversationMessage)}</p>
     </div>
   `;
@@ -2257,39 +1551,38 @@ function isRealtimeAvailable(): boolean {
   return state.connection.status === 'online';
 }
 
-async function handleConnect(viewId: string): Promise<void> {
-  const intercom = state.currentView?.intercom ?? null;
-  if (intercom && isIntercomConversationActive(intercom)) {
-    if (browserConversationState === 'active' || browserConversationState === 'starting') {
-      stopBrowserConversation(true);
-      return;
-    }
-    return;
-  }
-  if (!intercom) {
-    browserConversationState = 'idle';
-    browserConversationMessage = '';
-    render();
-    return;
-  }
-  if (intercom.doorbellActive) {
-    browserConversationState = 'idle';
-    browserConversationMessage = '';
-    post({
-      type: 'runBuiltInAction',
-      viewId,
-      action: 'answer',
-    });
-    render();
-    return;
-  }
-  await startBrowserConversation(intercom);
+function canStartBrowserConversation(intercom: CurrentIntercom): boolean {
+  return canUseRtcPreview(intercom) && Boolean(navigator.mediaDevices?.getUserMedia);
 }
 
-async function startBrowserConversation(intercom: CurrentIntercom): Promise<void> {
-  if (browserConversationState === 'starting' || browserConversationState === 'active') {
+async function handleConnect(viewId: string): Promise<void> {
+  const currentView = state.currentView;
+  const intercom = currentView?.intercom;
+  if (!intercom || currentView.config.id !== viewId) {
     return;
   }
+  if (isIntercomConversationActive()) {
+    stopBrowserConversation();
+    return;
+  }
+  if (!isRealtimeAvailable()) {
+    return;
+  }
+  if (intercom.doorbellActive && intercom.supportsAnswer) {
+    post({ type: 'runBuiltInAction', viewId, action: 'answer' });
+    if (!canStartBrowserConversation(intercom)) {
+      browserConversationState = 'idle';
+      browserConversationMessage = '';
+      render();
+      return;
+    }
+  }
+  if (canUseRtcPreview(intercom)) {
+    await startBrowserConversation();
+  }
+}
+
+async function startBrowserConversation(): Promise<void> {
   if (!navigator.mediaDevices?.getUserMedia) {
     browserConversationState = 'error';
     browserConversationMessage = tr('rtc_browser_unsupported');
@@ -2297,249 +1590,147 @@ async function startBrowserConversation(intercom: CurrentIntercom): Promise<void
     return;
   }
 
-  const attempt = browserConversationAttempt + 1;
+  const attempt = new AbortController();
   browserConversationAttempt = attempt;
   browserConversationState = 'starting';
   browserConversationMessage = '';
   render();
 
-  let stream: MediaStream | null = null;
+  let stream: MediaStream | undefined;
   try {
     stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    if (
-      attempt !== browserConversationAttempt ||
-      state.currentView?.intercom?.uuidAction !== intercom.uuidAction
-    ) {
-      for (const track of stream.getTracks()) {
-        track.stop();
-      }
-      return;
-    }
-
-    if (localMicrophoneStream) {
-      for (const track of localMicrophoneStream.getTracks()) {
-        track.stop();
-      }
-    }
+    throwIfAborted(attempt.signal);
     localMicrophoneStream = stream;
-    await intercomRtcSession.ensurePreview(intercom, stream);
+    await endingConversation;
+    throwIfAborted(attempt.signal);
 
-    if (
-      attempt !== browserConversationAttempt ||
-      state.currentView?.intercom?.uuidAction !== intercom.uuidAction
-    ) {
-      for (const track of stream.getTracks()) {
-        track.stop();
-      }
-      if (localMicrophoneStream === stream) {
-        localMicrophoneStream = null;
-      }
-      return;
+    const track = stream.getAudioTracks()[0];
+    if (!track) {
+      throw new IntercomMediaError('audio-unsupported');
     }
+    const operation = intercomRtcSession.startConversation(track, attempt.signal);
+    conversationNegotiation = operation;
+    try {
+      await operation;
+    } finally {
+      if (conversationNegotiation === operation) {
+        conversationNegotiation = null;
+      }
+    }
+    throwIfAborted(attempt.signal);
 
     browserConversationState = 'active';
-    browserConversationMessage = '';
   } catch (error) {
-    if (stream) {
-      for (const track of stream.getTracks()) {
-        track.stop();
-      }
-      if (localMicrophoneStream === stream) {
-        localMicrophoneStream = null;
-      }
+    stream?.getTracks().forEach(track => track.stop());
+    if (localMicrophoneStream === stream) {
+      localMicrophoneStream = null;
     }
-    if (attempt !== browserConversationAttempt) {
+    if (browserConversationAttempt !== attempt) {
       return;
     }
+    browserConversationAttempt = null;
     browserConversationState = 'error';
-    const message = toErrorMessage(error);
-    const isCallTimeout = message.includes(tr('signaling_timeout', { method: 'call' }));
-    browserConversationMessage =
-      message === INTERCOM_AUDIO_UNSUPPORTED_ERROR
-        ? tr('intercom_audio_not_supported')
-        : isCallTimeout
-          ? tr('intercom_call_timeout')
-        : tr('rtc_audio_failed', { message });
-    if (message === INTERCOM_AUDIO_UNSUPPORTED_ERROR || isCallTimeout) {
-      void intercomRtcSession.ensurePreview(intercom).catch(() => undefined);
-    }
+    browserConversationMessage = describeConversationError(error);
   }
   render();
 }
 
-function stopBrowserConversation(renderAfter = true, cancelPending = true): void {
-  if (cancelPending) {
-    browserConversationAttempt += 1;
+function describeConversationError(error: unknown): string {
+  if (!(error instanceof IntercomMediaError)) {
+    return tr('rtc_audio_failed', { message: toErrorMessage(error) });
   }
-  void resetBrowserConversationSession(true, renderAfter);
+  switch (error.reason) {
+    case 'timeout':
+      return error.method === 'call' ? tr('intercom_call_timeout') : tr('signaling_open_failed');
+    case 'response':
+    case 'no-sdp':
+    case 'audio-unsupported':
+      return tr('intercom_audio_not_supported');
+    case 'closed':
+      return tr('signaling_closed');
+    case 'auth':
+      return tr('intercom_challenge_encrypt_failed');
+    case 'transport':
+      return tr('intercom_call_timeout');
+    case 'open':
+      return tr('signaling_open_failed');
+  }
 }
 
-async function resetBrowserConversationSession(restartPreview: boolean, renderAfter = false): Promise<void> {
-  const intercom = state.currentView?.intercom ?? null;
+function stopBrowserConversation(renderAfter = true): void {
+  browserConversationAttempt?.abort();
+  browserConversationAttempt = null;
   if (localMicrophoneStream) {
-    for (const track of localMicrophoneStream.getTracks()) {
-      track.stop();
-    }
+    localMicrophoneStream.getTracks().forEach(track => track.stop());
     localMicrophoneStream = null;
   }
-  const liveMedia = document.querySelector('#intercom-live-media');
-  if (liveMedia instanceof HTMLVideoElement) {
-    liveMedia.muted = true;
+  const media = document.querySelector('#intercom-live-media');
+  if (media instanceof HTMLVideoElement) {
+    media.muted = true;
   }
-  await intercomRtcSession.disconnect();
+  if (!endingConversation && (browserConversationState === 'active' || browserConversationState === 'starting')) {
+    endingConversation = Promise.resolve(conversationNegotiation)
+      .catch(() => undefined)
+      .then(() => intercomRtcSession.endConversation())
+      .finally(() => { endingConversation = null; });
+  }
   browserConversationState = 'idle';
   browserConversationMessage = '';
-  if (restartPreview && intercom) {
-    void intercomRtcSession.ensurePreview(intercom).catch(() => {
-      // Keep striped loading state if preview restart fails.
-    });
-  }
   if (renderAfter) {
     render();
   }
 }
 
-function renderMedia(intercom: CurrentIntercom): string {
-  if (
-    canUseRtcPreview(intercom) &&
-    (
-      intercomRtcSession.hasRemoteTrackFor(intercom.uuidAction) ||
-      intercomRtcSession.hasRemoteStreamFor(intercom.uuidAction) ||
-      browserConversationState === 'starting'
-    )
-  ) {
-    return `<video id="intercom-live-media" class="intercom-media" autoplay ${isIntercomConversationActive(intercom) ? '' : 'muted'} playsinline></video>`;
+function renderMedia(intercom: CurrentIntercom, fallbackUrl: string | null): string {
+  if (intercomRtcSession.hasRemoteTrackFor(intercom.uuidAction)) {
+    return `<video id="intercom-live-media" class="intercom-media" autoplay ${browserConversationState === 'active' ? '' : 'muted'} playsinline></video>`;
   }
-  const liveUrl = resolveFallbackMediaUrl(intercom);
-  return liveUrl
-    ? renderMediaUrl(liveUrl, intercom.snapshotUrl, intercom.name, false)
-    : `<div class="media-empty"><p>${escapeHtml(tr('media_empty'))}</p></div>`;
+  if (!fallbackUrl) {
+    return '';
+  }
+  const src = escapeAttribute(fallbackUrl);
+  if (isVideoLikeUrl(fallbackUrl)) {
+    return `<video id="intercom-live-media" class="intercom-media" src="${src}" controls autoplay muted playsinline></video>`;
+  }
+  return `<img id="intercom-live-media" class="intercom-media" src="${src}" alt="${escapeAttribute(intercom.name)}" decoding="async" />`;
 }
 
-function isIntercomConversationActive(intercom: CurrentIntercom): boolean {
-  if (browserConversationState === 'active' || browserConversationState === 'starting') {
-    return true;
-  }
-  return intercomRtcSession.isConversationEnabledFor(intercom.uuidAction);
+function isIntercomConversationActive(): boolean {
+  return browserConversationState === 'active' || browserConversationState === 'starting';
 }
 
 function resolveFallbackMediaUrl(intercom: CurrentIntercom): string | null {
-  if (canUseRtcPreview(intercom)) {
-    const proxySnapshotUrl = resolveProxySnapshotUrl(intercom);
-    return proxySnapshotUrl ?? intercom.snapshotUrl ?? intercom.streamUrl ?? null;
-  }
-  return intercom.streamUrl ?? intercom.snapshotUrl ?? null;
-}
-
-function renderMediaUrl(url: string, snapshotUrl: string | null, alt: string, bustCache = false): string {
-  const resolvedUrl = state.currentView?.intercom ? resolveRenderableMediaUrl(url, state.currentView.intercom, bustCache) : url;
-  const resolvedPoster =
-    snapshotUrl && state.currentView?.intercom
-      ? resolveRenderableMediaUrl(snapshotUrl, state.currentView.intercom, false)
-      : snapshotUrl;
-  if (isVideoLikeUrl(url)) {
-    return `<video id="intercom-live-media" class="intercom-media" src="${escapeAttribute(resolvedUrl)}" controls autoplay ${browserConversationState === 'active' ? '' : 'muted'} playsinline poster="${escapeAttribute(resolvedPoster ?? '')}"></video>`;
-  }
-  return `<img id="intercom-live-media" class="intercom-media" src="${escapeAttribute(resolvedUrl)}" alt="${escapeAttribute(alt)}" loading="eager" decoding="async" />`;
-}
-
-async function closeSettingsOverlay(): Promise<void> {
-  if (state.settingsMode === 'app') {
-    await persistServerSettingsFromOverlay();
-  }
-  localServerDraft = null;
-  post({ type: 'closeSettings' });
-}
-
-async function persistServerSettingsFromOverlay(): Promise<void> {
-  const form = document.querySelector<HTMLFormElement>('form[data-form="server"]');
-  if (!form) {
-    return;
-  }
-  const formData = new FormData(form);
-  const serialField = form.querySelector<HTMLInputElement>('input[name="serial"]');
-  const origin = String(formData.get('origin') ?? '').trim();
-  const serial = serialField ? String(formData.get('serial') ?? '').trim() : '';
-  const username = String(formData.get('username') ?? '').trim();
-  const password = String(formData.get('password') ?? '');
-  const changed =
-    origin !== state.serverForm.origin ||
-    (serialField ? serial !== (state.serverForm.serial ?? '') : false) ||
-    username !== state.serverForm.username ||
-    password.trim().length > 0;
-  if (!changed) {
-    return;
-  }
-  post({
-    type: 'saveServer',
-    payload: {
-      origin,
-      serial,
-      username,
-      password,
-    },
-  });
-}
-
-function getHistoryVirtualizationState(items: IntercomHistoryItem[]): {
-  items: IntercomHistoryItem[];
-  topSpacerHeight: number;
-  bottomSpacerHeight: number;
-  windowKey: string;
-} {
-  if (items.length === 0) {
-    return {
-      items: [],
-      topSpacerHeight: 0,
-      bottomSpacerHeight: 0,
-      windowKey: 'empty',
-    };
-  }
-
-  const columns = window.innerWidth <= 900 ? 1 : 2;
-  const rowHeight = resolveHistoryRowHeight();
-  const totalRows = Math.ceil(items.length / columns);
-  const viewportHeight = historyDrawerViewportHeight || rowHeight * Math.min(3, totalRows);
-  const visibleRows = Math.max(1, Math.ceil(viewportHeight / rowHeight));
-  const startRow = Math.max(0, Math.floor(historyDrawerScrollTop / rowHeight) - HISTORY_DRAWER_OVERSCAN_ROWS);
-  const endRow = Math.min(totalRows, startRow + visibleRows + HISTORY_DRAWER_OVERSCAN_ROWS * 2);
-  const startIndex = startRow * columns;
-  const endIndex = Math.min(items.length, endRow * columns);
-
-  return {
-    items: items.slice(startIndex, endIndex),
-    topSpacerHeight: startRow * rowHeight,
-    bottomSpacerHeight: Math.max(0, (totalRows - endRow) * rowHeight),
-    windowKey: `${columns}:${startRow}:${endRow}:${rowHeight}`,
-  };
-}
-
-function resolveHistoryRowHeight(): number {
-  const cardHeight = window.innerWidth <= 900 ? HISTORY_CARD_HEIGHT_MOBILE : HISTORY_CARD_HEIGHT_DESKTOP;
-  return cardHeight + HISTORY_DRAWER_GAP;
-}
-
-async function hydrateVisibleHistoryCache(intercom: CurrentIntercom): Promise<void> {
-  const items = collectVisibleHistoryItems(intercom);
-  for (const item of items) {
-    const cacheKey = normalizeHistoryImageCacheKey(item.imageUrl);
-    if (
-      historyImageCache.has(cacheKey) ||
-      pendingHistoryImageCacheReads.has(cacheKey)
-    ) {
-      continue;
-    }
-    pendingHistoryImageCacheReads.add(cacheKey);
-    try {
-      const cached = await loadMediaCacheEntry(cacheKey);
-      if (cached) {
-        historyImageCache.set(cacheKey, cached);
-        render();
+  const candidates = canUseRtcPreview(intercom)
+    ? [intercom.snapshotUrl, resolveProxySnapshotUrl(intercom), intercom.streamUrl]
+    : [intercom.streamUrl, intercom.snapshotUrl];
+  for (const candidate of candidates) {
+    if (candidate) {
+      const url = resolveRenderableMediaUrl(candidate, intercom);
+      if (url && !failedPreviewUrls.has(url)) {
+        return url;
       }
-    } finally {
-      pendingHistoryImageCacheReads.delete(cacheKey);
     }
   }
+  return null;
+}
+
+function requestVisibleHistoryCache(intercom: CurrentIntercom): void {
+  const keys = [];
+  for (const item of collectVisibleHistoryItems(intercom)) {
+    const key = normalizeHistoryImageCacheKey(item.imageUrl);
+    if (key && !historyImageCache.has(key) && !requestedHistoryImageKeys.has(key)) {
+      keys.push(key);
+      requestedHistoryImageKeys.add(key);
+    }
+  }
+  if (keys.length) {
+    post({ type: 'loadHistoryImageCache', requestId: historyCacheGeneration, keys });
+  }
+}
+
+function viewHistory(intercom: CurrentIntercom): IntercomHistoryItem[] {
+  const items = browserHistoryByIntercomUuidAction.get(intercom.uuidAction) ?? intercom.history;
+  return items.slice(0, state.currentView?.config.historyLimit ?? 8);
 }
 
 function collectVisibleHistoryItems(intercom: CurrentIntercom): IntercomHistoryItem[] {
@@ -2547,11 +1738,11 @@ function collectVisibleHistoryItems(intercom: CurrentIntercom): IntercomHistoryI
     return [];
   }
 
-  const historyItems = browserHistoryByIntercomUuidAction.get(intercom.uuidAction) ?? intercom.history;
+  const historyItems = viewHistory(intercom);
   const items = new Map<string, IntercomHistoryItem>();
 
   if (sidePanelOpen && sidePanelTab === 'history') {
-    for (const item of getHistoryVirtualizationState(historyItems).items) {
+    for (const item of historyItems) {
       items.set(item.timestamp, item);
     }
   }
@@ -2563,62 +1754,73 @@ function collectVisibleHistoryItems(intercom: CurrentIntercom): IntercomHistoryI
   return Array.from(items.values());
 }
 
-function resolveHistoryImageDisplayUrl(sourceUrl: string, intercom: CurrentIntercom): string | null {
-  const cacheKey = normalizeHistoryImageCacheKey(sourceUrl);
-  return historyImageCache.get(cacheKey) ?? buildHistoryImageRequestUrl(sourceUrl, intercom, false);
+function resolveHistoryImageDisplayUrl(sourceUrl: string, intercom: CurrentIntercom): string {
+  const key = normalizeHistoryImageCacheKey(sourceUrl);
+  return (key ? historyImageCache.get(key) : null) || resolveRenderableMediaUrl(sourceUrl, intercom) || TRANSPARENT_1PX;
 }
 
-function buildHistoryImageRequestUrl(sourceUrl: string, intercom: CurrentIntercom, bustCache: boolean): string {
-  return resolveRenderableMediaUrl(sourceUrl, intercom, bustCache);
+function normalizeHistoryImageCacheKey(sourceUrl: string): string | null {
+  try {
+    const url = new URL(sourceUrl);
+    url.username = '';
+    url.password = '';
+    url.searchParams.delete('auth');
+    url.searchParams.delete('autht');
+    url.searchParams.delete('cacheBuster');
+    return JSON.stringify([state.serverForm.origin, state.serverForm.username, url.toString()]);
+  } catch {
+    return null;
+  }
 }
 
-function normalizeHistoryImageCacheKey(sourceUrl: string): string {
-  const url = new URL(sourceUrl);
-  url.username = '';
-  url.password = '';
-  url.searchParams.delete('auth');
-  url.searchParams.delete('autht');
-  url.searchParams.delete('cacheBuster');
-  return url.toString();
-}
-
-async function cacheHistoryImageFromElement(image: HTMLImageElement, sourceUrl: string): Promise<void> {
-  const cacheKey = normalizeHistoryImageCacheKey(sourceUrl);
-  if (
-    historyImageCache.has(cacheKey) ||
-    failedHistoryImageLoads.has(cacheKey) ||
-    pendingHistoryImageCacheWrites.has(cacheKey) ||
-    image.naturalWidth === 0 ||
-    image.naturalHeight === 0
-  ) {
+function cacheHistoryImageFromElement(image: HTMLImageElement, sourceUrl: string): void {
+  const key = normalizeHistoryImageCacheKey(sourceUrl);
+  if (!key || historyImageCache.has(key) || failedHistoryImageLoads.has(key) ||
+      encodingHistoryImageKeys.has(key) || !image.naturalWidth || !image.naturalHeight) {
     return;
   }
 
-  pendingHistoryImageCacheWrites.add(cacheKey);
-  try {
-    const cached = await loadMediaCacheEntry(cacheKey);
-    if (cached) {
-      historyImageCache.set(cacheKey, cached);
+  const generation = historyCacheGeneration;
+  encodingHistoryImageKeys.add(key);
+  const finish = (dataUrl: string | null) => {
+    if (generation !== historyCacheGeneration) {
       return;
     }
+    encodingHistoryImageKeys.delete(key);
+    if (dataUrl) {
+      historyImageCache.set(key, dataUrl);
+      post({ type: 'saveHistoryImageCache', key, dataUrl });
+    } else {
+      failedHistoryImageLoads.add(key);
+    }
+  };
 
+  try {
     const canvas = document.createElement('canvas');
-    canvas.width = image.naturalWidth;
-    canvas.height = image.naturalHeight;
+    const scale = Math.min(1, 1920 / Math.max(image.naturalWidth, image.naturalHeight));
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
     const context = canvas.getContext('2d');
-    if (!context) {
-      failedHistoryImageLoads.add(cacheKey);
+    if (!context || typeof canvas.toBlob !== 'function') {
+      finish(null);
       return;
     }
-    context.drawImage(image, 0, 0);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.86);
-    historyImageCache.set(cacheKey, dataUrl);
-    void saveMediaCacheEntry(cacheKey, dataUrl);
-    render();
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob((blob) => {
+      if (generation !== historyCacheGeneration) {
+        return;
+      }
+      if (!blob) {
+        finish(null);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => finish(typeof reader.result === 'string' ? reader.result : null);
+      reader.readAsDataURL(blob);
+    }, 'image/jpeg', 0.86);
   } catch {
-    failedHistoryImageLoads.add(cacheKey);
-  } finally {
-    pendingHistoryImageCacheWrites.delete(cacheKey);
+    // Cross-origin images can still be viewed when the browser disallows canvas export.
+    finish(null);
   }
 }
 
@@ -2627,6 +1829,11 @@ function resolveIntercomName(uuidAction: string | null): string {
     return tr('auto_first_intercom');
   }
   return state.intercoms.find((item) => item.uuidAction === uuidAction)?.name ?? tr('misc_other');
+}
+
+function newPhraseId(): string {
+  // Keep editing available when the app runs over plain HTTP on a LAN.
+  return crypto.getRandomValues(new Uint32Array(4)).join('-');
 }
 
 function appendTtsRow(): void {
@@ -2638,7 +1845,7 @@ function appendTtsRow(): void {
     ...localViewDraft!,
     quickTts: [
       ...localViewDraft!.quickTts,
-      { id: crypto.randomUUID(), label: '', message: '' },
+      { id: newPhraseId(), label: '', message: '' },
     ],
   };
   render();
@@ -2672,9 +1879,12 @@ function closeSavedMessagesDialog(): void {
   selectedSavedMessageId = null;
 }
 
-function confirmSavedMessage(viewId: string, phraseId: string): void {
-  const view = state.views.find((item) => item.id === viewId);
-  const phrase = view?.quickTts.find((item) => item.id === phraseId && item.message.trim());
+function sendSavedMessage(viewId: string, phraseId: string): void {
+  const view = state.currentView?.config;
+  if (view?.id !== viewId || !isRealtimeAvailable()) {
+    return;
+  }
+  const phrase = view.quickTts.find((item) => item.id === phraseId && item.message.trim());
   if (!phrase) {
     return;
   }
@@ -2690,7 +1900,7 @@ function confirmSavedMessage(viewId: string, phraseId: string): void {
 function collectQuickTts(form: HTMLFormElement, includeEmpty = false): QuickTtsPhrase[] {
   return Array.from(form.querySelectorAll<HTMLElement>('.tts-row'))
     .map((row) => ({
-      id: row.dataset.phraseId || crypto.randomUUID(),
+      id: row.dataset.phraseId || newPhraseId(),
       label: row.querySelector<HTMLInputElement>('input[name="phraseMessage"]')?.value.trim() ?? '',
       message: row.querySelector<HTMLInputElement>('input[name="phraseMessage"]')?.value.trim() ?? '',
     }))
@@ -2704,7 +1914,15 @@ root.addEventListener('input', (event) => {
   }
   const serverForm = target.closest<HTMLFormElement>('form[data-form="server"]');
   if (serverForm) {
+    const previousAddress = parseConnectionAddress(localServerDraft?.origin ?? state.serverForm.origin);
+    const previousSerial = localServerDraft?.serial ?? state.serverForm.serial ?? '';
     syncDraftFromServerForm(serverForm);
+    const address = parseConnectionAddress(localServerDraft?.origin ?? '');
+    if (needsConnectionSerial(previousAddress) !== needsConnectionSerial(address) ||
+        remoteConnectSerial(previousAddress) !== remoteConnectSerial(address) ||
+        parseMiniserverSerial(previousSerial) !== parseMiniserverSerial(localServerDraft?.serial ?? '')) {
+      render();
+    }
     return;
   }
   const form = target.closest<HTMLFormElement>('form[data-form="view"]');
@@ -2731,30 +1949,23 @@ root.addEventListener('change', (event) => {
   syncDraftFromViewForm(form);
 });
 
-function syncLocalServerDraft(): void {
-  if (state.settingsMode !== 'app') {
-    localServerDraft = null;
-    return;
-  }
-  if (!localServerDraft) {
-    localServerDraft = {
-      origin: state.serverForm.origin,
-      serial: state.serverForm.serial ?? '',
-      username: state.serverForm.username,
-      password: '',
-      passwordStored: state.serverForm.passwordStored,
-    };
-  }
-}
-
 function syncLocalViewDraft(): void {
-  syncLocalServerDraft();
+  if (localServerDraft) {
+    if (state.screen === 'loading' || state.settingsMode === 'app') {
+      localServerDraft.passwordStored = state.serverForm.passwordStored;
+    } else {
+      localServerDraft = null;
+    }
+  }
   if (state.settingsMode !== 'view' || !state.currentEditorView) {
     localViewDraft = null;
     return;
   }
   if (!localViewDraft || localViewDraft.id !== state.currentEditorView.id) {
-    localViewDraft = structuredClone(state.currentEditorView);
+    localViewDraft = {
+      ...state.currentEditorView,
+      quickTts: state.currentEditorView.quickTts.map((phrase) => ({ ...phrase })),
+    };
   }
 }
 
@@ -2783,8 +1994,8 @@ function ensureLocalViewDraft(): boolean {
   if (!state.currentEditorView) {
     return false;
   }
-  localViewDraft = structuredClone(state.currentEditorView);
-  return true;
+  syncLocalViewDraft();
+  return Boolean(localViewDraft);
 }
 
 function syncDraftFromViewForm(form?: HTMLFormElement | null): void {
@@ -2813,29 +2024,6 @@ function post(message: MainToWorkerMessage): void {
   worker.postMessage(message);
 }
 
-async function registerServiceWorker(): Promise<void> {
-  if (!('serviceWorker' in navigator)) {
-    return;
-  }
-  try {
-    const registration = await navigator.serviceWorker.register('./sw.js');
-    void registration.update();
-    if (registration.waiting) {
-      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-    }
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (refreshing) {
-        return;
-      }
-      refreshing = true;
-      window.location.reload();
-    });
-  } catch {
-    // Offline shell is best-effort only.
-  }
-}
-
 function formatDate(value: string): string {
   const parsed = Date.parse(value);
   if (Number.isNaN(parsed)) {
@@ -2849,11 +2037,11 @@ function formatDate(value: string): string {
 
 function escapeHtml(value: unknown): string {
   return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function escapeAttribute(value: string): string {
@@ -2876,42 +2064,6 @@ function describeLanguage(value: AppLanguage): string {
   }
 }
 
-function shouldExpandIntercomPanels(): boolean {
-  const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
-  const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
-  return viewportWidth >= 1400 && viewportHeight >= 980;
-}
-
-function setupViewportHeightTracking(): void {
-  const updateViewportHeight = (): void => {
-    const height = window.visualViewport?.height ?? window.innerHeight;
-    document.documentElement.style.setProperty('--app-height', `${Math.round(height)}px`);
-  };
-
-  updateViewportHeight();
-  window.addEventListener('resize', updateViewportHeight);
-  window.visualViewport?.addEventListener('resize', updateViewportHeight);
-  window.visualViewport?.addEventListener('scroll', updateViewportHeight);
-
-  document.addEventListener('focusin', (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLElement)) {
-      return;
-    }
-    const isTextEntryTarget =
-      target instanceof HTMLInputElement ||
-      target instanceof HTMLTextAreaElement ||
-      target instanceof HTMLSelectElement ||
-      target.isContentEditable;
-    if (!isTextEntryTarget) {
-      return;
-    }
-    window.setTimeout(() => {
-      target.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    }, 120);
-  });
-}
-
 function normalizeLanguage(value: string): AppLanguage | null {
   return value === 'en' ? 'en' : value === 'de' ? 'de' : value === 'pl' ? 'pl' : null;
 }
@@ -2930,7 +2082,7 @@ function groupActivityLogEntries(items: ActivityLogItem[]): Array<{
   }> = [];
 
   for (const item of parsedItems) {
-    const currentGroup = groups.at(-1);
+    const currentGroup = groups[groups.length - 1];
     if (!currentGroup || currentGroup.dateLabel !== item.dateLabel) {
       groups.push({
         dateLabel: item.dateLabel,
@@ -3007,148 +2159,7 @@ function isVideoLikeUrl(value: string): boolean {
 }
 
 function canUseRtcPreview(intercom: CurrentIntercom): boolean {
-  return Boolean(intercom.deviceUuid && intercom.authToken && intercom.signalingUrl);
-}
-
-function resolveIntercomSignalingUrls(intercom: CurrentIntercom): string[] {
-  return intercom.signalingUrl ? [intercom.signalingUrl] : [];
-}
-
-async function buildIntercomAuthenticationPayload(input: {
-  username: string;
-  token: string | null;
-  sessionToken: string;
-  modulus: string | null;
-  exponent: string | null;
-  publicKey: string | null;
-}): Promise<[string, string, string]> {
-  if (!input.username || !input.token || !input.sessionToken) {
-    throw new Error(tr('intercom_auth_missing'));
-  }
-  const passphrase = CryptoJS.lib.WordArray.random(16).toString(CryptoJS.enc.Hex);
-  const encryptedToken = CryptoJS.AES.encrypt(input.token, passphrase, {
-    mode: CryptoJS.mode.CBC,
-    padding: CryptoJS.pad.Pkcs7,
-  });
-  const envelope = [encryptedToken.key.toString(CryptoJS.enc.Hex), encryptedToken.iv.toString(CryptoJS.enc.Hex), input.sessionToken].join(':');
-  const encryptedEnvelope = encryptIntercomEnvelope(envelope, input.publicKey, input.modulus, input.exponent);
-  if (!encryptedEnvelope) {
-    throw new Error(tr('intercom_challenge_encrypt_failed'));
-  }
-  return [
-    input.username,
-    encryptedEnvelope,
-    encryptedToken.ciphertext.toString(CryptoJS.enc.Base64),
-  ];
-}
-
-function encryptIntercomEnvelope(
-  value: string,
-  publicKey: string | null,
-  modulus: string | null,
-  exponent: string | null,
-): string | null {
-  try {
-    let key: forge.pki.rsa.PublicKey | null = null;
-    if (publicKey) {
-      key = forge.pki.publicKeyFromPem(publicKey) as forge.pki.rsa.PublicKey;
-    } else if (modulus && exponent) {
-      key = forge.pki.setRsaPublicKey(
-        new forge.jsbn.BigInteger(modulus, 16),
-        new forge.jsbn.BigInteger(exponent, 16),
-      );
-    }
-    if (!key) {
-      return null;
-    }
-    return forge.util.encode64(key.encrypt(value, 'RSAES-PKCS1-V1_5'));
-  } catch {
-    return null;
-  }
-}
-
-function mapIntercomActivitiesToHistory(value: unknown, intercom: CurrentIntercom): IntercomHistoryItem[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  const mediaBase = resolveIntercomHistoryBase(intercom);
-  if (!mediaBase) {
-    return [];
-  }
-  return value
-    .map((item) => mapIntercomActivityToHistoryItem(item, mediaBase, intercom))
-    .filter((item): item is IntercomHistoryItem => item !== null)
-    .sort((left, right) => right.timestamp.localeCompare(left.timestamp));
-}
-
-function mapIntercomActivityToHistoryItem(
-  value: unknown,
-  mediaBase: string,
-  intercom?: CurrentIntercom,
-): IntercomHistoryItem | null {
-  if (!value || typeof value !== 'object') {
-    return null;
-  }
-  const record = value as Record<string, unknown>;
-  const dateValue = record.date;
-  const rawPath = resolveHistoryMediaPath(record);
-  if (typeof rawPath !== 'string' || !rawPath.trim()) {
-    return null;
-  }
-  const timestamp = normalizeIntercomActivityDate(dateValue);
-  const imageUrl = resolveHistoryImageUrl(record, mediaBase, intercom);
-  return {
-    timestamp,
-    label: formatBellLabel(timestamp),
-    imageUrl,
-  };
-}
-
-function resolveHistoryImageUrl(
-  record: Record<string, unknown>,
-  mediaBase: string,
-  intercom?: CurrentIntercom,
-): string {
-  const rawPath = resolveHistoryMediaPath(record);
-  if (typeof rawPath === 'string' && rawPath.trim()) {
-    return inheritMediaAuth(resolveMediaUrlAgainstBase(rawPath, mediaBase), mediaBase, intercom);
-  }
-  return mediaBase;
-}
-
-function resolveHistoryMediaPath(record: Record<string, unknown>): unknown {
-  return (
-    record.thumbPath ??
-    record.thumbnailPath ??
-    record.imagePath ??
-    record.path ??
-    record.thumbnail ??
-    record.image ??
-    null
-  );
-}
-
-function resolveMediaUrlAgainstBase(rawPath: string, mediaBase: string): URL {
-  const trimmedPath = rawPath.trim();
-  const intercom = state.currentView?.intercom ?? null;
-  const base = new URL(mediaBase);
-  if (/^https?:\/\//i.test(trimmedPath)) {
-    const absolute = new URL(trimmedPath);
-    if (intercom?.transportMode === 'secure-proxy' && intercom.mediaRootPath) {
-      return new URL(`${intercom.mediaRootPath}${absolute.pathname}${absolute.search}`, base.origin);
-    }
-    return absolute;
-  }
-
-  if (trimmedPath.startsWith('/') && intercom?.mediaRootPath) {
-    return new URL(`${intercom.mediaRootPath}${trimmedPath}`, base.origin);
-  }
-
-  return new URL(trimmedPath, mediaBase);
-}
-
-function resolveIntercomHistoryBase(intercom: CurrentIntercom): string | null {
-  return resolveProxyMediaBase(intercom) || intercom.historyBaseUrl || intercom.mediaBaseUrl || null;
+  return supportsBrowserRtc() && Boolean(intercom.deviceUuid && intercom.authToken && intercom.signalingUrl);
 }
 
 function resolveProxyMediaBase(intercom: CurrentIntercom): string | null {
@@ -3163,101 +2174,37 @@ function resolveProxySnapshotUrl(intercom: CurrentIntercom): string | null {
   return proxyBase ? new URL('jpg/image.jpg', proxyBase).toString() : null;
 }
 
-function isServerMediaUrl(url: URL, intercom?: CurrentIntercom): boolean {
-  if (url.pathname.includes('/proxy/') || url.pathname.includes('/camimage/')) {
-    return true;
-  }
-  if (!intercom?.origin) {
-    return false;
-  }
+function resolveRenderableMediaUrl(sourceUrl: string, intercom: CurrentIntercom): string {
   try {
-    return new URL(intercom.origin).host === url.host;
-  } catch {
-    return false;
-  }
-}
-
-function inheritMediaAuth(url: URL, mediaBase: string, intercom?: CurrentIntercom): string {
-  const base = new URL(mediaBase);
-  const useServerToken = Boolean(intercom?.authToken && isServerMediaUrl(url, intercom));
-  if (useServerToken) {
-    url.username = '';
-    url.password = '';
-    url.searchParams.delete('auth');
-    url.searchParams.set('autht', intercom!.authToken!);
-    return url.toString();
-  }
-  if (intercom?.mediaAuthMode === 'basic') {
-    if (!url.username && base.username && url.host === base.host) {
-      url.username = base.username;
-      url.password = base.password;
+    const url = new URL(sourceUrl);
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+      return '';
     }
-    url.searchParams.delete('auth');
-    url.searchParams.delete('autht');
-    return url.toString();
-  }
-  if (intercom?.mediaAuthMode === 'token' && intercom.authToken) {
-    url.username = '';
-    url.password = '';
-    url.searchParams.delete('auth');
-    url.searchParams.set('autht', intercom.authToken);
-  }
-  return url.toString();
-}
-
-function resolveRenderableMediaUrl(sourceUrl: string, intercom: CurrentIntercom, bustCache: boolean): string {
-  const url = new URL(sourceUrl);
-  const useServerToken = Boolean(intercom.authToken && isServerMediaUrl(url, intercom));
-  if (useServerToken) {
-    url.username = '';
-    url.password = '';
-    url.searchParams.set('autht', intercom.authToken!);
-    url.searchParams.delete('auth');
-  } else if (intercom.mediaAuthMode === 'basic') {
+    const serverOrigin = intercom.origin ? new URL(intercom.origin).origin : null;
     const mediaBase = intercom.mediaBaseUrl ? new URL(intercom.mediaBaseUrl) : null;
-    if (!url.username && mediaBase?.username && url.host === mediaBase.host) {
+    if (intercom.authToken && url.origin === serverOrigin) {
+      url.username = '';
+      url.password = '';
+      url.searchParams.delete('auth');
+      // An archive URL built by the signaling worker already carries the
+      // per-session token needed to read the private photo.
+      if (!url.searchParams.has('autht')) {
+        url.searchParams.set('autht', intercom.authToken);
+      }
+    } else if (intercom.mediaAuthMode === 'basic' && mediaBase?.origin === url.origin) {
       url.username = mediaBase.username;
       url.password = mediaBase.password;
+      url.searchParams.delete('auth');
+      url.searchParams.delete('autht');
+    } else {
+      url.username = '';
+      url.password = '';
     }
-    url.searchParams.delete('auth');
-    url.searchParams.delete('autht');
-  } else if (intercom.mediaAuthMode === 'token' && intercom.authToken) {
-    url.username = '';
-    url.password = '';
-    url.searchParams.set('autht', intercom.authToken);
-    url.searchParams.delete('auth');
-  }
-  if (bustCache) {
-    url.searchParams.set('cacheBuster', Date.now().toString());
-  } else {
     url.searchParams.delete('cacheBuster');
+    return url.toString();
+  } catch {
+    return '';
   }
-  return url.toString();
-}
-
-function normalizeIntercomActivityDate(value: unknown): string {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    const unixMs = value > 1_000_000_000_000 ? value : value * 1000;
-    return new Date(unixMs).toISOString();
-  }
-  if (typeof value === 'string' && value.trim()) {
-    const parsed = Date.parse(value);
-    if (!Number.isNaN(parsed)) {
-      return new Date(parsed).toISOString();
-    }
-  }
-  return new Date().toISOString();
-}
-
-function formatBellLabel(timestamp: string): string {
-  const parsed = Date.parse(timestamp);
-  if (Number.isNaN(parsed)) {
-    return timestamp;
-  }
-  return new Intl.DateTimeFormat('pl-PL', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(parsed);
 }
 
 function attachRtcStreamToDom(): void {
@@ -3267,7 +2214,7 @@ function attachRtcStreamToDom(): void {
     return;
   }
   const markFrameVisible = () => {
-    if (intercomRtcSession.noteRenderedVideoFrame()) {
+    if (intercomRtcSession.noteRenderedVideoFrame(stream)) {
       render();
     }
   };
@@ -3291,25 +2238,12 @@ function attachRtcStreamToDom(): void {
       });
     }
   }
-  media.muted = browserConversationState !== 'active';
-  void ensureRtcVideoPlayback(media, isNewStream);
-}
-
-function normalizeRtcAnswer(value: unknown): RTCSessionDescriptionInit | null {
-  if (!value || typeof value !== 'object') {
-    return null;
+  const mute = browserConversationState !== 'active';
+  const muteChanged = media.muted !== mute;
+  media.muted = mute;
+  if (isNewStream || muteChanged || (media.paused && rtcPlaybackRetryTimer === null)) {
+    void ensureRtcVideoPlayback(media, isNewStream);
   }
-  const record = value as Record<string, unknown>;
-  const sdp = typeof record.sdp === 'string' ? record.sdp : null;
-  if (!sdp) {
-    return null;
-  }
-  const rawType = typeof record.type === 'string' ? record.type : 'answer';
-  const type: RTCSdpType =
-    rawType === 'offer' || rawType === 'answer' || rawType === 'pranswer' || rawType === 'rollback'
-      ? rawType
-      : 'answer';
-  return { type, sdp };
 }
 
 async function ensureRtcVideoPlayback(media: HTMLVideoElement, forceRetry = false): Promise<void> {

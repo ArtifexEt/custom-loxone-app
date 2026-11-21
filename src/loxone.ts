@@ -1,5 +1,6 @@
-import CryptoJS from 'crypto-js';
-import forge from 'node-forge';
+import { throwIfAborted } from './abort';
+import { isLocalHost, remoteConnectUrl } from './connection-address';
+import { CryptoJS, forge } from './loxone-crypto';
 import type {
   ActivityLogSourceSummary,
   IntercomFunction,
@@ -17,10 +18,15 @@ import { localeForLanguage, rt } from './translations';
 
 const WS_PATH = 'ws/rfc6455';
 const TOKEN_PERMISSION_APP = '4';
-const JWT_SUPPORT_VERSION = '10.1.12.11';
-const AUTH_BOOTSTRAP_RETRIES = 5;
+const AUTH_BOOTSTRAP_RETRIES = 3;
 const AUTH_BOOTSTRAP_RETRY_DELAY_MS = 350;
 const AUTH_TOKEN_STEP_DELAY_MS = 150;
+const CONNECT_TIMEOUT_MS = 8000;
+const COMMAND_TIMEOUT_MS = 20_000;
+const KEEPALIVE_INTERVAL_MS = 15_000;
+const RESUME_PROBE_TIMEOUT_MS = 4_000;
+const RESUME_IDLE_MS = 8_000;
+const LOXONE_EPOCH_MS = Date.UTC(2009, 0, 1);
 const KEEPALIVE_RESPONSE = 6;
 const OUT_OF_SERVICE = 5;
 const TEXT_MESSAGE = 0;
@@ -131,41 +137,45 @@ interface PendingHeader {
   identifier: number;
 }
 
+class LoxoneResponseError extends Error {
+  constructor(readonly code: number, message: string) {
+    super(message);
+  }
+}
+
+class InsecureConnectionError extends Error {}
+
 export class LoxoneClient {
   private credentials: StoredCredentials;
-  private handlers: LoxoneClientHandlers;
   private hints: LoxoneConnectionHints;
+  private lifetime = new AbortController();
+  private connecting = false;
+  private ready = false;
   private ws: WebSocket | null = null;
   private pendingResponse:
     | {
         resolve: (value: string) => void;
         reject: (reason?: unknown) => void;
+        timer: ReturnType<typeof setTimeout>;
       }
     | null = null;
   private pendingHeader: PendingHeader | null = null;
   private keepaliveInterval: number | null = null;
+  private keepaliveDeadline: number | null = null;
+  private lastSocketActivityAt = 0;
   private reconnectTimer: number | null = null;
+  private reconnectAttempts = 0;
   private commandLock = Promise.resolve();
   private stateValues: Record<string, LoxoneStateValue> = {};
   private structure: LoxoneStructure | null = null;
-  private closedManually = false;
 
   constructor(
     credentials: StoredCredentials,
-    handlers: LoxoneClientHandlers,
+    private readonly handlers: LoxoneClientHandlers,
     hints: LoxoneConnectionHints,
   ) {
-    this.credentials = credentials;
-    this.handlers = handlers;
+    this.credentials = { ...credentials };
     this.hints = hints;
-  }
-
-  updateCredentials(credentials: StoredCredentials): void {
-    this.credentials = credentials;
-  }
-
-  currentResolvedOrigin(): string | null {
-    return this.credentials.resolvedOrigin ?? null;
   }
 
   updateConnectionHints(hints: Partial<LoxoneConnectionHints>): void {
@@ -175,63 +185,103 @@ export class LoxoneClient {
     };
   }
 
-  async connect(forceReload = false): Promise<void> {
-    this.closedManually = false;
+  resume(): void {
+    if (this.connecting || this.lifetime.signal.aborted) {
+      return;
+    }
+    if (this.ready) {
+      if (this.ws?.readyState !== WebSocket.OPEN || Date.now() - this.lastSocketActivityAt >= RESUME_IDLE_MS) {
+        this.probeKeepalive(true);
+      }
+      return;
+    }
+    this.reconnectNow();
+  }
+
+  private reconnectNow(): void {
+    // A missing timer means the client is not retrying, usually after an auth failure.
+    if (this.reconnectTimer === null) {
+      return;
+    }
+    clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = null;
+    void this.connect();
+  }
+
+  async connect(): Promise<void> {
+    if (this.connecting || this.ready || this.lifetime.signal.aborted) {
+      return;
+    }
+    this.connecting = true;
     this.handlers.onConnecting();
-    await this.disconnect(false);
 
     try {
-      await this.ensureValidToken();
-      this.ws = await this.openSocket();
-      await this.authenticateSocket();
-      if (forceReload || this.structure === null) {
-        this.structure = await this.loadStructure();
-      }
+      await this.connectSocket();
+      this.structure ??= await this.loadStructure();
       await this.sendCommand('jdev/sps/enablebinstatusupdate');
+      throwIfAborted(this.lifetime.signal);
+      this.ready = true;
+      this.lastSocketActivityAt = Date.now();
+      this.reconnectAttempts = 0;
       this.startKeepalive();
       this.handlers.onReady({
         structure: this.structure,
-        stateValues: this.stateValues,
+        stateValues: { ...this.stateValues },
         token: this.credentials.token,
         tokenValidUntil: this.credentials.tokenValidUntil,
         resolvedOrigin: this.credentials.resolvedOrigin ?? effectiveOrigin(this.credentials),
       });
       this.handlers.onAvailabilityChanged(true, rt('miniserver_connected'));
     } catch (error) {
-      const message = toErrorMessage(error);
-      this.handlers.onError(message);
-      await this.disconnect(false);
-      throw error;
+      this.disconnectSocket();
+      if (!this.lifetime.signal.aborted) {
+        this.handlers.onError(toErrorMessage(error));
+        if (!isAuthorizationError(error) && !(error instanceof InsecureConnectionError)) {
+          this.scheduleReconnect();
+        }
+      }
+    } finally {
+      this.connecting = false;
     }
   }
 
-  async disconnect(markOffline = true): Promise<void> {
-    this.stopKeepalive();
+  close(): void {
+    this.lifetime.abort();
     if (this.reconnectTimer !== null) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
-    if (this.pendingResponse) {
-      this.pendingResponse.reject(new Error(rt('miniserver_connection_closed')));
-      this.pendingResponse = null;
+    this.disconnectSocket();
+  }
+
+  private disconnectSocket(error = new Error(rt('miniserver_connection_closed'))): void {
+    this.stopKeepalive();
+    this.ready = false;
+    this.pendingHeader = null;
+    this.stateValues = {};
+    const pending = this.takePendingResponse();
+    pending?.reject(error);
+    const socket = this.ws;
+    this.ws = null;
+    if (socket) {
+      socket.onclose = null;
+      socket.onmessage = null;
+      if (socket.readyState === WebSocket.OPEN) socket.close();
     }
-    if (this.ws) {
-      this.ws.onclose = null;
-      this.ws.onerror = null;
-      this.ws.onmessage = null;
-      if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
-        this.ws.close();
-      }
-      this.ws = null;
-    }
-    if (markOffline) {
-      this.handlers.onAvailabilityChanged(false, rt('miniserver_connection_offline'));
+  }
+
+  private handleConnectionLoss(error: Error): void {
+    const wasReady = this.ready;
+    this.disconnectSocket(error);
+    if (wasReady) {
+      this.handlers.onAvailabilityChanged(false, error.message);
+      if (!isAuthorizationError(error)) this.scheduleReconnect();
     }
   }
 
   async sendAction(uuidAction: string, command: string): Promise<void> {
     const encodedUuid = encodeURIComponent(uuidAction);
-    const encodedCommand = encodeURIComponent(command).replaceAll('%2F', '/');
+    const encodedCommand = encodeURIComponent(command).replace(/%2F/g, '/');
     await this.sendCommand(`jdev/sps/io/${encodedUuid}/${encodedCommand}`);
   }
 
@@ -241,79 +291,156 @@ export class LoxoneClient {
     return coerceMaybeJsonRecord(response.value);
   }
 
-  stateSnapshot(): Record<string, LoxoneStateValue> {
-    return { ...this.stateValues };
-  }
-
-  private async openSocket(): Promise<WebSocket> {
-    const candidates = dedupeSocketCandidates([
-      ...socketCandidates(effectiveOrigin(this.credentials), this.hints.serial),
-      ...(this.credentials.resolvedOrigin && this.credentials.resolvedOrigin !== this.credentials.origin
-        ? socketCandidates(this.credentials.origin, this.hints.serial)
-        : []),
-    ]);
-    let lastError: Error | null = null;
-
-    for (const candidate of candidates) {
+  private async connectSocket(): Promise<void> {
+    if (this.credentials.token && !isExpired(this.credentials.tokenValidUntil)) {
       try {
-        const socket = await this.openSocketCandidate(candidate);
-        this.credentials.resolvedOrigin = candidate.origin;
-        return socket;
+        await this.openAuthenticatedSocket('reuse');
+        return;
       } catch (error) {
-        lastError = error instanceof Error ? error : new Error(rt('websocket_open_failed'));
+        if (!(error instanceof LoxoneResponseError) || error.code !== 401) throw error;
+        this.disconnectSocket();
       }
     }
 
-    throw (
-      lastError ??
-      new Error(describeSocketFailure(effectiveOrigin(this.credentials), this.hints.serial))
-    );
+    this.credentials.token = null;
+    this.credentials.tokenValidUntil = null;
+    try {
+      // Miniserver v11.2+ permits token acquisition on an authenticated TLS
+      // transport without a separate public-key fetch or application envelope.
+      await this.openAuthenticatedSocket('acquire');
+      return;
+    } catch (error) {
+      throwIfAborted(this.lifetime.signal);
+      if (isAuthorizationError(error) || error instanceof InsecureConnectionError) throw error;
+    }
+
+    await this.requestEncryptedHttpToken();
+    await this.openAuthenticatedSocket('reuse');
+  }
+
+  private async openAuthenticatedSocket(authentication: 'reuse' | 'acquire'): Promise<void> {
+    const { origin, resolvedOrigin } = this.credentials;
+    const lookup = remoteConnectLookup(origin, this.hints.serial);
+    if (
+      !lookup &&
+      !isAllowedTransport(new URL(origin)) &&
+      !(resolvedOrigin && isAllowedTransport(new URL(resolvedOrigin)))
+    ) {
+      throw new InsecureConnectionError(describeSocketFailure(origin, this.hints.serial));
+    }
+    const attempted = new Set<string>();
+    let lastError: Error | null = null;
+
+    const tryOrigin = async (target: string): Promise<boolean> => {
+      for (const candidate of socketCandidates(target, this.hints.serial)) {
+        if (authentication === 'acquire' && !candidate.wsUrl.startsWith('wss:')) continue;
+        if (attempted.has(candidate.wsUrl)) continue;
+        attempted.add(candidate.wsUrl);
+        try {
+          const socket = await this.openSocketCandidate(candidate);
+          throwIfAborted(this.lifetime.signal);
+          this.ws = socket;
+          if (authentication === 'acquire') {
+            await this.acquireSocketToken();
+          } else {
+            await this.authenticateSocket();
+          }
+          this.credentials.resolvedOrigin = candidate.origin;
+          return true;
+        } catch (error) {
+          this.disconnectSocket();
+          throwIfAborted(this.lifetime.signal);
+          if (isAuthorizationError(error)) throw error;
+          lastError = error instanceof Error ? error : new Error(rt('websocket_open_failed'));
+        }
+      }
+      return false;
+    };
+
+    if (resolvedOrigin && await tryOrigin(resolvedOrigin)) return;
+    if (await tryOrigin(origin)) return;
+    if (lookup) {
+      const resolved = await resolveRemoteConnect(lookup.serial, this.lifetime.signal);
+      if (resolved && await tryOrigin(resolved)) return;
+      // The public-key request also reveals the legacy relay origin when the
+      // discovery JSON isn't available. No credentials are sent on this hop.
+      const result = await fetchPublicKey(lookup.redirectOrigin, this.lifetime.signal).catch(() => null);
+      throwIfAborted(this.lifetime.signal);
+      if (result && await tryOrigin(result.resolvedOrigin)) return;
+    }
+
+    throw lastError ?? new Error(describeSocketFailure(origin, this.hints.serial));
   }
 
   private async openSocketCandidate(candidate: { origin: string; wsUrl: string }): Promise<WebSocket> {
     return new Promise((resolve, reject) => {
+      const signal = this.lifetime.signal;
+      throwIfAborted(signal);
       const socket = new WebSocket(candidate.wsUrl, 'remotecontrol');
+      const openError = new Error(describeSocketFailure(candidate.origin, this.hints.serial));
+      const timer = setTimeout(() => fail(openError), CONNECT_TIMEOUT_MS);
+      const cleanup = () => {
+        clearTimeout(timer);
+        signal.removeEventListener('abort', abort);
+      };
+      const fail = (error: unknown) => {
+        cleanup();
+        socket.onopen = null;
+        socket.onclose = null;
+        socket.onerror = null;
+        socket.close();
+        reject(error);
+      };
+      const abort = () => fail(signal.reason ?? new DOMException('The operation was aborted.', 'AbortError'));
+      signal.addEventListener('abort', abort, { once: true });
       socket.binaryType = 'arraybuffer';
       socket.onopen = () => {
+        cleanup();
         socket.onmessage = (event) => {
-          void this.handleMessage(event.data);
+          if (this.ws === socket) this.handleMessage(event.data);
         };
-        socket.onclose = () => {
-          if (!this.closedManually) {
-            this.handlers.onAvailabilityChanged(false, rt('miniserver_connection_interrupted'));
-            this.scheduleReconnect();
+        socket.onclose = (event) => {
+          if (this.ws === socket) {
+            this.handleConnectionLoss(socketCloseError(event.code));
           }
         };
-        socket.onerror = () => {
-          this.handlers.onAvailabilityChanged(false, describeSocketFailure(candidate.origin, this.hints.serial));
-        };
+        socket.onerror = null;
         resolve(socket);
       };
-      socket.onerror = () => reject(new Error(describeSocketFailure(candidate.origin, this.hints.serial)));
+      socket.onclose = (event) => {
+        const error = socketCloseError(event.code);
+        fail(isAuthorizationError(error) ? error : openError);
+      };
+      socket.onerror = () => fail(openError);
     });
   }
 
-  private async ensureValidToken(): Promise<void> {
+  private async acquireSocketToken(): Promise<void> {
     const username = sanitizeAuthSegment(this.credentials.username);
-    if (this.credentials.token && !isExpired(this.credentials.tokenValidUntil)) {
-      return;
-    }
+    const salts = coerceMaybeJsonRecord((await this.sendCommand(authKeyCommand(username))).value);
+    const request = authTokenCommand(username, this.credentials.password, salts, newClientUuid(), 'CustomLoxoneApp');
+    const token = coerceMaybeJsonRecord((await this.sendCommand(request)).value);
+    this.storeToken(token);
+  }
 
-    const clientUuid = crypto.randomUUID();
+  private async requestEncryptedHttpToken(): Promise<void> {
     const tokenResult = await requestJwtToken(
       this.credentials.origin,
       this.hints.serial,
-      username,
+      sanitizeAuthSegment(this.credentials.username),
       this.credentials.password,
-      clientUuid,
+      newClientUuid(),
       'CustomLoxoneApp',
+      this.lifetime.signal,
     );
-    const token = asString(tokenResult.payload.token);
+    this.storeToken(tokenResult.payload);
     this.credentials.resolvedOrigin = tokenResult.resolvedOrigin;
-    this.credentials.token = token;
-    this.credentials.tokenValidUntil = tokenResult.payload.validUntil
-      ? String(tokenResult.payload.validUntil)
-      : null;
+  }
+
+  private storeToken(payload: Record<string, unknown>): void {
+    if (!hasAuthTokenPayload(payload)) throw new Error(rt('loxone_missing_value'));
+    this.credentials.token = asString(payload.token);
+    this.credentials.tokenValidUntil = payload.validUntil ? String(payload.validUntil) : null;
   }
 
   private async authenticateSocket(): Promise<void> {
@@ -321,15 +448,9 @@ export class LoxoneClient {
     if (!this.credentials.token) {
       throw new Error(rt('loxone_missing_value'));
     }
-    try {
-      await this.sendCommand(
-        `authwithtoken/${encodeURIComponent(this.credentials.token)}/${encodeURIComponent(username)}`,
-      );
-    } catch (error) {
-      this.credentials.token = null;
-      this.credentials.tokenValidUntil = null;
-      throw error;
-    }
+    await this.sendCommand(
+      `authwithtoken/${encodeURIComponent(this.credentials.token)}/${encodeURIComponent(username)}`,
+    );
   }
 
   private async loadStructure(): Promise<LoxoneStructure> {
@@ -345,26 +466,29 @@ export class LoxoneClient {
   }
 
   private async sendTextCommand(command: string): Promise<string> {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+    const socket = this.ws;
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
       throw new Error(rt('websocket_not_connected'));
     }
 
     const operation = this.commandLock.then(
       () =>
         new Promise<string>((resolve, reject) => {
-          if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+          if (this.ws !== socket || socket.readyState !== WebSocket.OPEN) {
             reject(new Error(rt('websocket_not_connected')));
             return;
           }
 
-          this.pendingResponse = { resolve, reject };
-          this.ws.send(command);
-          setTimeout(() => {
-            if (this.pendingResponse?.resolve === resolve) {
-              this.pendingResponse = null;
-              reject(new Error(`Brak odpowiedzi dla komendy ${command}.`));
-            }
-          }, 20_000);
+          const timer = setTimeout(() => {
+            // Commands share one response slot. A delayed reply must stay on the old socket.
+            this.handleConnectionLoss(new Error(rt('websocket_no_response', { command: commandName(command) })));
+          }, COMMAND_TIMEOUT_MS);
+          this.pendingResponse = { resolve, reject, timer };
+          try {
+            socket.send(command);
+          } catch (error) {
+            this.takePendingResponse()?.reject(error);
+          }
         }),
     );
 
@@ -375,21 +499,33 @@ export class LoxoneClient {
     return operation;
   }
 
-  private async handleMessage(data: Blob | ArrayBuffer | string): Promise<void> {
+  private takePendingResponse() {
+    const pending = this.pendingResponse;
+    this.pendingResponse = null;
+    if (pending) {
+      clearTimeout(pending.timer);
+    }
+    return pending;
+  }
+
+  private handleMessage(data: ArrayBuffer | string): void {
+    this.lastSocketActivityAt = Date.now();
     if (typeof data === 'string') {
+      this.pendingHeader = null;
       this.deliverText(data);
       return;
     }
 
-    const buffer = data instanceof Blob ? await data.arrayBuffer() : data;
-    const bytes = new Uint8Array(buffer);
+    const bytes = new Uint8Array(data);
     if (bytes.length === 8 && bytes[0] === 0x03) {
       const header = parseHeader(bytes);
       if (header.identifier === KEEPALIVE_RESPONSE) {
+        this.clearKeepaliveDeadline();
         return;
       }
       if (header.identifier === OUT_OF_SERVICE) {
-        this.handlers.onError(rt('miniserver_out_of_service'));
+        this.structure = null;
+        this.handleConnectionLoss(new Error(rt('miniserver_out_of_service')));
         return;
       }
       this.pendingHeader = header;
@@ -419,36 +555,64 @@ export class LoxoneClient {
 
   private deliverText(payload: string): void {
     const result = applyStateUpdateFromText(payload);
-    if (result.changed) {
+    if (result.isStateUpdate && !result.hasResponseCode) {
       this.mergeChangedStates(result.changed);
-    }
-    if (this.pendingResponse && (!result.isStateUpdate || result.hasResponseCode)) {
-      this.pendingResponse.resolve(payload);
-      this.pendingResponse = null;
+    } else {
+      this.takePendingResponse()?.resolve(payload);
     }
   }
 
   private mergeChangedStates(changed: Record<string, LoxoneStateValue>): void {
-    if (Object.keys(changed).length === 0) {
-      return;
+    const updated: Record<string, LoxoneStateValue> = {};
+    for (const [uuid, value] of Object.entries(changed)) {
+      if (this.stateValues[uuid] !== value) {
+        this.stateValues[uuid] = value;
+        updated[uuid] = value;
+      }
     }
-    this.stateValues = {
-      ...this.stateValues,
-      ...changed,
-    };
-    this.handlers.onStatesChanged(changed);
+    if (this.ready && Object.keys(updated).length) {
+      this.handlers.onStatesChanged(updated);
+    }
   }
 
   private startKeepalive(): void {
     this.stopKeepalive();
-    this.keepaliveInterval = self.setInterval(() => {
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.send('keepalive');
+    this.keepaliveInterval = self.setInterval(() => this.probeKeepalive(), KEEPALIVE_INTERVAL_MS);
+  }
+
+  private probeKeepalive(onResume = false): void {
+    const recover = () => {
+      this.handleConnectionLoss(new Error(rt('miniserver_connection_interrupted')));
+      if (onResume) this.reconnectNow();
+    };
+    const socket = this.ws;
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      recover();
+      return;
+    }
+    if (this.keepaliveDeadline === null) {
+      try {
+        socket.send('keepalive');
+      } catch {
+        recover();
+        return;
       }
-    }, 15_000);
+    } else if (!onResume) {
+      return;
+    }
+    this.clearKeepaliveDeadline();
+    this.keepaliveDeadline = self.setTimeout(recover, onResume ? RESUME_PROBE_TIMEOUT_MS : KEEPALIVE_INTERVAL_MS);
+  }
+
+  private clearKeepaliveDeadline(): void {
+    if (this.keepaliveDeadline !== null) {
+      clearTimeout(this.keepaliveDeadline);
+      this.keepaliveDeadline = null;
+    }
   }
 
   private stopKeepalive(): void {
+    this.clearKeepaliveDeadline();
     if (this.keepaliveInterval !== null) {
       clearInterval(this.keepaliveInterval);
       this.keepaliveInterval = null;
@@ -456,13 +620,15 @@ export class LoxoneClient {
   }
 
   private scheduleReconnect(): void {
-    if (this.reconnectTimer !== null) {
+    if (this.reconnectTimer !== null || this.lifetime.signal.aborted) {
       return;
     }
+    const delayMs = Math.min(60_000, 5_000 * 2 ** this.reconnectAttempts);
+    this.reconnectAttempts += 1;
     this.reconnectTimer = self.setTimeout(() => {
       this.reconnectTimer = null;
-      void this.connect().catch(() => undefined);
-    }, 5_000);
+      void this.connect();
+    }, delayMs);
   }
 }
 
@@ -471,21 +637,26 @@ export function createDefaultView(
   activityLogControlUuidAction: string | null = null,
 ): IntercomViewConfig {
   return {
-    id: crypto.randomUUID(),
+    id: randomUuid(),
     type: 'intercom',
     title: rt('intercom_label'),
     intercomUuidAction,
     activityLogControlUuidAction,
     historyLimit: 8,
     quickTts: [
-      { id: crypto.randomUUID(), label: rt('quick_tts_wait_label'), message: rt('quick_tts_wait_message') },
-      { id: crypto.randomUUID(), label: rt('quick_tts_parcel_label'), message: rt('quick_tts_parcel_message') },
+      { id: randomUuid(), label: rt('quick_tts_wait_label'), message: rt('quick_tts_wait_message') },
+      { id: randomUuid(), label: rt('quick_tts_parcel_label'), message: rt('quick_tts_parcel_message') },
     ],
   };
 }
 
+const intercomCatalogs = new WeakMap<LoxoneStructure, IntercomSummary[]>();
+const logCatalogs = new WeakMap<LoxoneStructure, ActivityLogSourceSummary[]>();
+
 export function listIntercoms(structure: LoxoneStructure): IntercomSummary[] {
-  return structure.controls
+  const existing = intercomCatalogs.get(structure);
+  if (existing) return existing;
+  const catalog = structure.controls
     .filter(isIntercomControl)
     .map((control) => ({
       uuidAction: control.uuidAction,
@@ -493,10 +664,14 @@ export function listIntercoms(structure: LoxoneStructure): IntercomSummary[] {
       roomName: control.roomName,
     }))
     .sort((left, right) => left.name.localeCompare(right.name, localeForLanguage('pl')));
+  intercomCatalogs.set(structure, catalog);
+  return catalog;
 }
 
 export function listLogSources(structure: LoxoneStructure): ActivityLogSourceSummary[] {
-  return structure.controls
+  const existing = logCatalogs.get(structure);
+  if (existing) return existing;
+  const catalog = structure.controls
     .filter(isLogSourceControl)
     .map((control) => ({
       uuidAction: control.uuidAction,
@@ -505,6 +680,8 @@ export function listLogSources(structure: LoxoneStructure): ActivityLogSourceSum
       roomName: control.roomName,
     }))
     .sort((left, right) => left.name.localeCompare(right.name, localeForLanguage('pl')));
+  logCatalogs.set(structure, catalog);
+  return catalog;
 }
 
 export function buildIntercomViewModel(
@@ -525,7 +702,7 @@ export function buildIntercomViewModel(
   const mediaControl = resolveIntercomMediaControl(summary, structure);
 
   const doorbellActive = lookupBooleanState(summary, stateValues, DOORBELL_STATE_CANDIDATES);
-  const microphoneMuted = lookupBooleanState(summary, stateValues, MUTE_STATE_CANDIDATES);
+  const doorbellMuted = lookupBooleanState(summary, stateValues, MUTE_STATE_CANDIDATES);
   const deviceState = lookupNumericState(summary, stateValues, ['deviceState']);
   const supportsAnswer = supportsIntercomAnswer(summary);
   const supportsMute = supportsIntercomMute(summary);
@@ -566,7 +743,7 @@ export function buildIntercomViewModel(
     deviceUuid: transport.deviceUuid,
     address: transport.addressHost,
     origin: transport.runtimeOrigin,
-    authToken: credentials?.token ?? null,
+    authToken: transport.mode === 'none' ? null : (credentials?.token ?? null),
     transportMode: transport.mode,
     mediaAuthMode: transport.mediaAuthMode,
     signalingUrl: transport.signalingUrl,
@@ -574,7 +751,7 @@ export function buildIntercomViewModel(
     historyBaseUrl: transport.historyBaseUrl,
     mediaRootPath: transport.mediaRootPath,
     doorbellActive,
-    microphoneMuted,
+    doorbellMuted,
     deviceState,
     supportsAnswer,
     supportsMute,
@@ -737,9 +914,17 @@ function resolveIntercomTransportProfile(
   stateValues: Record<string, LoxoneStateValue>,
   credentials: StoredCredentials,
 ): IntercomTransportProfile {
-  const runtimeOrigin = effectiveOrigin(credentials);
+  const selectedOrigin = effectiveOrigin(credentials);
+  const runtime = new URL(selectedOrigin);
+  const runtimeOrigin = isAllowedTransport(runtime) && !isRemoteConnectHost(runtime.hostname) ? selectedOrigin : null;
   const deviceUuid = resolveIntercomDeviceUuid(control) ?? resolveIntercomDeviceUuid(mediaControl);
-  const addressBase = resolveAddressBase(mediaControl, stateValues) ?? resolveAddressBase(control, stateValues);
+  // The Structure File routes Trust devices through their member Miniserver.
+  // This app has credentials for the connected Miniserver only.
+  const foreignTrust = [control, mediaControl].some(({ details }) =>
+    Boolean(details?.trustMember || details?.trustAddress));
+  const addressBase = foreignTrust
+    ? null
+    : resolveAddressBase(mediaControl, stateValues) ?? resolveAddressBase(control, stateValues);
   const addressHost = addressBase ? new URL(addressBase).host : null;
 
   if (addressBase && self.location.protocol !== 'https:') {
@@ -761,7 +946,7 @@ function resolveIntercomTransportProfile(
     };
   }
 
-  if (runtimeOrigin && deviceUuid) {
+  if (!foreignTrust && runtimeOrigin && deviceUuid) {
     const rootPath = `/proxy/${encodeURIComponent(deviceUuid)}`;
     const mediaBaseUrl = `${runtimeOrigin.replace(/\/$/, '')}${rootPath}/`;
     const signalingUrl = toWebSocketUrl(mediaBaseUrl);
@@ -877,8 +1062,7 @@ function collectEventLogEntries(value: unknown): string[] {
 
 function splitEventLogText(value: string): string[] {
   return value
-    .replaceAll('\x14', '\n')
-    .replaceAll(';', '\n')
+    .replace(/[\x14;]/g, '\n')
     .split(/[\r\n|]+/)
     .map((item) => item.trim())
     .filter(Boolean);
@@ -992,9 +1176,9 @@ function normalizeBaseUrl(value: string): string | null {
   }
   if (value.includes('/')) {
     const host = value.split('/', 1)[0];
-    return `${isPrivateHost(host) ? 'http' : 'https'}://${host}`;
+    return `${isLocalHost(host) ? 'http' : 'https'}://${host}`;
   }
-  return `${isPrivateHost(value) ? 'http' : 'https'}://${value}`;
+  return `${isLocalHost(value) ? 'http' : 'https'}://${value}`;
 }
 
 function toWebSocketUrl(value: string): string {
@@ -1042,31 +1226,12 @@ function effectiveOrigin(credentials: StoredCredentials): string {
   return credentials.resolvedOrigin ?? credentials.origin;
 }
 
-function dedupeSocketCandidates(candidates: Array<{ origin: string; wsUrl: string }>): Array<{ origin: string; wsUrl: string }> {
-  const seen = new Set<string>();
-  return candidates.filter((candidate) => {
-    const key = `${candidate.origin}|${candidate.wsUrl}`;
-    if (seen.has(key)) {
-      return false;
-    }
-    seen.add(key);
-    return true;
-  });
-}
-
 function resolveAuthResponseOrigin(origin: string, responseUrl: string, commandPath: string): string {
   const fallback = new URL(origin);
   const response = new URL(responseUrl, fallback);
-  const commandUrl = new URL(commandPath, ensureTrailingSlash(fallback.toString()));
-  const commandPathname = commandUrl.pathname;
   const commandSuffix = `/${commandPath.replace(/^\/+/, '')}`;
-  const matchedSuffix = response.pathname.endsWith(commandPathname)
-    ? commandPathname
-    : response.pathname.endsWith(commandSuffix)
-      ? commandSuffix
-      : null;
-  if (matchedSuffix) {
-    const trimmedPath = response.pathname.slice(0, response.pathname.length - matchedSuffix.length);
+  if (response.pathname.endsWith(commandSuffix)) {
+    const trimmedPath = response.pathname.slice(0, -commandSuffix.length);
     response.pathname = trimmedPath || '/';
   }
   response.search = '';
@@ -1308,7 +1473,10 @@ function parseTextStateTable(bytes: Uint8Array): Record<string, LoxoneStateValue
     offset += 16;
     const textLength = view.getUint32(offset, true);
     offset += 4;
-    const paddedLength = (textLength + 3) & ~0x03;
+    const paddedLength = Math.ceil(textLength / 4) * 4;
+    if (paddedLength > bytes.length - offset) {
+      break;
+    }
     const slice = bytes.subarray(offset, offset + textLength);
     result[uuid] = decoder.decode(slice);
     offset += paddedLength;
@@ -1350,10 +1518,10 @@ function parseCommandPayload(raw: string, command: string): { code: number; cont
       const root = ensureRecord((parsed as Record<string, unknown>).LL);
       const code = Number(root.Code ?? root.code ?? 0);
       if (code === 401) {
-        throw new Error(rt('loxone_bad_credentials'));
+        throw new LoxoneResponseError(code, rt('loxone_bad_credentials'));
       }
       if (code >= 400) {
-        throw new Error(rt('loxone_command_error', { code, command }));
+        throw new LoxoneResponseError(code, rt('loxone_command_error', { code, command: commandName(command) }));
       }
       return {
         code,
@@ -1368,6 +1536,25 @@ function parseCommandPayload(raw: string, command: string): { code: number; cont
     }
     throw error;
   }
+}
+
+function commandName(command: string): string {
+  const segments = command.split('/');
+  return segments[0] === 'authwithtoken' ? segments[0] : segments.slice(0, 3).join('/');
+}
+
+function isAuthorizationError(error: unknown): error is LoxoneResponseError {
+  return error instanceof LoxoneResponseError && [401, 403, 423, 429, 4003, 4006].includes(error.code);
+}
+
+function socketCloseError(code: number): Error {
+  if ([4003, 4006].includes(code)) {
+    return new LoxoneResponseError(code, rt('miniserver_login_blocked'));
+  }
+  if (code === 4007) {
+    return new Error(rt('miniserver_out_of_service'));
+  }
+  return new Error(rt('miniserver_connection_interrupted'));
 }
 
 function sanitizeJsonLikeText(value: string): string {
@@ -1422,56 +1609,55 @@ function deserializeValue(value: unknown): unknown {
   return value;
 }
 
-async function hashPassword(password: string, salt: string, hashAlgorithm: string): Promise<string> {
-  const payload = new TextEncoder().encode(`${password}:${salt}`);
-  const hash = await crypto.subtle.digest(hashAlgorithm.includes('256') ? 'SHA-256' : 'SHA-1', payload);
-  return arrayBufferToHex(hash).toUpperCase();
-}
-
-async function hmacUserHash(
-  user: string,
-  passwordHash: string,
+function hashCredentials(
+  username: string,
+  password: string,
+  salt: string,
   keyHex: string,
   hashAlgorithm: string,
-): Promise<string> {
-  const key = await crypto.subtle.importKey(
-    'raw',
-    bytesToArrayBuffer(hexToBytes(keyHex)),
-    {
-      name: 'HMAC',
-      hash: hashAlgorithm.includes('256') ? 'SHA-256' : 'SHA-1',
-    },
-    false,
-    ['sign'],
-  );
-  const signature = await crypto.subtle.sign(
-    'HMAC',
-    key,
-    new TextEncoder().encode(`${user}:${passwordHash}`),
-  );
-  return arrayBufferToHex(signature);
-}
-
-function arrayBufferToHex(value: ArrayBuffer): string {
-  return Array.from(new Uint8Array(value))
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-function hexToBytes(value: string): Uint8Array {
-  const normalized = value.trim();
-  if (normalized.length % 2 !== 0) {
+): string {
+  const key = keyHex.trim();
+  if (!/^(?:[\da-f]{2})+$/i.test(key)) {
     throw new Error(rt('invalid_hmac_key'));
   }
-  const bytes = new Uint8Array(normalized.length / 2);
-  for (let index = 0; index < normalized.length; index += 2) {
-    bytes[index / 2] = Number.parseInt(normalized.slice(index, index + 2), 16);
-  }
-  return bytes;
+  const useSha256 = hashAlgorithm.includes('256');
+  const hash = useSha256 ? CryptoJS.SHA256 : CryptoJS.SHA1;
+  const hmac = useSha256 ? CryptoJS.HmacSHA256 : CryptoJS.HmacSHA1;
+  const passwordHash = hash(`${password}:${salt}`).toString().toUpperCase();
+  return hmac(`${username}:${passwordHash}`, CryptoJS.enc.Hex.parse(key)).toString();
 }
 
-function bytesToArrayBuffer(value: Uint8Array): ArrayBuffer {
-  return value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength) as ArrayBuffer;
+function randomUuid(): string {
+  if (typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  return normalizeUuid(Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join(''));
+}
+
+function newClientUuid(): string {
+  return randomUuid().replace(/-([\da-f]{12})$/, '$1');
+}
+
+function authKeyCommand(username: string): string {
+  return `jdev/sys/getkey2/${encodeURIComponent(username)}`;
+}
+
+function authTokenCommand(
+  username: string,
+  password: string,
+  salts: Record<string, unknown>,
+  clientUuid: string,
+  clientInfo: string,
+): string {
+  if (!hasAuthKeyPayload(salts)) throw new Error(rt('loxone_missing_value'));
+  const key = asString(salts.key);
+  const salt = asString(salts.salt);
+  const hashAlgorithm = asString(salts.hashAlg ?? 'SHA1').toUpperCase();
+  const hash = hashCredentials(username, password, salt, key, hashAlgorithm);
+  return `jdev/sys/getjwt/${hash}/${encodeURIComponent(username)}/${TOKEN_PERMISSION_APP}/${encodeURIComponent(clientUuid)}/${encodeURIComponent(clientInfo)}`;
 }
 
 async function requestJwtToken(
@@ -1481,26 +1667,32 @@ async function requestJwtToken(
   password: string,
   clientUuid: string,
   clientInfo: string,
-): Promise<{ origin: string; resolvedOrigin: string; payload: Record<string, unknown> }> {
-  const candidates = authBootstrapOrigins(origin, serial);
+  signal: AbortSignal,
+): Promise<{ resolvedOrigin: string; payload: Record<string, unknown> }> {
+  const lookup = remoteConnectLookup(origin, serial);
+  const resolved = lookup ? await resolveRemoteConnect(lookup.serial, signal) : null;
+  const candidates = new Set([
+    ...authBootstrapOrigins(origin, serial),
+    ...(resolved ? [resolved] : []),
+    ...(lookup ? [lookup.redirectOrigin] : []),
+  ]);
   let lastError: unknown = null;
 
   for (const candidateOrigin of candidates) {
     for (let attempt = 0; attempt < AUTH_BOOTSTRAP_RETRIES; attempt += 1) {
+      throwIfAborted(signal);
       try {
-        const tokenResult = await requestJwtTokenOnce(
+        return await requestJwtTokenOnce(
           candidateOrigin,
           username,
           password,
           clientUuid,
           clientInfo,
+          signal,
         );
-        return {
-          origin: candidateOrigin,
-          resolvedOrigin: tokenResult.resolvedOrigin,
-          payload: tokenResult.payload,
-        };
       } catch (error) {
+        throwIfAborted(signal);
+        if (isAuthorizationError(error)) throw error;
         lastError = error;
         if (attempt < AUTH_BOOTSTRAP_RETRIES - 1) {
           await delay(AUTH_BOOTSTRAP_RETRY_DELAY_MS * (attempt + 1));
@@ -1518,25 +1710,22 @@ async function requestJwtTokenOnce(
   password: string,
   clientUuid: string,
   clientInfo: string,
+  signal: AbortSignal,
 ): Promise<{ resolvedOrigin: string; payload: Record<string, unknown> }> {
-  const { publicKeyPem, resolvedOrigin, authOrigin } = await fetchPublicKey(candidateOrigin);
+  const { publicKeyPem, resolvedOrigin, authOrigin } = await fetchPublicKey(candidateOrigin, signal);
   const tokenSalts = await requestEncryptedValue(
     authOrigin,
-    `jdev/sys/getkey2/${encodeURIComponent(username)}`,
+    authKeyCommand(username),
     publicKeyPem,
+    signal,
     hasAuthKeyPayload,
   );
-  const key = asString(tokenSalts.key);
-  const salt = asString(tokenSalts.salt);
-  const hashAlg = asString(tokenSalts.hashAlg ?? 'SHA1').toUpperCase();
-  const passwordHash = await hashPassword(password, salt, hashAlg);
-  const userHash = await hmacUserHash(username, passwordHash, key, hashAlg);
-  const tokenPath = supportsVersion(JWT_SUPPORT_VERSION, null) ? 'jdev/sys/getjwt/' : 'jdev/sys/gettoken/';
   await delay(AUTH_TOKEN_STEP_DELAY_MS);
   const payload = await requestEncryptedValue(
     authOrigin,
-    `${tokenPath}${userHash}/${encodeURIComponent(username)}/${TOKEN_PERMISSION_APP}/${encodeURIComponent(clientUuid)}/${encodeURIComponent(clientInfo)}`,
+    authTokenCommand(username, password, tokenSalts, clientUuid, clientInfo),
     publicKeyPem,
+    signal,
     hasAuthTokenPayload,
   );
   return {
@@ -1545,39 +1734,113 @@ async function requestJwtTokenOnce(
   };
 }
 
-async function fetchPublicKey(origin: string): Promise<{ publicKeyPem: string; resolvedOrigin: string; authOrigin: string }> {
+async function fetchPublicKey(
+  origin: string,
+  signal: AbortSignal,
+): Promise<{ publicKeyPem: string; resolvedOrigin: string; authOrigin: string }> {
   try {
-    const response = await fetch(new URL('jdev/sys/getPublicKey', ensureTrailingSlash(origin)), {
-      method: 'GET',
-    });
-    const payload = parseCommandPayload(await response.text(), 'jdev/sys/getPublicKey');
+    const command = 'jdev/sys/getPublicKey';
+    const url = new URL(command, ensureTrailingSlash(origin));
+    const discovery = isRemoteConnectHost(url.hostname);
+    const { response, text } = await fetchText(url, signal, CONNECT_TIMEOUT_MS, discovery ? 'follow' : 'error');
+    const finalUrl = new URL(response.url || url.href);
+    if (finalUrl.origin !== url.origin && !(discovery && isTrustedRelay(finalUrl))) {
+      throw new Error(rt('socket_open_failed'));
+    }
+    const payload = parseHttpCommandPayload(response, text, command);
     return {
       publicKeyPem: normalizePublicKeyPem(asString(payload.value)),
-      resolvedOrigin: resolveAuthResponseOrigin(origin, response.url, 'jdev/sys/getPublicKey'),
-      authOrigin: resolveAuthBootstrapOrigin(response.url),
+      resolvedOrigin: resolveAuthResponseOrigin(origin, finalUrl.href, command),
+      authOrigin: resolveAuthBootstrapOrigin(finalUrl.href),
     };
   } catch (error) {
     throw mapAuthBootstrapError(error, origin, 'jdev/sys/getPublicKey');
   }
 }
 
-export async function resolveRuntimeOrigin(origin: string, serial: string | null): Promise<string | null> {
-  const candidates = authBootstrapOrigins(origin, serial);
-  for (const candidateOrigin of candidates) {
-    try {
-      const { resolvedOrigin } = await fetchPublicKey(candidateOrigin);
-      return resolvedOrigin;
-    } catch {
-      // Keep background probing silent.
-    }
+function remoteConnectLookup(origin: string, serial: string | null): { serial: string; redirectOrigin: string } | null {
+  const configured = new URL(origin);
+  const cloud = isRemoteConnectHost(configured.hostname);
+  const serialNumber = serial || (cloud ? configured.pathname.split('/').filter(Boolean)[0] : null);
+  if (!serialNumber || !/^[a-z\d]+$/i.test(serialNumber)) {
+    return null;
   }
-  return null;
+  if (!cloud && !(self.location.protocol === 'https:' && isLocalHost(configured.hostname))) return null;
+  return { serial: serialNumber, redirectOrigin: remoteConnectUrl(serialNumber.toUpperCase()) };
+}
+
+function isRemoteConnectHost(hostname: string): boolean {
+  return hostname === 'connect.loxonecloud.com' || hostname === 'dns.loxonecloud.com';
+}
+
+function isTrustedRelay(url: URL): boolean {
+  return url.protocol === 'https:' && !url.username && !url.password && url.hostname.endsWith('.loxonecloud.com');
+}
+
+async function resolveRemoteConnect(serial: string, signal: AbortSignal): Promise<string | null> {
+  const lookup = new URL('https://connect.loxonecloud.com/getip');
+  lookup.searchParams.set('snr', serial);
+  try {
+    const { response, text } = await fetchText(lookup, signal, 3500);
+    if (!response.ok) return null;
+    const payload = ensureRecord(JSON.parse(text));
+    const resolved = typeof payload.url === 'string'
+      ? new URL(payload.url)
+      : typeof payload.IPHTTPS === 'string'
+        ? buildCloudDnsTlsAddress(new URL(`https://${payload.IPHTTPS}`), serial)
+        : null;
+    if (!resolved || !isTrustedRelay(resolved)) return null;
+    resolved.search = '';
+    resolved.hash = '';
+    return resolved.toString().replace(/\/$/, '');
+  } catch {
+    throwIfAborted(signal);
+    return null;
+  }
+}
+
+async function fetchText(
+  url: URL,
+  signal: AbortSignal,
+  timeoutMs = CONNECT_TIMEOUT_MS,
+  redirect: RequestRedirect = 'error',
+) {
+  throwIfAborted(signal);
+  const request = new AbortController();
+  const abort = () => request.abort(signal.reason);
+  const timer = setTimeout(() => request.abort(new Error(rt('websocket_open_failed'))), timeoutMs);
+  signal.addEventListener('abort', abort, { once: true });
+  try {
+    const response = await fetch(url, { signal: request.signal, cache: 'no-store', redirect });
+    return { response, text: await response.text() };
+  } finally {
+    clearTimeout(timer);
+    signal.removeEventListener('abort', abort);
+  }
+}
+
+function parseHttpCommandPayload(response: Response, text: string, command: string) {
+  if (!response.ok && !text.trim()) {
+    throw new LoxoneResponseError(
+      response.status,
+      rt('loxone_command_error', { code: response.status, command: commandName(command) }),
+    );
+  }
+  const payload = parseCommandPayload(text, command);
+  if (!response.ok) {
+    throw new LoxoneResponseError(
+      response.status,
+      rt('loxone_command_error', { code: response.status, command: commandName(command) }),
+    );
+  }
+  return payload;
 }
 
 async function requestEncryptedValue(
   origin: string,
   command: string,
   publicKeyPem: string,
+  signal: AbortSignal,
   validator?: (value: Record<string, unknown>) => boolean,
 ): Promise<Record<string, unknown>> {
   const encrypted = await encryptCommand(command, publicKeyPem);
@@ -1586,23 +1849,22 @@ async function requestEncryptedValue(
 
   for (const url of urls) {
     try {
-      const response = await fetch(url, {
-        method: 'GET',
-      });
-      const rawResponse = await response.text();
+      const { response, text: rawResponse } = await fetchText(new URL(url), signal);
       const decrypted = await tryDecryptEncryptedResponse(rawResponse, encrypted.aesKey, encrypted.aesIv);
-      const payload = parseCommandPayload(decrypted ?? rawResponse, command);
+      const payload = parseHttpCommandPayload(response, decrypted ?? rawResponse, command);
       const record = coerceMaybeJsonRecord(payload.value);
       if (validator && !validator(record)) {
         throw new Error(rt('loxone_missing_value'));
       }
       return record;
     } catch (error) {
-      lastError = error;
+      throwIfAborted(signal);
+      if (isAuthorizationError(error) && error.code !== 401) throw error;
+      if (!isAuthorizationError(lastError) || isAuthorizationError(error)) lastError = error;
     }
   }
 
-  throw mapAuthBootstrapError(lastError, origin, command);
+  throw mapAuthBootstrapError(lastError, origin, commandName(command));
 }
 
 function hasAuthKeyPayload(value: Record<string, unknown>): boolean {
@@ -1647,12 +1909,7 @@ async function encryptCommand(
 }> {
   const salt = forge.util.bytesToHex(forge.random.getBytesSync(2));
   const plainCommand = `salt/${salt}/${command}`;
-  const aesKey = forge.pkcs5.pbkdf2(
-    forge.util.bytesToHex(forge.random.getBytesSync(36)),
-    forge.random.getBytesSync(16),
-    50,
-    32,
-  );
+  const aesKey = forge.util.bytesToHex(forge.random.getBytesSync(32));
   const aesIv = forge.util.bytesToHex(forge.random.getBytesSync(16));
   const encryptedPayload = await aesEncryptBase64(plainCommand, aesKey, aesIv);
   const rsaPublicKey = forge.pki.publicKeyFromPem(publicKeyPem) as forge.pki.rsa.PublicKey;
@@ -1715,26 +1972,6 @@ function normalizePublicKeyPem(value: string): string {
   return `-----BEGIN PUBLIC KEY-----\n${body.match(/.{1,64}/g)?.join('\n') ?? body}\n-----END PUBLIC KEY-----`;
 }
 
-function supportsVersion(minimum: string, current: string | null): boolean {
-  if (!current) {
-    return true;
-  }
-  const left = minimum.split('.').map((part) => Number.parseInt(part, 10));
-  const right = current.split('.').map((part) => Number.parseInt(part, 10));
-  const maxLength = Math.max(left.length, right.length);
-  for (let index = 0; index < maxLength; index += 1) {
-    const leftValue = left[index] ?? 0;
-    const rightValue = right[index] ?? 0;
-    if (rightValue > leftValue) {
-      return true;
-    }
-    if (rightValue < leftValue) {
-      return false;
-    }
-  }
-  return true;
-}
-
 function sanitizeAuthSegment(value: string): string {
   if (value.includes('/')) {
     throw new Error(rt('login_slash_forbidden'));
@@ -1754,7 +1991,7 @@ function isExpired(value: string | null): boolean {
   }
   const numeric = Number(value);
   if (!Number.isNaN(numeric) && /^\d+$/.test(value)) {
-    return numeric * 1000 <= Date.now();
+    return LOXONE_EPOCH_MS + numeric * 1000 <= Date.now();
   }
   const parsed = Date.parse(value);
   return Number.isNaN(parsed) ? false : parsed <= Date.now();
@@ -1768,7 +2005,7 @@ function ensureRecord(value: unknown): Record<string, unknown> {
 }
 
 function normalizeUuid(value: string): string {
-  const compact = value.trim().toLowerCase().replaceAll('-', '');
+  const compact = value.trim().toLowerCase().replace(/-/g, '');
   if (compact.length !== 32) {
     return value.trim().toLowerCase();
   }
@@ -1869,102 +2106,67 @@ function mapAuthBootstrapError(error: unknown, origin: string, command: string):
 }
 
 function authBootstrapOrigins(origin: string, serial: string | null): string[] {
-  const candidates = socketCandidates(origin, serial);
-  const orderedOrigins = candidates.map((candidate) => candidate.origin);
-  const normalizedOrigin = new URL(origin).toString().replace(/\/$/, '');
-  if (!orderedOrigins.includes(normalizedOrigin)) {
-    orderedOrigins.push(normalizedOrigin);
-  }
-  return orderedOrigins;
+  return socketCandidates(origin, serial).map((candidate) => candidate.origin);
+}
+
+function isAllowedTransport(origin: URL): boolean {
+  return origin.protocol === 'https:' || (origin.protocol === 'http:' && self.location.protocol !== 'https:');
 }
 
 function socketCandidates(origin: string, serial: string | null): Array<{ origin: string; wsUrl: string }> {
-  const normalized = new URL(origin);
-  const candidates: Array<{ origin: string; wsUrl: string }> = [];
-
+  const normalized = new URL(ensureTrailingSlash(origin));
+  if (isRemoteConnectHost(normalized.hostname)) return [];
   const smartTlsOrigin = buildSmartTlsOrigin(normalized, serial);
-  if (smartTlsOrigin) {
-    const smartTlsWs = new URL(WS_PATH, smartTlsOrigin);
-    smartTlsWs.protocol = 'wss:';
-    candidates.push({
-      origin: smartTlsOrigin.toString().replace(/\/$/, ''),
-      wsUrl: smartTlsWs.toString(),
-    });
-  }
-
-  const primary = new URL(WS_PATH, normalized);
-  primary.protocol = normalized.protocol === 'https:' ? 'wss:' : 'ws:';
-  candidates.push({ origin: normalized.toString().replace(/\/$/, ''), wsUrl: primary.toString() });
-
+  const origins = smartTlsOrigin ? [smartTlsOrigin, normalized] : [normalized];
   if (
     normalized.protocol === 'https:' &&
-    isPrivateHost(normalized.hostname) &&
+    isLocalHost(normalized.hostname) &&
     self.location.protocol !== 'https:'
   ) {
     const fallbackOrigin = new URL(normalized.toString());
     fallbackOrigin.protocol = 'http:';
-    const fallbackWs = new URL(WS_PATH, fallbackOrigin);
-    fallbackWs.protocol = 'ws:';
-    candidates.push({
-      origin: fallbackOrigin.toString().replace(/\/$/, ''),
-      wsUrl: fallbackWs.toString(),
-    });
+    origins.push(fallbackOrigin);
   }
 
-  return candidates;
+  return origins.filter(isAllowedTransport).map((candidate) => {
+    const socket = new URL(WS_PATH, candidate);
+    socket.protocol = candidate.protocol === 'https:' ? 'wss:' : 'ws:';
+    return { origin: candidate.toString().replace(/\/$/, ''), wsUrl: socket.toString() };
+  });
 }
 
 function buildSmartTlsOrigin(origin: URL, serial: string | null): URL | null {
-  if (self.location.protocol !== 'https:' || origin.protocol !== 'http:' || !isPrivateHost(origin.hostname) || !serial) {
+  if (self.location.protocol !== 'https:' || !isLocalHost(origin.hostname) || !serial || origin.pathname !== '/') {
     return null;
   }
+  return buildCloudDnsTlsAddress(origin, serial);
+}
 
-  return buildCloudDnsOrigin(serial);
+function buildCloudDnsTlsAddress(origin: URL, serial: string): URL | null {
+  if (!/^[a-z\d]{1,63}$/i.test(serial)) return null;
+  if (!/^(?:(?:\d{1,3}\.){3}\d{1,3}|\[[\da-f:]+\])$/i.test(origin.hostname)) return null;
+  const dashedIp = origin.hostname.replace(/^\[|\]$/g, '').replace(/[:.]/g, '-');
+  const port = origin.protocol === 'https:' && origin.port ? `:${origin.port}` : '';
+  return new URL(`https://${dashedIp}.${serial.toLowerCase()}.dyndns.loxonecloud.com${port}/`);
 }
 
 function describeSocketFailure(origin: string, serial: string | null): string {
   const url = new URL(origin);
-  if (self.location.protocol === 'https:' && url.protocol === 'http:' && isPrivateHost(url.hostname)) {
+  if (self.location.protocol === 'https:' && url.protocol === 'http:' && isLocalHost(url.hostname)) {
     const suggestedHost = buildSuggestedDnsHost(url, serial);
     return suggestedHost
       ? rt('socket_https_local_ws_blocked', { host: suggestedHost })
       : rt('socket_https_local_ws_blocked_generic');
   }
-  if (url.protocol === 'https:' && isPrivateHost(url.hostname)) {
+  if (url.protocol === 'https:' && isLocalHost(url.hostname)) {
     return rt('socket_tls_mismatch');
   }
   return rt('socket_open_failed');
 }
 
 function buildSuggestedDnsHost(origin: URL, serial: string | null): string | null {
-  if (!serial || !isPrivateHost(origin.hostname)) {
+  if (!serial || !isLocalHost(origin.hostname)) {
     return null;
   }
-  return buildCloudDnsOrigin(serial)?.toString().replace(/\/$/, '') ?? null;
-}
-
-function buildCloudDnsOrigin(serial: string): URL | null {
-  const normalizedSerial = serial.trim().toUpperCase();
-  if (!normalizedSerial) {
-    return null;
-  }
-  return new URL(`https://connect.loxonecloud.com/${encodeURIComponent(normalizedSerial)}/`);
-}
-
-function isPrivateHost(hostname: string): boolean {
-  const lower = hostname.toLowerCase();
-  if (lower === 'localhost' || lower.endsWith('.local')) {
-    return true;
-  }
-  const ipv4 = lower.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (!ipv4) {
-    return false;
-  }
-  const [a, b] = [Number(ipv4[1]), Number(ipv4[2])];
-  return (
-    a === 10 ||
-    a === 127 ||
-    (a === 172 && b >= 16 && b <= 31) ||
-    (a === 192 && b === 168)
-  );
+  return remoteConnectUrl(serial);
 }

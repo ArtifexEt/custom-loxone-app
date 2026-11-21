@@ -3,6 +3,7 @@ dist
 ._*
 .DS_Store
 test-results/
+tmp-playwright/
 official-console.txt
 official-network.txt
 tmp-profile-app.png

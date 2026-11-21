@@ -32,6 +32,8 @@ export interface IntercomViewConfig {
 export interface AppConfig {
   credentials: StoredCredentials | null;
   languageOverride: AppLanguage | null;
+  panelMode: boolean;
+  keepScreenAwake: boolean;
   defaultViewId: string | null;
   lastViewId: string | null;
   views: IntercomViewConfig[];
@@ -146,7 +148,7 @@ export interface IntercomViewModel {
   historyBaseUrl: string | null;
   mediaRootPath: string | null;
   doorbellActive: boolean;
-  microphoneMuted: boolean;
+  doorbellMuted: boolean;
   deviceState: number | null;
   supportsAnswer: boolean;
   supportsMute: boolean;
@@ -166,6 +168,8 @@ export interface AppViewModel {
   settingsMode: 'app' | 'view' | null;
   language: AppLanguage;
   languageOverride: AppLanguage | null;
+  panelMode: boolean;
+  keepScreenAwake: boolean;
   connection: {
     status: ConnectionStatus;
   };
@@ -193,11 +197,37 @@ export interface SaveServerPayload {
 }
 
 export interface SaveAppSettingsPayload {
-  languageOverride: AppLanguage | null;
+  languageOverride?: AppLanguage | null;
+  panelMode?: boolean;
+  keepScreenAwake?: boolean;
 }
 
+export type IntercomRpcMethod = 'info' | 'call' | 'hangup' | 'addIceCandidate' | 'getLastActivities';
+
+export type IntercomSignalRequest =
+  | { type: 'intercomSignal'; operation: 'open'; sessionId: number; requestId: number; uuidAction: string }
+  | {
+      type: 'intercomSignal';
+      operation: 'request';
+      sessionId: number;
+      requestId: number;
+      method: IntercomRpcMethod;
+      params?: unknown[];
+    }
+  | { type: 'intercomSignal'; operation: 'gathered' | 'close'; sessionId: number };
+
+export type IntercomSignalError = 'open' | 'closed' | 'timeout' | 'response' | 'auth';
+
+export type IntercomSignalMessage =
+  | { type: 'intercomSignalResult'; sessionId: number; requestId: number; result: unknown }
+  | { type: 'intercomSignalResult'; sessionId: number; requestId: number; error: IntercomSignalError }
+  | { type: 'intercomSignalEvent'; sessionId: number; event: 'closed' }
+  | { type: 'intercomSignalEvent'; sessionId: number; event: 'candidate'; params: unknown[] };
+
 export type MainToWorkerMessage =
+  | IntercomSignalRequest
   | { type: 'bootstrap'; browserLanguage?: string }
+  | { type: 'resume' }
   | { type: 'showAppSettings' }
   | { type: 'showViewSettings'; viewId?: string }
   | { type: 'closeSettings' }
@@ -214,6 +244,11 @@ export type MainToWorkerMessage =
   | { type: 'sendTts'; viewId: string; message: string }
   | { type: 'runBuiltInAction'; viewId: string; action: 'answer' | 'mute' | 'unmute' }
   | { type: 'cacheIntercomPreview'; uuidAction: string; url: string | null }
+  | { type: 'loadHistoryImageCache'; requestId: number; keys: string[] }
+  | { type: 'saveHistoryImageCache'; key: string; dataUrl: string }
   | { type: 'dismissNotice' };
 
-export type WorkerToMainMessage = { type: 'state'; state: AppViewModel };
+export type WorkerToMainMessage =
+  | { type: 'state'; state: AppViewModel }
+  | { type: 'historyImageCache'; requestId: number; entries: [string, string][] }
+  | IntercomSignalMessage;

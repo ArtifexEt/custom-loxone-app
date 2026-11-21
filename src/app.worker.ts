@@ -1,5 +1,7 @@
 /// <reference lib="webworker" />
 
+import { IntercomSignaling } from './intercom-signaling';
+import { isLocalHost, parseConnectionAddress, parseMiniserverSerial, remoteConnectSerial, remoteConnectUrl } from './connection-address';
 import {
   LoxoneClient,
   buildIntercomViewModel,
@@ -8,18 +10,25 @@ import {
   listIntercoms,
   listLogSources,
   mergeControlSecuredDetails,
-  resolveRuntimeOrigin,
   selectIntercomControl,
 } from './loxone';
-import { defaultPersistedState, loadPersistedState, saveCache, saveConfig } from './storage';
+import {
+  defaultPersistedState,
+  loadMediaCacheEntry,
+  loadPersistedState,
+  saveCache,
+  saveConfig,
+  saveMediaCacheEntry,
+  saveServerState,
+} from './storage';
 import { setRuntimeLanguage, t } from './translations';
 import type {
-  AppConfig,
   AppLanguage,
   AppNotice,
   AppViewModel,
   CachedRuntime,
   IntercomViewConfig,
+  LoxoneStructure,
   MainToWorkerMessage,
   SaveServerPayload,
   StoredCredentials,
@@ -27,9 +36,9 @@ import type {
 } from './types';
 
 declare const self: DedicatedWorkerGlobalScope;
+const intercomSignaling = new IntercomSignaling(message => self.postMessage(message));
 
-let config: AppConfig = defaultPersistedState().config;
-let cache: CachedRuntime = defaultPersistedState().cache;
+let { config, cache } = defaultPersistedState();
 let client: LoxoneClient | null = null;
 let bootstrapped = false;
 let settingsOpen = false;
@@ -42,11 +51,12 @@ let connection: AppViewModel['connection'] = {
   status: 'idle',
 };
 let persistCacheTimer: number | null = null;
+let persistCacheAt = 0;
+let emitStateTimer: number | null = null;
 let browserLanguage: string | null = null;
-let resolvedOriginRefreshTimer: number | null = null;
 let lastEmittedStateSignature: string | null = null;
-
-const RESOLVED_ORIGIN_REFRESH_MS = 120000;
+const bellSubscriptions = new WeakMap<LoxoneStructure, Map<string, string>>();
+let securedDetailsRequested = new Set<string>();
 
 self.onmessage = (event: MessageEvent<MainToWorkerMessage>) => {
   void handleMessage(event.data);
@@ -55,9 +65,21 @@ self.onmessage = (event: MessageEvent<MainToWorkerMessage>) => {
 async function handleMessage(message: MainToWorkerMessage): Promise<void> {
   try {
     switch (message.type) {
+      case 'intercomSignal': {
+        const intercom = message.operation === 'open'
+          ? buildViewState().currentView?.intercom ?? null
+          : null;
+        const localReach = intercom?.transportMode === 'lan-direct' ||
+          Boolean(intercom?.origin && isLocalHost(new URL(intercom.origin).hostname));
+        await intercomSignaling.handle(message, intercom, config.credentials?.username ?? '', localReach);
+        return;
+      }
       case 'bootstrap':
         browserLanguage = message.browserLanguage ?? null;
         await bootstrap();
+        return;
+      case 'resume':
+        client?.resume();
         return;
       case 'showAppSettings':
         settingsOpen = true;
@@ -78,18 +100,26 @@ async function handleMessage(message: MainToWorkerMessage): Promise<void> {
         settingsEditorViewId = activeViewId();
         emitState();
         return;
-      case 'saveAppSettings':
-        config.languageOverride = message.payload.languageOverride;
+      case 'saveAppSettings': {
+        const { languageOverride, panelMode, keepScreenAwake } = message.payload;
+        config = {
+          ...config,
+          languageOverride: languageOverride === undefined ? config.languageOverride : languageOverride,
+          panelMode: panelMode ?? config.panelMode,
+          keepScreenAwake: keepScreenAwake ?? config.keepScreenAwake,
+        };
+        setRuntimeLanguage(resolveLanguage());
         await persistConfig();
         emitState();
         return;
+      }
       case 'saveServer':
         await saveServerConfiguration(message.payload);
         return;
       case 'selectView':
         config.lastViewId = message.viewId;
-        await persistConfig();
         emitState();
+        await persistConfig();
         return;
       case 'addIntercomView':
         await addIntercomView();
@@ -128,6 +158,28 @@ async function handleMessage(message: MainToWorkerMessage): Promise<void> {
       case 'cacheIntercomPreview':
         cacheIntercomPreview(message.uuidAction, message.url);
         return;
+      case 'loadHistoryImageCache': {
+        const entries = await Promise.all(
+          message.keys.slice(0, 32).map(async (key): Promise<[string, string] | null> => {
+            const value = key.length <= 4096 ? await loadMediaCacheEntry(key).catch(() => null) : null;
+            return value ? [key, value] : null;
+          }),
+        );
+        const response: WorkerToMainMessage = {
+          type: 'historyImageCache',
+          requestId: message.requestId,
+          entries: entries.filter((entry) => entry !== null),
+        };
+        self.postMessage(response);
+        return;
+      }
+      case 'saveHistoryImageCache':
+        if (message.key.length <= 4096 &&
+            message.dataUrl.startsWith('data:image/jpeg;base64,') &&
+            message.dataUrl.length <= 4 * 1024 * 1024) {
+          await saveMediaCacheEntry(message.key, message.dataUrl).catch(() => undefined);
+        }
+        return;
       case 'dismissNotice':
         clearNotice();
         return;
@@ -145,29 +197,55 @@ async function bootstrap(): Promise<void> {
     return;
   }
 
-  const persisted = await loadPersistedState();
+  const persisted = await loadPersistedState().catch(() => null);
+  bootstrapped = true;
+  if (!persisted) {
+    setRuntimeLanguage(resolveLanguage());
+    setErrorNotice(t(resolveLanguage(), 'storage_unavailable'));
+    return;
+  }
   config = persisted.config;
   cache = persisted.cache;
   ensureConfigConsistency();
-  bootstrapped = true;
   setRuntimeLanguage(resolveLanguage());
-  setInfoNotice(t(resolveLanguage(), 'startup_ready'));
   emitState();
 
   if (config.credentials) {
-    ensureResolvedOriginRefreshLoop();
     await connect();
   }
 }
 
 async function saveServerConfiguration(payload: SaveServerPayload): Promise<void> {
-  const credentials = mergeCredentials(payload, config.credentials);
+  const previous = config.credentials;
+  const credentials = mergeCredentials(payload, previous);
+  const accessChanged = previous?.origin !== credentials.origin ||
+    previous?.serial !== credentials.serial ||
+    previous?.username !== credentials.username;
+  client?.close();
+  client = null;
+  if (accessChanged) {
+    clearTimeout(persistCacheTimer ?? undefined);
+    persistCacheTimer = null;
+    cache = defaultPersistedState().cache;
+    draftView = null;
+  }
   config.credentials = credentials;
-  ensureResolvedOriginRefreshLoop();
-  setInfoNotice(t(resolveLanguage(), 'server_saved'));
-  await persistConfig();
+  connection = { status: 'connecting' };
   emitState();
-  await connect(true);
+  try {
+    await saveServerState(config, cache);
+  } catch {
+    if (config.credentials !== credentials) {
+      return;
+    }
+    setErrorNotice(t(resolveLanguage(), 'storage_unavailable'));
+    await connect();
+    return;
+  }
+  if (config.credentials !== credentials) {
+    return;
+  }
+  await connect();
 }
 
 async function addIntercomView(): Promise<void> {
@@ -227,8 +305,8 @@ async function upsertView(view: IntercomViewConfig): Promise<void> {
   config.lastViewId = normalized.id;
   config.defaultViewId = config.defaultViewId ?? normalized.id;
   await persistConfig();
-  await hydrateIntercomSecuredDetails();
   emitState();
+  void hydrateIntercomSecuredDetails();
 }
 
 async function deleteView(viewId: string): Promise<void> {
@@ -248,7 +326,7 @@ async function deleteView(viewId: string): Promise<void> {
 }
 
 async function runChildFunction(viewId: string, functionUuidAction: string): Promise<void> {
-  if (!client) {
+  if (!client || connection.status !== 'online') {
     setErrorNotice(t(resolveLanguage(), 'no_intercom_action_connection'));
     return;
   }
@@ -267,7 +345,11 @@ async function runChildFunction(viewId: string, functionUuidAction: string): Pro
 }
 
 async function runTts(viewId: string, message: string): Promise<void> {
-  if (!client) {
+  if (message.trim().length > 300) {
+    setErrorNotice(t(resolveLanguage(), 'tts_too_long'));
+    return;
+  }
+  if (!client || connection.status !== 'online') {
     setErrorNotice(t(resolveLanguage(), 'no_tts_connection'));
     return;
   }
@@ -294,7 +376,7 @@ async function runBuiltInAction(
   viewId: string,
   action: 'answer' | 'mute' | 'unmute',
 ): Promise<void> {
-  if (!client) {
+  if (!client || connection.status !== 'online') {
     setErrorNotice(t(resolveLanguage(), 'no_intercom_connection'));
     return;
   }
@@ -327,55 +409,81 @@ async function runBuiltInAction(
   }
 }
 
-async function connect(forceReload = false): Promise<void> {
-  if (!config.credentials) {
+async function connect(): Promise<void> {
+  const credentials = config.credentials;
+  if (!credentials) {
     connection = { status: 'idle' };
     emitState();
     return;
   }
 
-  if (!client) {
-    client = new LoxoneClient(config.credentials, {
+  const serial = credentials.serial ?? cache.structure?.serial ?? null;
+  if (self.location.protocol === 'https:' && new URL(credentials.origin).protocol === 'http:' &&
+      !serial && parseConnectionAddress(credentials.resolvedOrigin ?? '')?.protocol !== 'https:') {
+    connection = { status: 'error' };
+    setErrorNotice(t(resolveLanguage(), 'https_connection_address_required'));
+    return;
+  }
+
+  let sourceStructure: LoxoneStructure | null = null;
+  const nextClient = new LoxoneClient(
+    credentials,
+    {
       onConnecting: () => {
         connection = { status: 'connecting' };
         emitState();
       },
       onReady: (payload) => {
-        client?.updateConnectionHints({ serial: payload.structure.serial });
+        nextClient.updateConnectionHints({ serial: payload.structure.serial || credentials.serial });
+        // The client reuses its parsed structure across a network interruption.
+        // Keep any secured details already fetched for that same structure.
+        if (sourceStructure !== payload.structure) {
+          securedDetailsRequested = new Set();
+        }
+        const structure = sourceStructure === payload.structure ? cache.structure ?? payload.structure : payload.structure;
+        sourceStructure = payload.structure;
+        const previousStateValues = cache.stateValues;
         cache = {
-          structure: payload.structure,
+          structure,
           stateValues: payload.stateValues,
           intercomHistoryByUuidAction: cache.intercomHistoryByUuidAction,
           intercomPreviewByUuidAction: cache.intercomPreviewByUuidAction,
           updatedAt: new Date().toISOString(),
         };
-        captureIntercomBellHistory({}, payload.stateValues, payload.structure);
+        const bellRang = captureIntercomBellHistory(previousStateValues, payload.stateValues, structure);
         config.credentials = {
-          ...config.credentials!,
+          ...credentials,
+          serial: credentials.serial ?? parseMiniserverSerial(payload.structure.serial),
           token: payload.token,
           tokenValidUntil: payload.tokenValidUntil,
           resolvedOrigin: payload.resolvedOrigin,
         };
         ensureConfigConsistency();
-        void persistConfig();
+        void persistConfig().catch(() => setErrorNotice(t(resolveLanguage(), 'storage_unavailable')));
         scheduleCachePersist();
         connection = { status: 'online' };
-        emitState();
+        if (bellRang) {
+          setInfoNotice(t(resolveLanguage(), 'intercom_ring_prompt'));
+        } else {
+          emitState();
+        }
+        void hydrateIntercomSecuredDetails();
       },
       onStatesChanged: (changed) => {
-        const nextStateValues = {
-          ...cache.stateValues,
-          ...changed,
-        };
-        captureIntercomBellHistory(cache.stateValues, nextStateValues, cache.structure);
-        cache = {
-          ...cache,
-          stateValues: nextStateValues,
-        };
-        scheduleCachePersist();
-        emitState();
+        const bellRang = captureIntercomBellHistory(cache.stateValues, changed, cache.structure);
+        Object.assign(cache.stateValues, changed);
+        if (bellRang) {
+          scheduleCachePersist();
+          setInfoNotice(t(resolveLanguage(), 'intercom_ring_prompt'));
+        } else {
+          scheduleCachePersist(10_000);
+          scheduleStateEmit();
+        }
       },
       onAvailabilityChanged: (online, message) => {
+        if (online && connection.status === 'online') {
+          return;
+        }
         connection = {
           status: online ? 'online' : 'offline',
         };
@@ -390,60 +498,51 @@ async function connect(forceReload = false): Promise<void> {
         };
         setErrorNotice(message);
       },
-    }, { serial: cache.structure?.serial ?? null });
-  } else {
-    client.updateCredentials(config.credentials);
-    client.updateConnectionHints({ serial: cache.structure?.serial ?? null });
-  }
+    },
+    { serial },
+  );
 
-  try {
-    await client.connect(forceReload);
-    await hydrateIntercomSecuredDetails();
-    emitState();
-  } catch (error) {
-    const message = error instanceof Error && error.message.trim() ? error.message.trim() : null;
-    connection = {
-      status: 'error',
-    };
-    setErrorNotice(message ?? t(resolveLanguage(), 'connection_failed'));
-    emitState();
-  }
+  client = nextClient;
+  await nextClient.connect();
 }
 
 async function hydrateIntercomSecuredDetails(): Promise<void> {
-  if (!client || !cache.structure) {
-    return;
-  }
-  let nextStructure = cache.structure;
-  let changed = false;
-  const targets = listHydrationIntercoms(cache.structure);
-  if (targets.length === 0) {
+  const connectedClient = client;
+  const structure = cache.structure;
+  if (!connectedClient || !structure || connection.status !== 'online') {
     return;
   }
 
-  for (const intercom of targets) {
+  const requested = securedDetailsRequested;
+  let changed = false;
+  for (const { uuidAction } of listHydrationIntercoms(structure)) {
+    if (requested.has(uuidAction)) continue;
+    requested.add(uuidAction);
     try {
-      const securedDetails = await client.fetchSecuredDetails(intercom.uuidAction);
+      const securedDetails = await connectedClient.fetchSecuredDetails(uuidAction);
+      if (client !== connectedClient || requested !== securedDetailsRequested || !cache.structure) {
+        return;
+      }
       if (Object.keys(securedDetails).length === 0) {
         continue;
       }
-      nextStructure = mergeControlSecuredDetails(nextStructure, intercom.uuidAction, securedDetails);
+      cache = {
+        ...cache,
+        structure: mergeControlSecuredDetails(cache.structure, uuidAction, securedDetails),
+      };
       changed = true;
     } catch {
       // Some installations may not expose secured details for every control.
+      if (client !== connectedClient || connection.status !== 'online') {
+        requested.delete(uuidAction);
+        break;
+      }
     }
   }
-
-  if (!changed) {
-    return;
+  if (changed) {
+    scheduleCachePersist();
+    emitState();
   }
-
-  cache = {
-    ...cache,
-    structure: nextStructure,
-    updatedAt: new Date().toISOString(),
-  };
-  scheduleCachePersist();
 }
 
 function listHydrationIntercoms(structure: NonNullable<CachedRuntime['structure']>) {
@@ -476,7 +575,12 @@ function listHydrationIntercoms(structure: NonNullable<CachedRuntime['structure'
 }
 
 function emitState(): void {
+  if (emitStateTimer !== null) {
+    clearTimeout(emitStateTimer);
+    emitStateTimer = null;
+  }
   const state = buildViewState();
+  intercomSignaling.keepFor(state.currentView?.intercom ?? null, state.serverForm.username);
   const signature = JSON.stringify(state);
   if (signature === lastEmittedStateSignature) {
     return;
@@ -487,6 +591,13 @@ function emitState(): void {
     state,
   };
   self.postMessage(message);
+}
+
+function scheduleStateEmit(): void {
+  if (emitStateTimer === null) {
+    // Group packets received during the same display frame. A bell bypasses this queue.
+    emitStateTimer = self.setTimeout(emitState, 32);
+  }
 }
 
 function buildViewState(): AppViewModel {
@@ -507,6 +618,8 @@ function buildViewState(): AppViewModel {
     settingsMode,
     language: resolveLanguage(),
     languageOverride: config.languageOverride,
+    panelMode: config.panelMode,
+    keepScreenAwake: config.keepScreenAwake,
     connection,
     notice,
     serverForm: {
@@ -563,37 +676,36 @@ function captureIntercomBellHistory(
   previousStateValues: Record<string, unknown>,
   nextStateValues: Record<string, unknown>,
   structure: CachedRuntime['structure'],
-): void {
+): boolean {
   if (!structure) {
-    return;
+    return false;
+  }
+  let subscriptions = bellSubscriptions.get(structure);
+  if (!subscriptions) {
+    subscriptions = new Map<string, string>();
+    for (const { uuidAction } of listIntercoms(structure)) {
+      const control = structure.controlsByAction[uuidAction];
+      const bellState = control && resolveMatchingStateUuid(control.states, ['bell', 'ring', 'doorbell']);
+      if (bellState) subscriptions.set(uuidAction, bellState);
+    }
+    bellSubscriptions.set(structure, subscriptions);
   }
   let changed = false;
-  for (const summary of listIntercoms(structure)) {
-    const control = structure.controlsByAction[summary.uuidAction];
-    if (!control) {
-      continue;
-    }
-    const bellStateUuid = resolveMatchingStateUuid(control.states, ['bell', 'ring', 'doorbell']);
-    if (!bellStateUuid) {
-      continue;
-    }
+  for (const [uuidAction, bellStateUuid] of subscriptions) {
     const previous = toBoolean(previousStateValues[bellStateUuid]);
     const next = toBoolean(nextStateValues[bellStateUuid]);
     if (previous || !next) {
       continue;
     }
     const timestamp = new Date().toISOString();
-    const existing = cache.intercomHistoryByUuidAction[control.uuidAction] ?? [];
+    const existing = cache.intercomHistoryByUuidAction[uuidAction] ?? [];
     cache.intercomHistoryByUuidAction = {
       ...cache.intercomHistoryByUuidAction,
-      [control.uuidAction]: [timestamp, ...existing].slice(0, 40),
+      [uuidAction]: [timestamp, ...existing].slice(0, 40),
     };
-    setInfoNotice(t(resolveLanguage(), 'intercom_ring_prompt'));
     changed = true;
   }
-  if (changed) {
-    scheduleCachePersist();
-  }
+  return changed;
 }
 
 function resolveMatchingStateUuid(states: Record<string, string>, candidates: string[]): string | null {
@@ -678,16 +790,30 @@ function mergeCredentials(
   payload: SaveServerPayload,
   existing: StoredCredentials | null,
 ): StoredCredentials {
-  const explicitSerial = normalizeSerial(payload.serial || '');
-  const origin = normalizeOrigin(payload.origin || buildCloudDnsOriginString(explicitSerial) || existing?.origin || '');
-  const inferredSerial = inferSerialFromOrigin(origin);
+  const explicitSerial = parseMiniserverSerial(payload.serial);
+  if (payload.serial.trim() && !explicitSerial) {
+    throw new Error(t(resolveLanguage(), 'invalid_miniserver_serial'));
+  }
+  const address = parseConnectionAddress(payload.origin || (explicitSerial ? remoteConnectUrl(explicitSerial) : ''));
+  if (!address) {
+    throw new Error(t(resolveLanguage(), 'enter_server_address'));
+  }
+  address.search = '';
+  address.hash = '';
+  address.pathname = address.pathname.replace(/\/{2,}/g, '/');
+  const origin = address.toString().replace(/\/$/, '');
+  const inferredSerial = inferSerialFromOrigin(address);
   const preserveExistingSerial = existing && existing.origin === origin ? existing.serial : null;
   const serial = explicitSerial ?? inferredSerial ?? preserveExistingSerial ?? null;
   const username = payload.username.trim();
-  const password = payload.password || existing?.password || '';
+  const sameAccess = existing?.origin === origin && existing.serial === serial && existing.username === username;
+  const password = payload.password || (sameAccess ? existing.password : '');
 
-  if (!origin && !serial) {
-    throw new Error(t(resolveLanguage(), 'enter_server_address'));
+  if (self.location.protocol === 'https:' && address.protocol === 'http:' && !serial) {
+    throw new Error(t(resolveLanguage(), 'https_connection_address_required'));
+  }
+  if ((address.hostname === 'connect.loxonecloud.com' || address.hostname === 'dns.loxonecloud.com') && !inferredSerial) {
+    throw new Error(t(resolveLanguage(), 'invalid_miniserver_serial'));
   }
   if (!username) {
     throw new Error(t(resolveLanguage(), 'enter_login'));
@@ -702,8 +828,8 @@ function mergeCredentials(
     resolvedOrigin: existing?.resolvedOrigin ?? null,
     username,
     password,
-    intercomUsername: existing?.intercomUsername ?? '',
-    intercomPassword: existing?.intercomPassword ?? '',
+    intercomUsername: sameAccess ? existing.intercomUsername : '',
+    intercomPassword: sameAccess ? existing.intercomPassword : '',
     token: existing?.token ?? null,
     tokenValidUntil: existing?.tokenValidUntil ?? null,
   };
@@ -723,133 +849,16 @@ function mergeCredentials(
   return base;
 }
 
-function normalizeOrigin(value: string): string {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return '';
+function inferSerialFromOrigin(address: URL): string | null {
+  const remoteSerial = remoteConnectSerial(address);
+  if (remoteSerial) {
+    return remoteSerial;
   }
-  const withScheme = /^https?:\/\//i.test(trimmed)
-    ? trimmed
-    : `${shouldUseHttpByDefault(trimmed) ? 'http' : 'https'}://${trimmed}`;
-  const url = new URL(withScheme);
-  if (isCloudDnsLikeHost(url.hostname)) {
-    url.protocol = 'https:';
+  if (address.hostname.endsWith('.dyndns.loxonecloud.com')) {
+    const labels = address.hostname.split('.');
+    return parseMiniserverSerial(labels[labels.length - 4] ?? '');
   }
-  url.search = '';
-  url.hash = '';
-  const normalizedPath = url.pathname.replace(/\/{2,}/g, '/');
-  url.pathname = normalizedPath.endsWith('/') ? normalizedPath : `${normalizedPath}/`;
-  return url.toString().replace(/\/$/, normalizedPath === '/' ? '' : '/');
-}
-
-function isCloudDnsLikeHost(hostname: string): boolean {
-  const lower = hostname.trim().toLowerCase();
-  return (
-    lower === 'dns.loxonecloud.com' ||
-    lower === 'connect.loxonecloud.com' ||
-    lower.endsWith('.dyndns.loxonecloud.com')
-  );
-}
-
-function buildCloudDnsOriginString(serial: string | null): string | null {
-  if (!serial) {
-    return null;
-  }
-  return `https://connect.loxonecloud.com/${encodeURIComponent(serial)}`;
-}
-
-function normalizeSerial(value: string): string | null {
-  const trimmed = value.trim().toUpperCase();
-  if (!trimmed) {
-    return null;
-  }
-  return /^[A-Z0-9]+$/.test(trimmed) ? trimmed : null;
-}
-
-function inferSerialFromOrigin(origin: string): string | null {
-  if (!origin) {
-    return null;
-  }
-  try {
-    const url = new URL(origin);
-    const hostname = url.hostname.toLowerCase();
-    if (hostname === 'dns.loxonecloud.com' || hostname === 'connect.loxonecloud.com') {
-      const pathSegment = url.pathname.split('/').filter(Boolean)[0] ?? '';
-      return normalizeSerial(pathSegment);
-    }
-
-    const labels = url.hostname.split('.');
-    const dyndnsIndex = labels.findIndex((label) => label.toLowerCase() === 'dyndns');
-    if (dyndnsIndex > 0) {
-      return normalizeSerial(labels[dyndnsIndex - 1] ?? '');
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-function shouldUseHttpByDefault(value: string): boolean {
-  const candidate = value.trim().toLowerCase();
-  if (candidate === 'localhost' || candidate.endsWith('.local')) {
-    return true;
-  }
-  const ipv4 = candidate.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (!ipv4) {
-    return false;
-  }
-  const [a, b] = [Number(ipv4[1]), Number(ipv4[2])];
-  return (
-    a === 10 ||
-    a === 127 ||
-    (a === 172 && b >= 16 && b <= 31) ||
-    (a === 192 && b === 168)
-  );
-}
-
-function ensureResolvedOriginRefreshLoop(): void {
-  if (resolvedOriginRefreshTimer !== null) {
-    return;
-  }
-  resolvedOriginRefreshTimer = self.setInterval(() => {
-    void refreshResolvedOriginInBackground();
-  }, RESOLVED_ORIGIN_REFRESH_MS);
-}
-
-async function refreshResolvedOriginInBackground(): Promise<void> {
-  const credentials = config.credentials;
-  if (!credentials || (!credentials.serial && !isCloudDnsOrigin(credentials.origin))) {
-    return;
-  }
-
-  const nextResolvedOrigin = await resolveRuntimeOrigin(credentials.origin, credentials.serial);
-  if (!nextResolvedOrigin || nextResolvedOrigin === credentials.resolvedOrigin) {
-    return;
-  }
-
-  config.credentials = {
-    ...credentials,
-    resolvedOrigin: nextResolvedOrigin,
-  };
-  if (client) {
-    client.updateCredentials(config.credentials);
-  }
-  await persistConfig();
-  emitState();
-
-  if (connection.status !== 'online') {
-    await connect(true);
-  }
-}
-
-function isCloudDnsOrigin(origin: string): boolean {
-  try {
-    const hostname = new URL(origin).hostname.toLowerCase();
-    return hostname === 'dns.loxonecloud.com' || hostname === 'connect.loxonecloud.com';
-  } catch {
-    return false;
-  }
+  return null;
 }
 
 function clampHistory(value: number): number {
@@ -859,14 +868,17 @@ function clampHistory(value: number): number {
   return Math.max(3, Math.min(20, Math.round(value)));
 }
 
-function scheduleCachePersist(): void {
+function scheduleCachePersist(delayMs = 300): void {
+  const scheduledAt = Date.now() + delayMs;
   if (persistCacheTimer !== null) {
+    if (persistCacheAt <= scheduledAt) return;
     clearTimeout(persistCacheTimer);
   }
+  persistCacheAt = scheduledAt;
   persistCacheTimer = self.setTimeout(() => {
     persistCacheTimer = null;
-    void saveCache(cache);
-  }, 300);
+    void saveCache(cache).catch(() => undefined);
+  }, delayMs);
 }
 
 async function persistConfig(): Promise<void> {
