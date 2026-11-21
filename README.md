@@ -52,3 +52,7 @@ npm run dev
 ```
 
 Use `npm run build` to type-check the code and build `dist/`. Use `npm run preview` to serve that build locally. The Web Worker owns application state, persistence, Miniserver communication and intercom signaling. The page handles rendering and WebRTC browser media APIs.
+
+## Artwork
+
+The sign-in screen uses an original generated illustration of the Miniserver Gen. 2. [Loxone product reference](https://www.loxone.com/int/products/miniserver/)

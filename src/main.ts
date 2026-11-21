@@ -86,6 +86,7 @@ let activeHistoryIntercomKey: string | null = null;
 let rtcPlaybackRetryTimer: number | null = null;
 let pendingFrame: number | null = null;
 let lastMarkup: string | null = null;
+let hasLoadedAppState = false;
 let panelFromUrl = new URL(window.location.href).searchParams.get('panel') === '1';
 let wakeLockUnavailable = false;
 let updateStatus: 'close-other-tabs' | 'unavailable' | null = null;
@@ -215,6 +216,7 @@ worker.onmessage = (event: MessageEvent<WorkerToMainMessage>) => {
   const previousViewId = state.currentView?.config.id;
   const previousServer = state.serverForm;
   const previousConnection = state.connection.status;
+  hasLoadedAppState = true;
   state = event.data.state;
   setRuntimeLanguage(state.language);
   document.documentElement.lang = state.language;
@@ -600,6 +602,9 @@ function cancelScheduledRender(): void {
 
 function render(): void {
   cancelScheduledRender();
+  if (!hasLoadedAppState) {
+    return;
+  }
   renderMarkup(`
     <main class="shell ${state.screen === 'loading' ? 'shell-loading' : ''} ${isPanelMode() ? 'shell-panel' : ''}">
       <div class="shell-content">
@@ -608,7 +613,7 @@ function render(): void {
       ${state.settingsOpen ? renderSettingsOverlay() : ''}
       ${selectedHistoryImage ? renderHistoryImageOverlay(selectedHistoryImage) : ''}
       ${renderSavedMessagesOverlay()}
-      ${state.notice && !state.settingsOpen ? renderNotice() : ''}
+      ${state.notice && !state.settingsOpen && state.screen !== 'loading' ? renderNotice() : ''}
     </main>
   `);
   syncModalDialogs();
@@ -795,19 +800,18 @@ function renderLoadingScreen(): string {
 
   return `
     <section class="splash-screen">
-      <div class="splash-art" aria-hidden="true">
-        <div class="door-station">
-          <span class="door-station-lens"></span>
-          <span class="door-station-grille"></span>
-          <span class="door-station-button"></span>
-        </div>
-      </div>
+      <figure class="splash-art">
+        <img class="miniserver-image" src="${import.meta.env.BASE_URL}miniserver.jpg" width="1024" height="1024" alt="" decoding="async" />
+        <figcaption>Loxone Miniserver <span>Gen. 2</span></figcaption>
+      </figure>
       <div class="splash-content">
         ${renderBrand()}
         <h1>${escapeHtml(tr('connection_title'))}</h1>
         ${connecting
           ? `<p class="loading-status" role="status"><span class="spinner" aria-hidden="true"></span>${escapeHtml(tr('connecting_miniserver'))}</p>`
-          : `${renderServerForm()}<p class="connection-copy">${escapeHtml(tr('connection_helper'))}</p>`}
+          : renderServerForm()}
+        ${state.notice && !state.settingsOpen ? renderNotice('inline') : ''}
+        ${connecting ? '' : `<p class="connection-copy">${escapeHtml(tr('connection_helper'))}</p>`}
       </div>
     </section>
   `;
@@ -835,7 +839,9 @@ function renderAppShell(): string {
         <span class="status-pill status-${status}" role="status"${syncedAt ? ` title="${escapeAttribute(syncedAt)}"` : ''}>
           ${escapeHtml(tr(options[status]))}
         </span>
-        <button class="icon-button" data-action="show-app-settings" aria-label="${escapeAttribute(tr('app_settings_aria'))}">⚙</button>
+        <button class="icon-button" data-action="show-app-settings" aria-label="${escapeAttribute(tr('app_settings_aria'))}">
+          <span class="settings-glyph" aria-hidden="true"></span>
+        </button>
         ${isPanelMode() && canUseFullscreen() ? renderFullscreenButton() : ''}
       </div>
     </header>
@@ -958,18 +964,22 @@ function renderIntercomStage(): string {
           <h1>${escapeHtml(config.title || intercom.name)}</h1>
           ${config.title && config.title !== intercom.name ? `<p class="subtle intercom-name">${escapeHtml(intercom.name)}</p>` : ''}
         </div>
-        <button class="icon-button" data-action="show-view-settings" data-view-id="${viewId}" aria-label="${escapeAttribute(tr('view_settings_aria'))}">✎</button>
+        <button class="icon-button" data-action="show-view-settings" data-view-id="${viewId}" aria-label="${escapeAttribute(tr('view_settings_aria'))}">
+          <span class="edit-glyph" aria-hidden="true"></span>
+        </button>
       </header>
       <section class="panel media-panel">
         <div class="media-frame ${intercom.doorbellActive ? 'media-frame-bell-active' : ''} ${conversationActive ? 'media-frame-conversation-active' : ''}">
           ${renderMedia(intercom, fallbackMediaUrl)}
           ${!hasVisualMedia ? `
-            <div class="media-frame-status-overlay">
+            <div class="media-frame-status-overlay" role="status">
               <span class="camera-reticle" aria-hidden="true"></span>
               <span>${escapeHtml(tr(!realtimeAvailable ? 'offline_intercom' : canPreview && !failedPreviewUrls.size ? 'rtc_connecting' : 'media_empty'))}</span>
             </div>
           ` : ''}
-          <span class="media-label ${hasRtcMedia ? 'media-label-live' : ''}" role="status">${escapeHtml(mediaLabel)}</span>
+          ${hasVisualMedia || conversationActive || intercom.doorbellActive
+            ? `<span class="media-label ${hasRtcMedia ? 'media-label-live' : ''}" role="status">${escapeHtml(mediaLabel)}</span>`
+            : ''}
         </div>
         <div class="media-overlay-controls">
           <button class="action-button call-button ${conversationActive ? 'call-button-active' : ''}"
@@ -1012,7 +1022,7 @@ function renderIntercomTools(intercom: CurrentIntercom, config: IntercomViewConf
   `;
   return `
     ${intercom.functions.length ? `
-      <section class="panel action-panel">
+      <section class="action-panel">
         <h2 class="panel-title">${escapeHtml(tr('actions'))}</h2>
         <div class="secondary-action-grid">
           ${intercom.functions.map((item) => `
@@ -1024,7 +1034,7 @@ function renderIntercomTools(intercom: CurrentIntercom, config: IntercomViewConf
         </div>
       </section>
     ` : ''}
-    <section class="panel action-panel voice-panel">
+    <section class="action-panel voice-panel">
       <h2 class="panel-title">${escapeHtml(tr('voice_message'))}</h2>
       ${shortcuts.length ? `
         <div class="panel-voice-shortcuts">
@@ -1055,7 +1065,7 @@ function renderInsightRail(intercom: CurrentIntercom): string {
   const selectedTab = sidePanelTab === 'log' && hasActivityLog ? 'log' : 'history';
   const historyActive = selectedTab === 'history';
   return `
-    <section class="panel insight-rail">
+    <section class="insight-rail">
       <div class="insight-rail-handles">
         <button class="rail-tab-button" data-action="open-side-panel" data-tab="history"
           aria-controls="insight-drawer" aria-expanded="${sidePanelOpen && historyActive}">
@@ -1102,9 +1112,7 @@ function renderActivityLogPanel(intercom: NonNullable<AppViewModel['currentView'
   const groupedEntries = groupActivityLogEntries(intercom.activityLog);
   return `
     <div class="drawer-section">
-      <div class="section-head compact">
-        <p class="eyebrow">${escapeHtml(intercom.activityLogSourceName ?? tr('event_log_source_fallback'))}</p>
-      </div>
+      <h3 class="activity-source">${escapeHtml(intercom.activityLogSourceName ?? tr('event_log_source_fallback'))}</h3>
       ${
         intercom.activityLogSourceName
           ? intercom.activityLog.length > 0
@@ -1146,14 +1154,14 @@ function renderSettingsOverlay(): string {
   const isAppSettings = state.settingsMode === 'app';
   const isViewSettings = state.settingsMode === 'view';
   return `
-    <dialog id="settings-dialog" role="dialog" aria-modal="true" data-render-key="settings-dialog" class="overlay-panel" aria-labelledby="settings-title">
+    <dialog id="settings-dialog" role="dialog" aria-modal="true" data-render-key="settings-dialog" class="overlay-panel ${isViewSettings ? 'view-settings-dialog' : 'app-settings-dialog'}" aria-labelledby="settings-title">
         <div class="section-head">
           <h2 id="settings-title">${escapeHtml(isAppSettings ? tr('app_settings') : tr('view_settings'))}</h2>
           <button class="icon-button" data-action="close-settings" data-dialog-close autofocus aria-label="${escapeAttribute(tr('close_settings_aria'))}">×</button>
         </div>
         ${isAppSettings ? renderAppSettingsContent() : ''}
         ${isViewSettings ? renderViewSettingsContent() : ''}
-        ${state.notice ? renderNotice(true) : ''}
+        ${state.notice ? renderNotice('dialog') : ''}
     </dialog>
   `;
 }
@@ -1271,39 +1279,34 @@ function getAdjacentHistoryImage(offset: -1 | 1): IntercomHistoryItem | null {
 function renderAppSettingsContent(): string {
   return `
     <div class="settings-grid">
-      <article class="panel settings-panel">
-        <div class="section-head compact">
-          <p class="eyebrow">${escapeHtml(tr('server_section'))}</p>
-        </div>
+      <section class="settings-section">
+        <h3 class="panel-title">${escapeHtml(tr('connection_section'))}</h3>
         ${renderServerForm('settings')}
-        ${renderLanguageForm()}
-        ${renderPanelSettings()}
-        <div class="settings-panel-footer">
-          <a
-            class="support-link"
-            href="https://buymeacoffee.com/szymonrybka"
-            target="_blank"
-            rel="noreferrer noopener"
-          >
-            buy me a coffee
-          </a>
-        </div>
-      </article>
-      <article class="panel settings-panel">
-        <div class="section-head compact">
-          <p class="eyebrow">${escapeHtml(tr('views_section'))}</p>
-          <button class="ghost-button mini-button" data-action="configure-intercom-view">${escapeHtml(tr('new_intercom'))}</button>
-        </div>
-        ${state.views.length > 0 ? renderViewList() : `<p class="empty-copy">${escapeHtml(tr('no_saved_views'))}</p>`}
-      </article>
+      </section>
+      <div class="settings-column">
+        <section class="settings-section">
+          <h3 class="panel-title">${escapeHtml(tr('display_section'))}</h3>
+          ${renderLanguageForm()}
+          ${renderPanelSettings()}
+        </section>
+        <section class="settings-section">
+          <div class="section-head">
+            <h3 class="panel-title">${escapeHtml(tr('views_section'))}</h3>
+            <button class="ghost-button mini-button" data-action="configure-intercom-view">${escapeHtml(tr('new_intercom'))}</button>
+          </div>
+          ${state.views.length > 0 ? renderViewList() : `<p class="empty-copy">${escapeHtml(tr('no_saved_views'))}</p>`}
+        </section>
+      </div>
+    </div>
+    <div class="settings-panel-footer">
+      <a class="support-link" href="https://buymeacoffee.com/szymonrybka" target="_blank" rel="noreferrer noopener">Buy me a coffee</a>
     </div>
   `;
 }
 
 function renderLanguageForm(): string {
   return `
-    <div class="server-form server-form-secondary">
-      <label>
+    <label>
         <span>${escapeHtml(tr('language_label'))}</span>
         <select name="languageOverride">
           <option value="" ${state.languageOverride === null ? 'selected' : ''}>${escapeHtml(tr('language_browser_default', { language: describeLanguage(state.language) }))}</option>
@@ -1311,8 +1314,7 @@ function renderLanguageForm(): string {
           <option value="en" ${state.languageOverride === 'en' ? 'selected' : ''}>${escapeHtml(tr('language_english'))}</option>
           <option value="de" ${state.languageOverride === 'de' ? 'selected' : ''}>${escapeHtml(tr('language_german'))}</option>
         </select>
-      </label>
-    </div>
+    </label>
   `;
 }
 
@@ -1368,11 +1370,7 @@ async function togglePanelFullscreen(): Promise<void> {
 function renderViewSettingsContent(): string {
   const editorView = localViewDraft ?? state.currentEditorView;
   return `
-    <div class="settings-grid settings-grid-single">
-      <article class="panel">
-        ${editorView ? renderViewEditor(editorView) : `<p class="empty-copy">${escapeHtml(tr('no_editor_view'))}</p>`}
-      </article>
-    </div>
+    ${editorView ? renderViewEditor(editorView) : `<p class="empty-copy">${escapeHtml(tr('no_editor_view'))}</p>`}
   `;
 }
 
@@ -1438,7 +1436,7 @@ function renderViewList(): string {
                 <strong>${escapeHtml(view.title)}</strong>
                 ${deviceName !== view.title ? `<p>${escapeHtml(deviceName)}</p>` : ''}
               </div>
-              <div class="inline-actions">
+              <div class="inline-actions view-list-actions">
                 <button class="ghost-button mini-button" data-action="edit-view" data-view-id="${escapeAttribute(view.id)}">${escapeHtml(tr('edit'))}</button>
                 <button class="ghost-button mini-button" data-action="set-default-view" data-view-id="${escapeAttribute(view.id)}">${escapeHtml(tr('default'))}</button>
                 <button class="ghost-button mini-button" data-action="delete-view" data-view-id="${escapeAttribute(view.id)}">${escapeHtml(tr('delete'))}</button>
@@ -1517,19 +1515,14 @@ function renderTtsRow(phrase: QuickTtsPhrase): string {
   `;
 }
 
-function renderNotice(inDialog = false): string {
+function renderNotice(placement: 'toast' | 'dialog' | 'inline' = 'toast'): string {
   if (!state.notice) {
     return '';
   }
-  const label =
-    state.notice.kind === 'error' ? tr('app_warning') : state.notice.kind === 'success' ? tr('app_ok') : tr('app_info');
   return `
-    <section class="notice notice-${state.notice.kind} toast-notice ${inDialog ? 'dialog-notice' : ''}" role="${state.notice.kind === 'error' ? 'alert' : 'status'}">
+    <section class="notice notice-${state.notice.kind} toast-notice notice-placement-${placement}" role="${state.notice.kind === 'error' ? 'alert' : 'status'}">
       <span class="toast-dot toast-dot-${state.notice.kind}" aria-hidden="true"></span>
-      <div>
-        <strong>${escapeHtml(label)}</strong>
-        <p>${escapeHtml(state.notice.message)}</p>
-      </div>
+      <p>${escapeHtml(state.notice.message)}</p>
       <button class="icon-button" data-action="dismiss-notice" aria-label="${escapeAttribute(tr('dismiss_notice_aria'))}">×</button>
     </section>
   `;

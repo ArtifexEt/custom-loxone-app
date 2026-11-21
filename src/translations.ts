@@ -4,6 +4,7 @@ type TranslationParams = Record<string, string | number>;
 
 const TRANSLATIONS = {
   en: {
+    display_section: 'Display',
     connection_address_or_serial: 'Miniserver address or serial number',
     connection_serial_hint: 'Find the serial number on the Miniserver label or in Loxone Config.',
     miniserver_serial: 'Miniserver serial number',
@@ -120,7 +121,7 @@ const TRANSLATIONS = {
     password_placeholder: 'Loxone password',
     save_and_connect: 'Save and connect',
     edit: 'Edit',
-    default: 'Default',
+    default: 'Set as default',
     delete: 'Delete',
     view_name: 'View name',
     intercom_label: 'Intercom',
@@ -216,6 +217,7 @@ const TRANSLATIONS = {
     enter_password: 'Enter the Loxone password.',
   },
   pl: {
+    display_section: 'Wyświetlanie',
     connection_address_or_serial: 'Adres lub numer seryjny Miniservera',
     connection_serial_hint: 'Numer seryjny znajdziesz na etykiecie Miniservera lub w Loxone Config.',
     miniserver_serial: 'Numer seryjny Miniservera',
@@ -316,7 +318,7 @@ const TRANSLATIONS = {
     close_photo_aria: 'Zamknij podgląd zdjęcia',
     server_section: 'Serwer',
     views_section: 'Widoki',
-    new_intercom: 'Nowy Intercom',
+    new_intercom: 'Dodaj interkom',
     no_saved_views: 'Nie masz jeszcze zapisanych widoków.',
     language_label: 'Język aplikacji',
     language_browser_default: 'Domyślnie z przeglądarki ({language})',
@@ -332,7 +334,7 @@ const TRANSLATIONS = {
     password_placeholder: 'Hasło do Loxone',
     save_and_connect: 'Zapisz i połącz',
     edit: 'Edytuj',
-    default: 'Domyślny',
+    default: 'Ustaw jako domyślny',
     delete: 'Usuń',
     view_name: 'Nazwa widoku',
     intercom_label: 'Interkom',
@@ -428,6 +430,7 @@ const TRANSLATIONS = {
     enter_password: 'Podaj hasło do Loxone.',
   },
   de: {
+    display_section: 'Anzeige',
     connection_address_or_serial: 'Adresse oder Seriennummer des Miniservers',
     connection_serial_hint: 'Die Seriennummer steht auf dem Miniserver oder in Loxone Config.',
     miniserver_serial: 'Seriennummer des Miniservers',
@@ -544,7 +547,7 @@ const TRANSLATIONS = {
     password_placeholder: 'Loxone-Passwort',
     save_and_connect: 'Speichern und verbinden',
     edit: 'Bearbeiten',
-    default: 'Standard',
+    default: 'Als Standard festlegen',
     delete: 'Löschen',
     view_name: 'Ansichtsname',
     intercom_label: 'Intercom',
