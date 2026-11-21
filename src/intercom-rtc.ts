@@ -38,6 +38,7 @@ interface PeerSession {
   negotiating: boolean;
   firstFrame: boolean;
   videoTimer: number | null;
+  signalingReady: boolean;
   historyLoading: boolean;
 }
 
@@ -82,8 +83,8 @@ export class IntercomRtcSession {
     const previous = this.intercom;
     this.intercom = intercom;
     if (intercom?.uuidAction === previous?.uuidAction && intercom?.signalingUrl === previous?.signalingUrl) {
-      if (intercom && previous?.doorbellActive && !intercom.doorbellActive && this.session) {
-        void this.refreshHistory(this.session, intercom);
+      if (previous?.doorbellActive && !intercom?.doorbellActive) {
+        this.refreshArchive();
       }
       return;
     }
@@ -91,6 +92,15 @@ export class IntercomRtcSession {
     this.retryCount = 0;
     this.closeSession();
     if (intercom) {
+      this.startPreview();
+    }
+  }
+
+  refreshArchive(): void {
+    if (this.session?.signalingReady && this.intercom) {
+      void this.refreshHistory(this.session, this.intercom);
+    } else if (!this.session && this.intercom) {
+      this.clearRetry();
       this.startPreview();
     }
   }
@@ -221,6 +231,7 @@ export class IntercomRtcSession {
       negotiating: true,
       firstFrame: false,
       videoTimer: null,
+      signalingReady: false,
       historyLoading: false,
     };
     this.session = session;
@@ -272,6 +283,8 @@ export class IntercomRtcSession {
 
   private async openAndStartVideo(session: PeerSession, intercom: IntercomViewModel): Promise<void> {
     await this.sendRequest(session, { operation: 'open', uuidAction: intercom.uuidAction });
+    throwIfAborted(session.controller.signal);
+    session.signalingReady = true;
     // Preserve the official app's bootstrap without making optional RPCs a
     // prerequisite for the preview.
     void this.request(session, 'info').catch(() => undefined);

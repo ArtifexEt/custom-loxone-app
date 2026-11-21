@@ -58,6 +58,12 @@ img { max-width: 100%; }
   padding: 0 max(var(--gutter), env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom))
     max(var(--gutter), env(safe-area-inset-left));
 }
+.shell-with-insight {
+  --insight-handle-width: 46px;
+  padding-right: calc(var(--insight-handle-width) + 10px);
+  padding-right: max(var(--gutter), calc(var(--insight-handle-width) + 10px + env(safe-area-inset-right, 0px)));
+}
+.shell-panel.shell-with-insight { --insight-handle-width: 52px; }
 
 .panel {
   padding: 22px;
@@ -465,7 +471,7 @@ img { max-width: 100%; }
 .conversation-status p { color: #ffd4c9; }
 
 .intercom-side { display: grid; gap: 0; min-width: 0; }
-.action-panel, .insight-rail { min-width: 0; border-top: 1px solid var(--line-strong); }
+.action-panel { min-width: 0; border-top: 1px solid var(--line-strong); }
 .action-panel { padding: 14px 0 18px; }
 .panel-title { margin-bottom: 10px; font-size: 1rem; font-weight: 650; letter-spacing: -.012em; }
 .secondary-action-grid, .panel-voice-shortcuts { display: grid; }
@@ -485,32 +491,94 @@ img { max-width: 100%; }
 .tts-controls > button { flex: 1 1 104px; }
 .saved-messages-button { font-size: .88rem; }
 
-.insight-rail-handles { display: flex; }
+.insight-rail {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+}
+.shell-content[aria-hidden="true"] .insight-rail { visibility: hidden; }
+.insight-rail-slider {
+  position: absolute;
+  top: 50%;
+  right: env(safe-area-inset-right, 0px);
+  display: flex;
+  align-items: center;
+  transform: translate(calc(100% - var(--insight-handle-width)), -50%);
+  transition: transform 200ms ease-out;
+}
+.insight-rail-open { transform: translate(0, -50%); }
+.insight-rail-handles {
+  display: grid;
+  width: var(--insight-handle-width);
+  flex: 0 0 var(--insight-handle-width);
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-right: 0;
+  border-radius: var(--radius) 0 0 var(--radius);
+  background: var(--surface);
+  pointer-events: auto;
+}
 .rail-tab-button {
-  flex: 1;
-  justify-content: space-between;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 96px;
+  padding: 12px 0;
   border: 0;
-  border-bottom: 2px solid var(--line);
   border-radius: 0;
   font-size: .9rem;
+  touch-action: pan-y;
 }
-.rail-tab-button::after {
-  content: "";
-  width: 6px;
-  height: 6px;
-  flex: 0 0 auto;
-  margin-top: -3px;
-  border-right: 1px solid currentColor;
-  border-bottom: 1px solid currentColor;
-  transform: rotate(45deg);
+.rail-tab-button + .rail-tab-button { border-top: 1px solid var(--line); }
+.rail-tab-button span {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
 }
-.rail-tab-button[aria-expanded="true"] { border-color: var(--pine); color: var(--pine-dark); }
-.rail-tab-button[aria-expanded="true"]::after { margin-top: 3px; transform: rotate(225deg); }
+.rail-tab-button:focus-visible { outline-offset: -4px; }
+.rail-tab-button[aria-expanded="true"] {
+  background: var(--pine-soft);
+  box-shadow: inset 3px 0 var(--pine);
+  color: var(--pine-dark);
+}
 .insight-drawer {
-  max-height: min(56vh, 500px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: calc(100vw - var(--insight-handle-width) - 16px - env(safe-area-inset-right, 0px));
+  max-width: 390px;
+  height: 84vh;
+  height: 84dvh;
+  max-height: 720px;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-right: 0;
+  border-radius: var(--radius) 0 0 var(--radius);
+  background: var(--surface);
+  box-shadow: -8px 12px 28px #19242a24;
+  pointer-events: auto;
+}
+.insight-drawer[aria-hidden="true"] {
+  visibility: hidden;
+  transition: visibility 0s linear 200ms;
+  pointer-events: none;
+}
+.insight-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+  padding: 10px 14px;
+}
+.insight-drawer-header h2 { font-size: 1.2rem; }
+.insight-drawer-content {
   overflow: auto;
   overscroll-behavior: contain;
-  padding: 12px 3px 3px;
+  padding: 12px 14px;
 }
 .history-grid { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .history-card {
@@ -536,6 +604,23 @@ img { max-width: 100%; }
   background: #dfe5e7;
 }
 .history-card span { padding: 7px 8px; overflow-wrap: anywhere; }
+.history-card .history-image-unavailable {
+  display: grid;
+  place-items: center;
+  min-height: 82px;
+  aspect-ratio: 16 / 10;
+  color: var(--muted);
+  background: #e4e9eb;
+  text-align: center;
+}
+.history-retry { margin-top: 12px; }
+.history-lightbox-empty {
+  display: grid;
+  place-items: center;
+  min-height: 160px;
+  color: #ccd5d7;
+}
+
 .activity-source { margin-bottom: 14px; font-size: .95rem; }
 .activity-log, .activity-log-group { display: grid; gap: 8px; }
 .activity-log-date, .activity-log-time { color: var(--muted); font: .75rem/1.4 var(--mono); }
@@ -704,7 +789,6 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
 @media (max-width: 840px) {
   .intercom-layout { grid-template-columns: minmax(0, 1fr); }
   .intercom-side { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; }
-  .insight-rail { grid-column: 1 / -1; }
   .history-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 125px), 1fr)); }
 }
 @media (max-width: 640px) {
@@ -801,7 +885,7 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
   gap: 8px;
   padding: 8px;
 }
-.shell-panel .action-button, .shell-panel .ghost-button, .shell-panel .rail-tab-button, .shell-panel .view-chip,
+.shell-panel .action-button, .shell-panel .ghost-button, .shell-panel .view-chip,
 .shell-panel .toggle-row {
   min-height: var(--touch-height);
   touch-action: manipulation;
@@ -819,8 +903,7 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
 .shell-panel .intercom-side {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-.shell-panel .insight-rail { grid-column: 1 / -1; }
-.intercom-side > :nth-last-child(2):first-child { grid-column: 1 / -1; }
+.intercom-side > :only-child { grid-column: 1 / -1; }
 .shell-panel .panel-title { font-size: 1.12rem; }
 .panel-voice-compose summary {
   cursor: pointer;

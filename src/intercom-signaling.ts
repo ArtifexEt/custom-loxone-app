@@ -130,6 +130,7 @@ class SignalSocket {
   matches(intercom: IntercomViewModel | null, username: string): boolean {
     return this.intercom.uuidAction === intercom?.uuidAction &&
       this.intercom.signalingUrl === intercom?.signalingUrl &&
+      this.intercom.origin === intercom?.origin &&
       this.username === username && Boolean(intercom.authToken);
   }
 
@@ -156,14 +157,17 @@ class SignalSocket {
       }
       result = await this.rpc('getLastActivities', params.slice(0, 2));
     }
-    const intercom = this.intercom;
-    const base = intercom.origin && intercom.deviceUuid
-      ? new URL(`${intercom.origin.replace(/\/$/, '')}/proxy/${encodeURIComponent(intercom.deviceUuid)}/`)
-      : intercom.historyBaseUrl ? new URL(intercom.historyBaseUrl) : null;
-    if (!base || !Array.isArray(result)) {
+    const { origin, deviceUuid, address } = this.intercom;
+    const proxy = origin && deviceUuid
+      ? new URL(`${origin.replace(/\/$/, '')}/proxy/${encodeURIComponent(deviceUuid)}/`)
+      : null;
+    const direct = directArchiveBase(this.intercom);
+    if ((!proxy && !direct) || !Array.isArray(result)) {
       return [];
     }
-    const token = intercom.transportMode === 'secure-proxy' ? this.photoToken : intercom.authToken;
+
+    const trustedHosts = [proxy?.host, address, direct?.host];
+    const proxyPrefix = proxy?.pathname;
     const byTimestamp = new Map<string, IntercomHistoryItem>();
     for (const item of result.slice(0, 100)) {
       const record = asRecord(item);
@@ -171,11 +175,28 @@ class SignalSocket {
         continue;
       }
       const timestamp = activityTimestamp(record.date);
-      const path = record.imagePath ?? record.path ?? record.thumbPath ?? record.thumbnailPath ??
-        record.thumbnail ?? record.image;
-      const imageUrl = resolveArchiveImage(base, path, token);
-      if (timestamp && imageUrl && !byTimestamp.has(timestamp)) {
-        byTimestamp.set(timestamp, { timestamp, imageUrl, label: timestamp });
+      if (!timestamp || byTimestamp.has(timestamp)) {
+        continue;
+      }
+      const imagePaths = [record.imagePath, record.path, record.image];
+      const thumbnailPaths = [record.thumbPath, record.thumbnailPath, record.thumbnail];
+      const paths = [...imagePaths, ...thumbnailPaths];
+      const previews = [...thumbnailPaths, ...imagePaths];
+      const proxyImage = archiveImage(proxy, paths, trustedHosts, proxyPrefix);
+      const proxyThumbnail = archiveImage(proxy, previews, trustedHosts, proxyPrefix);
+      const directImage = archiveImage(direct, paths, trustedHosts, proxyPrefix, this.photoToken);
+      const directThumbnail = archiveImage(direct, previews, trustedHosts, proxyPrefix, this.photoToken);
+      const imageUrl = proxyImage ?? directImage;
+      const thumbnailUrl = proxyThumbnail ?? directThumbnail;
+      if (imageUrl) {
+        byTimestamp.set(timestamp, {
+          timestamp,
+          label: timestamp,
+          imageUrl,
+          ...(thumbnailUrl && thumbnailUrl !== imageUrl ? { thumbnailUrl } : {}),
+          ...(proxyImage && directImage ? { fallbackImageUrl: directImage } : {}),
+          ...(proxyThumbnail && directThumbnail ? { fallbackThumbnailUrl: directThumbnail } : {}),
+        });
       }
     }
     return [...byTimestamp.values()].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
@@ -370,35 +391,100 @@ function activityTimestamp(value: unknown): string | null {
   return timestamp > 0 && Number.isFinite(date.getTime()) ? date.toISOString() : null;
 }
 
-function resolveArchiveImage(base: URL, value: unknown, token: string | null): string | null {
+function directArchiveBase(intercom: IntercomViewModel): URL | null {
+  if (intercom.transportMode !== 'lan-direct' || !intercom.historyBaseUrl || !intercom.signalingUrl) {
+    return null;
+  }
+  const base = new URL(intercom.historyBaseUrl);
+  const signaling = new URL(intercom.signalingUrl);
+  signaling.protocol = signaling.protocol === 'wss:' ? 'https:' : 'http:';
+  if (signaling.origin !== base.origin) {
+    return null;
+  }
+  base.username = '';
+  base.password = '';
+  base.search = '';
+  base.hash = '';
+  return base;
+}
+
+function archiveImage(
+  base: URL | null,
+  candidates: unknown[],
+  trustedHosts: Array<string | null | undefined>,
+  proxyPrefix: string | undefined,
+  token?: string | null,
+): string | null {
+  if (!base || token === null) {
+    return null;
+  }
+  for (const value of candidates) {
+    const photo = resolveArchiveImage(base, value, trustedHosts, proxyPrefix, token);
+    if (photo) {
+      return photo;
+    }
+  }
+  return null;
+}
+
+function resolveArchiveImage(
+  base: URL,
+  value: unknown,
+  trustedHosts: Array<string | null | undefined>,
+  proxyPrefix: string | undefined,
+  token?: string,
+): string | null {
   if (typeof value !== 'string' || !value || value.length > 4096 ||
       value.startsWith('//') || /[\u0000-\u0020\u007f\\#]/.test(value)) {
     return null;
   }
-  const [path, ...query] = value.split('?');
-  const relative = path.replace(/^\//, '');
+  const separator = value.indexOf('?');
+  let path = separator < 0 ? value : value.slice(0, separator);
+  if (/^https?:\/\//i.test(path)) {
+    const hostStart = path.indexOf('://') + 3;
+    const pathStart = path.indexOf('/', hostStart);
+    if (pathStart < 0) {
+      return null;
+    }
+    try {
+      const url = new URL(path.slice(0, pathStart));
+      if (url.username || url.password || !trustedHosts.includes(url.host)) {
+        return null;
+      }
+    } catch {
+      return null;
+    }
+    path = path.slice(pathStart);
+  }
+
+  // Strip only this Intercom's existing proxy prefix. Keep the supplied query
+  // bytes, because some firmware signs the activity URL's original parameters.
+  const hasProxyPrefix = proxyPrefix && path.startsWith(proxyPrefix);
+  if (!hasProxyPrefix && /^\/?proxy\//i.test(path)) {
+    return null;
+  }
+  const relative = hasProxyPrefix ? path.slice(proxyPrefix.length) : path.replace(/^\//, '');
   if (!/^[a-z0-9._~+=/-]+$/i.test(relative) ||
-      !(/^(jpg|snapshots)\//i.test(relative) || /\.jpe?g$/i.test(relative)) ||
+      !(/^(images|jpg|snapshots)\//i.test(relative) || /\.jpe?g$/i.test(relative)) ||
       relative.split('/').some(part => !part || part === '.' || part === '..')) {
     return null;
   }
-  const url = new URL(relative + (query.length ? `?${query.join('?')}` : ''), base);
+  const url = new URL(relative, base);
   if (url.origin !== base.origin || !url.pathname.startsWith(base.pathname)) {
     return null;
   }
-  const queryKeys: string[] = [];
-  url.searchParams.forEach((_value, key) => queryKeys.push(key));
-  for (const key of queryKeys) {
-    if (/^(auth|autht)$/i.test(key)) {
-      url.searchParams.delete(key);
+  const query = separator < 0 ? [] : value.slice(separator + 1).split('&').filter((pair) => {
+    if (!pair) return false;
+    try {
+      return !/^(auth|autht)$/i.test(decodeURIComponent(pair.split('=', 1)[0]));
+    } catch {
+      return false;
     }
-  }
+  });
   if (token) {
-    url.username = '';
-    url.password = '';
-    url.searchParams.set('autht', token);
+    query.push(`autht=${encodeURIComponent(token)}`);
   }
-  return url.toString();
+  return query.length ? `${url.href}?${query.join('&')}` : url.href;
 }
 
 function buildAuthentication(params: unknown[], username: string, token: string): [string, string, string] {

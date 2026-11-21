@@ -116,6 +116,9 @@ export interface IntercomHistoryItem {
   timestamp: string;
   label: string;
   imageUrl: string;
+  thumbnailUrl?: string;
+  fallbackImageUrl?: string;
+  fallbackThumbnailUrl?: string;
 }
 
 export interface ActivityLogSourceSummary {

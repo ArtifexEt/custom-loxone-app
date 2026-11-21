@@ -27,8 +27,6 @@ if (!rootElement) {
 const root = rootElement;
 type SidePanelTab = 'history' | 'log';
 type BrowserConversationState = 'idle' | 'starting' | 'active' | 'error';
-const TRANSPARENT_1PX =
-  'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
 
 let state: AppViewModel = {
   screen: 'loading',
@@ -58,6 +56,8 @@ let state: AppViewModel = {
 };
 let sidePanelOpen = false;
 let sidePanelTab: SidePanelTab = 'history';
+let sidePanelSwipe: { pointerId: number; tab: SidePanelTab; x: number; y: number } | null = null;
+let suppressSidePanelClick = false;
 let browserConversationState: BrowserConversationState = 'idle';
 let browserConversationMessage = '';
 let browserConversationAttempt: AbortController | null = null;
@@ -77,7 +77,8 @@ let localServerDraft: {
 } | null = null;
 let browserHistoryByIntercomUuidAction = new Map<string, IntercomHistoryItem[]>();
 let historyImageCache = new Map<string, string>();
-let failedHistoryImageLoads = new Set<string>();
+const failedHistoryImageUrls = new Set<string>();
+const failedHistoryImageEncodes = new Set<string>();
 const requestedHistoryImageKeys = new Set<string>();
 const encodingHistoryImageKeys = new Set<string>();
 let historyCacheGeneration = 0;
@@ -130,9 +131,11 @@ const intercomRtcSession = new IntercomRtcSession({
     browserConversationMessage = tr('signaling_closed');
   },
   history: (items, intercom) => {
-    browserHistoryByIntercomUuidAction.set(intercom.uuidAction,
-      items.map(item => ({ ...item, label: formatDate(item.timestamp) })),
-    );
+    const history = items.map(item => ({ ...item, label: formatDate(item.timestamp) }));
+    browserHistoryByIntercomUuidAction.set(intercom.uuidAction, history);
+    if (selectedHistoryImage && state.currentView?.intercom?.uuidAction === intercom.uuidAction) {
+      selectedHistoryImage = history.find(item => item.timestamp === selectedHistoryImage?.timestamp) ?? selectedHistoryImage;
+    }
     scheduleRender();
   },
 });
@@ -224,6 +227,7 @@ worker.onmessage = (event: MessageEvent<WorkerToMainMessage>) => {
   if (previousViewId !== state.currentView?.config.id) {
     closeSavedMessagesDialog();
     selectedHistoryImage = null;
+    sidePanelOpen = false;
   }
   const intercom = state.currentView?.intercom;
   const accountChanged = previousServer.origin !== state.serverForm.origin ||
@@ -235,6 +239,9 @@ worker.onmessage = (event: MessageEvent<WorkerToMainMessage>) => {
   if (accountChanged || previousViewId !== state.currentView?.config.id || previousConnection !== state.connection.status) {
     failedPreviewUrls.clear();
   }
+  if (previousConnection !== 'online' && isRealtimeAvailable()) {
+    failedHistoryImageUrls.clear();
+  }
   if (accountChanged || previousIntercom?.uuidAction !== intercom?.uuidAction ||
       previousIntercom?.signalingUrl !== intercom?.signalingUrl ||
       (previousConnection === 'online' && !isRealtimeAvailable())) {
@@ -245,7 +252,8 @@ worker.onmessage = (event: MessageEvent<WorkerToMainMessage>) => {
   if (accountChanged || nextIntercomKey !== activeHistoryIntercomKey) {
     activeHistoryIntercomKey = nextIntercomKey;
     historyImageCache = new Map();
-    failedHistoryImageLoads = new Set();
+    failedHistoryImageUrls.clear();
+    failedHistoryImageEncodes.clear();
     requestedHistoryImageKeys.clear();
     encodingHistoryImageKeys.clear();
     historyCacheGeneration += 1;
@@ -274,7 +282,53 @@ root.addEventListener('click', (event) => {
     ? event.target.closest<HTMLElement>('[data-action]')
     : null;
   if (action && !action.matches(':disabled')) {
+    if (suppressSidePanelClick && event.detail !== 0 && action.dataset.action === 'open-side-panel') {
+      suppressSidePanelClick = false;
+      return;
+    }
     handleUiAction(action);
+  }
+});
+
+root.addEventListener('pointerdown', (event) => {
+  if (!event.isPrimary) {
+    return;
+  }
+  suppressSidePanelClick = false;
+  const handle = event.target instanceof Element
+    ? event.target.closest<HTMLElement>('.rail-tab-button')
+    : null;
+  if (handle && event.pointerType !== 'mouse') {
+    sidePanelSwipe = {
+      pointerId: event.pointerId,
+      tab: handle.dataset.tab === 'log' ? 'log' : 'history',
+      x: event.clientX,
+      y: event.clientY,
+    };
+  }
+});
+
+root.addEventListener('pointerup', (event) => {
+  if (!sidePanelSwipe || sidePanelSwipe.pointerId !== event.pointerId) {
+    return;
+  }
+  const { tab, x, y } = sidePanelSwipe;
+  sidePanelSwipe = null;
+  const deltaX = event.clientX - x;
+  if (Math.abs(deltaX) < 42 || Math.abs(deltaX) < Math.abs(event.clientY - y) * 1.45) {
+    return;
+  }
+  suppressSidePanelClick = true;
+  if (deltaX < 0) {
+    openSidePanel(tab);
+  } else if (sidePanelOpen) {
+    closeSidePanel();
+  }
+});
+
+root.addEventListener('pointercancel', (event) => {
+  if (sidePanelSwipe?.pointerId === event.pointerId) {
+    sidePanelSwipe = null;
   }
 });
 
@@ -289,6 +343,11 @@ root.addEventListener('cancel', (event) => {
 
 root.addEventListener('keydown', (event) => {
   if (handleLegacyDialogKeys(event)) {
+    return;
+  }
+  if (event.key === 'Escape' && sidePanelOpen && !root.querySelector('dialog[open]')) {
+    event.preventDefault();
+    closeSidePanel();
     return;
   }
   if (!selectedHistoryImage || !(event.target instanceof Element) || !event.target.closest('.history-lightbox')) {
@@ -331,9 +390,15 @@ function handleUiAction(actionElement: HTMLElement): void {
       return;
     case 'open-side-panel': {
       const tab = actionElement.dataset.tab === 'log' ? 'log' : 'history';
-      sidePanelOpen = !sidePanelOpen || sidePanelTab !== tab;
-      sidePanelTab = tab;
-      render();
+      if (sidePanelOpen && sidePanelTab === tab) {
+        closeSidePanel();
+      } else {
+        openSidePanel(tab);
+      }
+      return;
+    }
+    case 'close-side-panel': {
+      closeSidePanel();
       return;
     }
     case 'open-history-image': {
@@ -347,6 +412,12 @@ function handleUiAction(actionElement: HTMLElement): void {
       render();
       return;
     }
+    case 'retry-history-images':
+      failedHistoryImageUrls.clear();
+      intercomRtcSession.refreshArchive();
+      render();
+      root.querySelector<HTMLButtonElement>('[data-action="close-side-panel"]')?.focus({ preventScroll: true });
+      return;
     case 'close-history-image':
       selectedHistoryImage = null;
       render();
@@ -570,6 +641,19 @@ root.addEventListener(
 
 root.addEventListener('error', (event) => {
   const media = event.target;
+  if (media instanceof HTMLImageElement && media.dataset.historySourceUrl) {
+    const src = media.getAttribute('src');
+    if (src?.startsWith('data:')) {
+      const key = normalizeHistoryImageCacheKey(media.dataset.historySourceUrl);
+      if (key && historyImageCache.delete(key)) {
+        scheduleRender();
+      }
+    } else if (src && !failedHistoryImageUrls.has(src)) {
+      failedHistoryImageUrls.add(src);
+      scheduleRender();
+    }
+    return;
+  }
   if (!(media instanceof HTMLElement) || media.id !== 'intercom-live-media') {
     return;
   }
@@ -605,8 +689,9 @@ function render(): void {
   if (!hasLoadedAppState) {
     return;
   }
+  const hasInsightRail = state.screen === 'dashboard' && Boolean(state.currentView?.intercom);
   renderMarkup(`
-    <main class="shell ${state.screen === 'loading' ? 'shell-loading' : ''} ${isPanelMode() ? 'shell-panel' : ''}">
+    <main class="shell ${state.screen === 'loading' ? 'shell-loading' : ''} ${isPanelMode() ? 'shell-panel' : ''} ${hasInsightRail ? 'shell-with-insight' : ''}">
       <div class="shell-content">
         ${state.screen === 'loading' ? renderLoadingScreen() : renderAppShell()}
       </div>
@@ -881,10 +966,12 @@ function renderViewPicker(): string {
 }
 
 function renderDashboard(): string {
+  const intercom = state.currentView?.intercom;
   return `
     <section class="dashboard-screen">
       ${state.views.length > 1 ? renderViewTabs() : ''}
       ${state.currentView ? renderIntercomStage() : renderEmptyDashboard()}
+      ${intercom ? renderInsightRail(intercom) : ''}
     </section>
   `;
 }
@@ -998,7 +1085,6 @@ function renderIntercomStage(): string {
       </section>
       <div class="intercom-side">
         ${renderIntercomTools(intercom, config, controlsDisabled)}
-        ${renderInsightRail(intercom)}
       </div>
     </article>
   `;
@@ -1060,28 +1146,60 @@ function renderSavedMessagesButton(viewId: string, controlsDisabled: string): st
     data-view-id="${viewId}" ${controlsDisabled}>${escapeHtml(tr('saved_messages'))}</button>`;
 }
 
+function openSidePanel(tab: SidePanelTab): void {
+  if (sidePanelOpen && sidePanelTab === tab) {
+    return;
+  }
+  sidePanelTab = tab;
+  sidePanelOpen = true;
+  render();
+  const content = root.querySelector<HTMLElement>('.insight-drawer-content');
+  if (content) {
+    content.scrollTop = 0;
+  }
+  root.querySelector<HTMLButtonElement>('[data-action="close-side-panel"]')?.focus({ preventScroll: true });
+}
+
+function closeSidePanel(): void {
+  sidePanelOpen = false;
+  render();
+  root.querySelector<HTMLButtonElement>(`[data-action="open-side-panel"][data-tab="${sidePanelTab}"]`)?.focus({ preventScroll: true });
+}
+
 function renderInsightRail(intercom: CurrentIntercom): string {
   const hasActivityLog = Boolean(intercom.activityLogSourceName);
   const selectedTab = sidePanelTab === 'log' && hasActivityLog ? 'log' : 'history';
   const historyActive = selectedTab === 'history';
   return `
-    <section class="insight-rail">
-      <div class="insight-rail-handles">
-        <button class="rail-tab-button" data-action="open-side-panel" data-tab="history"
-          aria-controls="insight-drawer" aria-expanded="${sidePanelOpen && historyActive}">
-          ${escapeHtml(tr('photos'))}
-        </button>
-        ${hasActivityLog ? `
-          <button class="rail-tab-button" data-action="open-side-panel" data-tab="log"
-            aria-controls="insight-drawer" aria-expanded="${sidePanelOpen && !historyActive}">
-            ${escapeHtml(tr('log'))}
+    <div class="insight-rail">
+      <div class="insight-rail-slider ${sidePanelOpen ? 'insight-rail-open' : ''}">
+        <div class="insight-rail-handles">
+          <button type="button" class="rail-tab-button" data-action="open-side-panel" data-tab="history"
+            aria-controls="insight-drawer" aria-expanded="${sidePanelOpen && historyActive}">
+            <span>${escapeHtml(tr('photos'))}</span>
           </button>
-        ` : ''}
+          ${hasActivityLog ? `
+            <button type="button" class="rail-tab-button" data-action="open-side-panel" data-tab="log"
+              aria-controls="insight-drawer" aria-expanded="${sidePanelOpen && !historyActive}">
+              <span>${escapeHtml(tr('log'))}</span>
+            </button>
+          ` : ''}
+        </div>
+        <aside class="insight-drawer" id="insight-drawer"
+          ${sidePanelOpen ? 'aria-labelledby="insight-drawer-title"' : 'aria-hidden="true"'}>
+          ${sidePanelOpen ? `
+            <header class="insight-drawer-header">
+              <h2 id="insight-drawer-title">${escapeHtml(tr(historyActive ? 'photos' : 'log'))}</h2>
+              <button type="button" class="icon-button" data-action="close-side-panel"
+                aria-label="${escapeAttribute(tr('close_side_panel_aria'))}">×</button>
+            </header>
+            <div class="insight-drawer-content">
+              ${historyActive ? renderHistoryPanel(intercom) : renderActivityLogPanel(intercom)}
+            </div>
+          ` : ''}
+        </aside>
       </div>
-      <div class="insight-drawer" id="insight-drawer" ${sidePanelOpen ? '' : 'hidden'}>
-        ${sidePanelOpen ? historyActive ? renderHistoryPanel(intercom) : renderActivityLogPanel(intercom) : ''}
-      </div>
-    </section>
+    </div>
   `;
 }
 
@@ -1090,18 +1208,29 @@ function renderHistoryPanel(intercom: CurrentIntercom): string {
   if (!items.length) {
     return `<p class="empty-copy">${escapeHtml(tr('no_photos'))}</p>`;
   }
+  const photos = items.map(item => ({
+    item,
+    image: resolveHistoryPhoto(item, intercom, 'thumbnail'),
+  }));
   return `
     <div class="history-grid">
-      ${items.map((item) => `
+      ${photos.map(({ item, image }) => `
         <button class="history-card" type="button" data-action="open-history-image"
           data-timestamp="${escapeAttribute(item.timestamp)}"
           aria-label="${escapeAttribute(tr('open_photo_aria', { label: item.label }))}">
-          <img src="${escapeAttribute(resolveHistoryImageDisplayUrl(item.imageUrl, intercom))}"
-            alt="" loading="lazy" decoding="async" data-history-source-url="${escapeAttribute(item.imageUrl)}" />
+          ${image
+            ? `<img src="${escapeAttribute(image.src)}" alt="" loading="lazy" decoding="async"
+                referrerpolicy="no-referrer" data-history-source-url="${escapeAttribute(image.sourceUrl)}" />`
+            : `<span class="history-image-unavailable" aria-hidden="true">${escapeHtml(tr('photo_unavailable'))}</span>`}
           <span>${escapeHtml(item.label)}</span>
         </button>
       `).join('')}
     </div>
+    ${photos.some(({ image }) => !image) && isRealtimeAvailable() ? `
+      <button class="ghost-button history-retry" type="button" data-action="retry-history-images">
+        ${escapeHtml(tr('retry_history_images'))}
+      </button>
+    ` : ''}
   `;
 }
 
@@ -1219,7 +1348,7 @@ function renderSavedMessagesOverlay(): string {
 
 function renderHistoryImageOverlay(item: IntercomHistoryItem): string {
   const intercom = state.currentView?.intercom ?? null;
-  const imageSrc = intercom ? resolveHistoryImageDisplayUrl(item.imageUrl, intercom) : TRANSPARENT_1PX;
+  const image = intercom ? resolveHistoryPhoto(item, intercom, 'full') : null;
   const previous = getAdjacentHistoryImage(-1);
   const next = getAdjacentHistoryImage(1);
   return `
@@ -1247,14 +1376,11 @@ function renderHistoryImageOverlay(item: IntercomHistoryItem): string {
           </div>
         </div>
         <div class="history-lightbox-body">
-          <img
-            class="history-lightbox-image"
-            src="${escapeAttribute(imageSrc)}"
-            alt="${escapeAttribute(item.label)}"
-            loading="eager"
-            decoding="async"
-            data-history-source-url="${escapeAttribute(item.imageUrl)}"
-          />
+          ${image ? `
+            <img class="history-lightbox-image" src="${escapeAttribute(image.src)}" alt="${escapeAttribute(item.label)}"
+              loading="eager" decoding="async" referrerpolicy="no-referrer"
+              data-history-source-url="${escapeAttribute(image.sourceUrl)}" />
+          ` : `<p class="history-lightbox-empty" role="status">${escapeHtml(tr('photo_unavailable'))}</p>`}
         </div>
     </dialog>
   `;
@@ -1708,13 +1834,20 @@ function resolveFallbackMediaUrl(intercom: CurrentIntercom): string | null {
 }
 
 function requestVisibleHistoryCache(intercom: CurrentIntercom): void {
-  const keys = [];
-  for (const item of collectVisibleHistoryItems(intercom)) {
-    const key = normalizeHistoryImageCacheKey(item.imageUrl);
+  const keys: string[] = [];
+  const requestPhoto = (item: IntercomHistoryItem, kind: 'thumbnail' | 'full') => {
+    const photo = resolveHistoryPhoto(item, intercom, kind);
+    const key = photo && normalizeHistoryImageCacheKey(photo.sourceUrl);
     if (key && !historyImageCache.has(key) && !requestedHistoryImageKeys.has(key)) {
       keys.push(key);
       requestedHistoryImageKeys.add(key);
     }
+  };
+  if (sidePanelOpen && sidePanelTab === 'history') {
+    viewHistory(intercom).forEach(item => requestPhoto(item, 'thumbnail'));
+  }
+  if (selectedHistoryImage) {
+    requestPhoto(selectedHistoryImage, 'full');
   }
   if (keys.length) {
     post({ type: 'loadHistoryImageCache', requestId: historyCacheGeneration, keys });
@@ -1726,30 +1859,58 @@ function viewHistory(intercom: CurrentIntercom): IntercomHistoryItem[] {
   return items.slice(0, state.currentView?.config.historyLimit ?? 8);
 }
 
-function collectVisibleHistoryItems(intercom: CurrentIntercom): IntercomHistoryItem[] {
-  if (!sidePanelOpen && !selectedHistoryImage) {
-    return [];
-  }
-
-  const historyItems = viewHistory(intercom);
-  const items = new Map<string, IntercomHistoryItem>();
-
-  if (sidePanelOpen && sidePanelTab === 'history') {
-    for (const item of historyItems) {
-      items.set(item.timestamp, item);
+function resolveHistoryPhoto(
+  item: IntercomHistoryItem,
+  intercom: CurrentIntercom,
+  kind: 'thumbnail' | 'full',
+): { src: string; sourceUrl: string } | null {
+  const { imageUrl, thumbnailUrl, fallbackImageUrl, fallbackThumbnailUrl } = item;
+  const candidates = kind === 'thumbnail'
+    ? [thumbnailUrl ?? imageUrl, fallbackThumbnailUrl, imageUrl, fallbackImageUrl]
+    : [imageUrl, fallbackImageUrl, thumbnailUrl, fallbackThumbnailUrl];
+  for (const sourceUrl of new Set(candidates)) {
+    if (!sourceUrl) {
+      continue;
+    }
+    const key = normalizeHistoryImageCacheKey(sourceUrl);
+    const src = (key && historyImageCache.get(key)) || resolveArchiveRequestUrl(sourceUrl, intercom);
+    if (src && !failedHistoryImageUrls.has(src)) {
+      return { src, sourceUrl };
     }
   }
-
-  if (selectedHistoryImage) {
-    items.set(selectedHistoryImage.timestamp, selectedHistoryImage);
-  }
-
-  return Array.from(items.values());
+  return null;
 }
 
-function resolveHistoryImageDisplayUrl(sourceUrl: string, intercom: CurrentIntercom): string {
-  const key = normalizeHistoryImageCacheKey(sourceUrl);
-  return (key ? historyImageCache.get(key) : null) || resolveRenderableMediaUrl(sourceUrl, intercom) || TRANSPARENT_1PX;
+function resolveArchiveRequestUrl(sourceUrl: string, intercom: CurrentIntercom): string | null {
+  try {
+    const url = new URL(sourceUrl);
+    if (url.protocol !== 'https:' && (url.protocol !== 'http:' || window.location.protocol === 'https:')) {
+      return null;
+    }
+    const proxyBase = resolveProxyMediaBase(intercom);
+    const proxy = proxyBase ? new URL(proxyBase) : null;
+    if (proxy?.origin === url.origin && url.pathname.startsWith(proxy.pathname) && intercom.authToken) {
+      url.username = '';
+      url.password = '';
+      // Keep the other query parameters byte-for-byte for signed image paths.
+      const query = url.search.slice(1).split('&').filter(part =>
+        part && !/^autht?$/i.test(decodeURIComponent(part.split('=', 1)[0])),
+      );
+      query.push(`autht=${encodeURIComponent(intercom.authToken)}`);
+      url.search = query.join('&');
+      return url.href;
+    }
+    const lanBase = intercom.transportMode === 'lan-direct' && intercom.historyBaseUrl
+      ? new URL(intercom.historyBaseUrl)
+      : null;
+    if (lanBase?.origin === url.origin && !url.username && !url.password && url.searchParams.has('autht')) {
+      return url.href;
+    }
+    // The worker can also provide already-renderable images from this application origin.
+    return url.origin === window.location.origin && !url.username && !url.password ? url.href : null;
+  } catch {
+    return null;
+  }
 }
 
 function normalizeHistoryImageCacheKey(sourceUrl: string): string | null {
@@ -1768,7 +1929,7 @@ function normalizeHistoryImageCacheKey(sourceUrl: string): string | null {
 
 function cacheHistoryImageFromElement(image: HTMLImageElement, sourceUrl: string): void {
   const key = normalizeHistoryImageCacheKey(sourceUrl);
-  if (!key || historyImageCache.has(key) || failedHistoryImageLoads.has(key) ||
+  if (!key || historyImageCache.has(key) || failedHistoryImageEncodes.has(key) ||
       encodingHistoryImageKeys.has(key) || !image.naturalWidth || !image.naturalHeight) {
     return;
   }
@@ -1784,7 +1945,7 @@ function cacheHistoryImageFromElement(image: HTMLImageElement, sourceUrl: string
       historyImageCache.set(key, dataUrl);
       post({ type: 'saveHistoryImageCache', key, dataUrl });
     } else {
-      failedHistoryImageLoads.add(key);
+      failedHistoryImageEncodes.add(key);
     }
   };
 

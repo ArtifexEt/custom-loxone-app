@@ -4,6 +4,8 @@ type TranslationParams = Record<string, string | number>;
 
 const TRANSLATIONS = {
   en: {
+    photo_unavailable: 'Photo unavailable',
+    retry_history_images: 'Retry loading photos',
     display_section: 'Display',
     connection_address_or_serial: 'Miniserver address or serial number',
     connection_serial_hint: 'Find the serial number on the Miniserver label or in Loxone Config.',
@@ -217,6 +219,8 @@ const TRANSLATIONS = {
     enter_password: 'Enter the Loxone password.',
   },
   pl: {
+    photo_unavailable: 'Zdjęcie niedostępne',
+    retry_history_images: 'Ponów ładowanie zdjęć',
     display_section: 'Wyświetlanie',
     connection_address_or_serial: 'Adres lub numer seryjny Miniservera',
     connection_serial_hint: 'Numer seryjny znajdziesz na etykiecie Miniservera lub w Loxone Config.',
@@ -430,6 +434,8 @@ const TRANSLATIONS = {
     enter_password: 'Podaj hasło do Loxone.',
   },
   de: {
+    photo_unavailable: 'Foto nicht verfügbar',
+    retry_history_images: 'Fotos erneut laden',
     display_section: 'Anzeige',
     connection_address_or_serial: 'Adresse oder Seriennummer des Miniservers',
     connection_serial_hint: 'Die Seriennummer steht auf dem Miniserver oder in Loxone Config.',
